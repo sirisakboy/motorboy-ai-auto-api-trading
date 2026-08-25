@@ -1,0 +1,8 @@
+{
+  "name": "Trading Engine Pro",
+  "description": "Real-time Multi-Asset Trading Engine & Signal Analysis with live crypto, forex, SET market hours and AI analytics.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
