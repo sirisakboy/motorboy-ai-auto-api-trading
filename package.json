@@ -1,0 +1,29 @@
+{
+  "name": "trading-engine-pro",
+  "version": "1.2.0",
+  "description": "Automated API Trading Engine - Real-time crypto/forex/stock data with trading signals",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "keywords": [
+    "trading",
+    "crypto",
+    "forex",
+    "stocks",
+    "real-time",
+    "websocket",
+    "coingecko",
+    "binance"
+  ],
+  "devDependencies": {
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "vite": "^5.4.21"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "type": "module"
+}

@@ -1,0 +1,101 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Prompt:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  font-variant-ligatures: common-ligatures;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes flashUp {
+  0% { background: rgba(34, 197, 94, 0); }
+  30% { background: rgba(34, 197, 94, 0.35); }
+  100% { background: rgba(34, 197, 94, 0); }
+}
+
+@keyframes flashDown {
+  0% { background: rgba(239, 68, 68, 0); }
+  30% { background: rgba(239, 68, 68, 0.35); }
+  100% { background: rgba(239, 68, 68, 0); }
+}
+
+.flash-up { animation: flashUp 0.6s ease-out; }
+.flash-down { animation: flashDown 0.6s ease-out; }
+
+@keyframes tickerScroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.ticker-track { animation: tickerScroll 60s linear infinite; will-change: transform; }
+.ticker-track.paused { animation-play-state: paused; }
+
+@keyframes pulseLive {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(0.9); }
+}
+
+.live-dot { animation: pulseLive 1.2s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ticker-track, .live-dot, .flash-up, .flash-down { animation: none !important; }
+}
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-thumb { background: #252A3A; border-radius: 999px; }
+
+.focus-ring:focus-visible { outline: 2px solid #7C6CFF; outline-offset: 2px; }
+
+/* Loading skeleton animation */
+.animate-pulse {
+  animation: pulse 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Tooltip */
+[data-tooltip] {
+  position: relative;
+  cursor: help;
+}
+[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 8px;
+  background: #1A1D29;
+  color: #ffffff;
+  font-size: 11px;
+  white-space: nowrap;
+  border-radius: 4px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+  z-index: 9999;
+}
+[data-tooltip]:hover::after {
+  opacity: 1;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Dark mode class support */
+html.dark {
+  color-scheme: dark;
+}
