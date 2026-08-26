@@ -92,14 +92,14 @@ fun TradingAppScreen(
                             Column {
                                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                                     Text(
-                                        text = "TRADING ENGINE",
+                                        text = "TRADING",
                                         color = if (isDark) TextWhite else Color(0xFF0F172A),
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 15.sp,
                                         letterSpacing = (-0.5).sp
                                     )
                                     Text(
-                                        text = "Pro",
+                                        text = "ENGINE",
                                         color = PrimaryPurple,
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 15.sp
@@ -110,11 +110,11 @@ fun TradingAppScreen(
                                             .border(1.dp, PrimaryPurple.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
                                             .padding(horizontal = 6.dp, vertical = 2.dp)
                                     ) {
-                                        Text("Live v1.2", color = PrimaryPurpleMuted, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                                        Text("PRO", color = PrimaryPurpleMuted, fontSize = 9.sp, fontWeight = FontWeight.Bold)
                                     }
                                 }
                                 Text(
-                                    text = "Real-time Market Data • Phase 2 Live",
+                                    text = "Real-time Multi-Asset • Live",
                                     color = TextDim,
                                     fontSize = 10.sp
                                 )

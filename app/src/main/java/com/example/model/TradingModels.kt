@@ -1,9 +1,37 @@
 package com.example.model
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 enum class FlashDirection { UP, DOWN, NONE }
+
+@Serializable
 enum class Sentiment { BULLISH, BEARISH, NEUTRAL }
+
+@Serializable
 enum class MarketStatus { OPEN, CLOSED }
 
+@Serializable
+data class Asset(
+    val id: String,
+    val symbol: String,
+    val name: String,
+    val binanceSymbol: String,
+    val exchange: String = "Binance"
+)
+
+@Serializable
+data class PriceData(
+    val symbol: String,
+    val price: Double,
+    val change: Double,
+    val high: Double = 0.0,
+    val low: Double = 0.0,
+    val volume: Double = 0.0,
+    val timestamp: Long = System.currentTimeMillis()
+)
+
+@Serializable
 data class CryptoCoin(
     val id: String,
     val symbol: String,
@@ -19,6 +47,7 @@ data class CryptoCoin(
     val flash: FlashDirection = FlashDirection.NONE
 )
 
+@Serializable
 data class ForexPair(
     val pair: String,
     val price: Double = 0.0,
@@ -26,6 +55,7 @@ data class ForexPair(
     val flash: FlashDirection = FlashDirection.NONE
 )
 
+@Serializable
 data class StockIndex(
     val symbol: String,
     val name: String,
@@ -35,6 +65,7 @@ data class StockIndex(
     val schedule: String = ""
 )
 
+@Serializable
 data class TradingSignal(
     val id: String,
     val symbol: String,
@@ -55,6 +86,7 @@ data class TradingSignal(
     val etfFlow: String
 )
 
+@Serializable
 data class NewsArticle(
     val id: String,
     val title: String,
@@ -64,6 +96,7 @@ data class NewsArticle(
     val sentiment: Sentiment = Sentiment.NEUTRAL
 )
 
+@Serializable
 data class MarketHoursInfo(
     val setStatus: MarketStatus = MarketStatus.CLOSED,
     val forexStatus: MarketStatus = MarketStatus.OPEN,
@@ -72,12 +105,14 @@ data class MarketHoursInfo(
     val timestamp: String = ""
 )
 
+@Serializable
 data class ChartData(
     val prices: List<Double> = emptyList(),
     val ema20: List<Double> = emptyList(),
     val ema50: List<Double> = emptyList()
 )
 
+@Serializable
 data class ApiStatusState(
     val binanceWs: String = "CONNECTING",
     val coinGecko: String = "LIVE",
@@ -86,3 +121,4 @@ data class ApiStatusState(
     val signals: String = "LIVE",
     val stocks: String = "LIVE"
 )
+

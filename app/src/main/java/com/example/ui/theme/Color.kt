@@ -26,3 +26,4 @@ val RedBg = Color(0x26EF4444)
 val TextWhite = Color(0xFFFFFFFF)
 val TextMuted = Color(0xFF9CA3AF)
 val TextDim = Color(0xFF6B7280)
+
