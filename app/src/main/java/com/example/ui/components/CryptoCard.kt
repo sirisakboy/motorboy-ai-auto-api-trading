@@ -1,6 +1,7 @@
 package com.example.ui.components
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -14,11 +15,11 @@ import androidx.compose.material.icons.outlined.StarOutline
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -40,6 +41,9 @@ fun CryptoCard(
     onSelect: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var isPressed by remember { mutableStateOf(false) }
+    val scale by animateFloatAsState(targetValue = if (isPressed) 0.98f else 1f, label = "scaleAnimation")
+
     val flashColor by animateColorAsState(
         targetValue = when (coin?.flash) {
             FlashDirection.UP -> GreenProfit.copy(alpha = 0.25f)
@@ -57,10 +61,13 @@ fun CryptoCard(
     Box(
         modifier = modifier
             .fillMaxWidth()
+            .scale(scale)
             .clip(RoundedCornerShape(18.dp))
             .background(flashColor)
             .border(1.dp, BorderDark, RoundedCornerShape(18.dp))
-            .clickable { onSelect() }
+            .clickable(
+                onClick = { onSelect() }
+            )
             .padding(16.dp)
             .testTag("signal_card_${signal.symbol.lowercase()}")
     ) {
@@ -117,13 +124,13 @@ fun CryptoCard(
                     // Watchlist button
                     IconButton(
                         onClick = { onToggleWatchlist(signal.symbol) },
-                        modifier = Modifier.size(32.dp).testTag("watchlist_btn_${signal.symbol}")
+                        modifier = Modifier.size(48.dp).testTag("watchlist_btn_${signal.symbol}")
                     ) {
                         Icon(
                             imageVector = if (isWatchlisted) Icons.Filled.Star else Icons.Outlined.StarOutline,
                             contentDescription = "Watchlist",
                             tint = if (isWatchlisted) PrimaryPurple else TextDim,
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(24.dp)
                         )
                     }
 
@@ -178,15 +185,15 @@ fun CryptoCard(
                 Text(
                     text = String.format(Locale.US, "%s%,.2f", currencyPrefix, displayPrice),
                     color = TextWhite,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp
+                    fontWeight = FontWeight.Black,
+                    fontSize = 22.sp
                 )
                 val isPositive = signal.change >= 0
                 Text(
                     text = String.format(Locale.US, "%s%.2f%%", if (isPositive) "+" else "", signal.change),
-                    color = if (isPositive) GreenText else RedText,
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 14.sp
+                    color = if (isPositive) GreenProfit else RedLoss,
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 16.sp
                 )
             }
 
@@ -225,9 +232,9 @@ fun CryptoCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("SL: $currencyPrefix${String.format(Locale.US, "%,.1f", if (useThb) signal.sl * 36.45 else signal.sl)}", color = RedText, fontSize = 11.sp)
-                    Text("TP: $currencyPrefix${String.format(Locale.US, "%,.1f", if (useThb) signal.tp * 36.45 else signal.tp)}", color = GreenText, fontSize = 11.sp)
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("SL: $currencyPrefix${String.format(Locale.US, "%,.1f", if (useThb) signal.sl * 36.45 else signal.sl)}", color = RedLoss, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                    Text("TP: $currencyPrefix${String.format(Locale.US, "%,.1f", if (useThb) signal.tp * 36.45 else signal.tp)}", color = GreenProfit, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                 }
 
                 Text(

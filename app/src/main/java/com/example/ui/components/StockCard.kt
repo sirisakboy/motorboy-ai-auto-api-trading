@@ -1,7 +1,13 @@
 package com.example.ui.components
 
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.runtime.*
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -28,14 +34,30 @@ fun StockCard(
     stock: StockIndex,
     marketStatusText: String,
     countdown: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit = {}
 ) {
+    var isPressed by remember { mutableStateOf(false) }
+    val scale by animateFloatAsState(targetValue = if (isPressed) 0.98f else 1f, label = "scaleAnimation")
+
     Box(
         modifier = modifier
             .fillMaxWidth()
+            .scale(scale)
             .clip(RoundedCornerShape(18.dp))
             .background(CardDark)
             .border(1.dp, BorderDark, RoundedCornerShape(18.dp))
+            .clickable(onClick = onClick)
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onPress = {
+                        isPressed = true
+                        tryAwaitRelease()
+                        isPressed = false
+                    },
+                    onTap = { onClick() }
+                )
+            }
             .padding(16.dp)
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
@@ -82,15 +104,15 @@ fun StockCard(
                     Text(
                         text = String.format(Locale.US, "%,.2f", stock.price),
                         color = TextWhite,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp
+                        fontWeight = FontWeight.Black,
+                        fontSize = 18.sp
                     )
                     val isPositive = stock.change >= 0
                     Text(
                         text = String.format(Locale.US, "%s%.2f%%", if (isPositive) "+" else "", stock.change),
-                        color = if (isPositive) GreenText else RedText,
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 12.sp
+                        color = if (isPositive) GreenProfit else RedLoss,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 14.sp
                     )
                 }
             }

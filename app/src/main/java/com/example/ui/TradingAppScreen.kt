@@ -76,6 +76,7 @@ fun TradingAppScreen(
                     ) {
                         // Logo & Brand
                         Row(
+                            modifier = Modifier.weight(1f, fill = false),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
@@ -123,6 +124,7 @@ fun TradingAppScreen(
 
                         // Header action buttons
                         Row(
+                            modifier = Modifier.weight(1f, fill = false),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
@@ -147,7 +149,7 @@ fun TradingAppScreen(
                             IconButton(
                                 onClick = { viewModel.toggleTheme() },
                                 modifier = Modifier
-                                    .size(36.dp)
+                                    .size(48.dp)
                                     .background(if (isDark) CardDark else CardLight, CircleShape)
                                     .border(1.dp, if (isDark) BorderDark else BorderLight, CircleShape)
                             ) {
@@ -155,7 +157,7 @@ fun TradingAppScreen(
                                     imageVector = if (isDark) Icons.Default.DarkMode else Icons.Default.LightMode,
                                     contentDescription = "Toggle Theme",
                                     tint = if (isDark) TextWhite else Color(0xFF0F172A),
-                                    modifier = Modifier.size(18.dp)
+                                    modifier = Modifier.size(24.dp)
                                 )
                             }
 
@@ -164,7 +166,7 @@ fun TradingAppScreen(
                                 IconButton(
                                     onClick = { viewModel.toggleNotifications() },
                                     modifier = Modifier
-                                        .size(36.dp)
+                                        .size(48.dp)
                                         .background(if (isDark) CardDark else CardLight, CircleShape)
                                         .border(1.dp, if (isDark) BorderDark else BorderLight, CircleShape)
                                 ) {
@@ -325,31 +327,35 @@ fun TradingAppScreen(
                         // Status Info Row
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Box(
                                 modifier = Modifier
+                                    .weight(1f)
                                     .background(CardDark, RoundedCornerShape(12.dp))
                                     .border(1.dp, BorderDark, RoundedCornerShape(12.dp))
-                                    .padding(horizontal = 10.dp, vertical = 4.dp)
+                                    .padding(horizontal = 8.dp, vertical = 4.dp)
                             ) {
                                 Text(
-                                    text = "กรองความผันผวน ≥ $minProb% | ${filteredSignals.size} คู่",
+                                    text = "ความผันผวน ≥ $minProb% | ${filteredSignals.size} คู่",
                                     color = TextMuted,
-                                    fontSize = 11.sp
+                                    fontSize = 10.sp,
+                                    maxLines = 1,
+                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                                 )
                             }
 
                             Box(
                                 modifier = Modifier
+                                    .weight(1f)
                                     .background(CardDark, RoundedCornerShape(12.dp))
                                     .border(1.dp, BorderDark, RoundedCornerShape(12.dp))
-                                    .padding(horizontal = 10.dp, vertical = 4.dp)
+                                    .padding(horizontal = 8.dp, vertical = 4.dp)
                             ) {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
                                 ) {
                                     Box(
                                         modifier = Modifier
@@ -357,9 +363,11 @@ fun TradingAppScreen(
                                             .background(if (apiStatus.binanceWs == "LIVE") GreenProfit else RedLoss, CircleShape)
                                     )
                                     Text(
-                                        text = "Latency -95% WS ${apiStatus.binanceWs}",
+                                        text = "WS ${apiStatus.binanceWs}",
                                         color = TextMuted,
-                                        fontSize = 11.sp
+                                        fontSize = 10.sp,
+                                        maxLines = 1,
+                                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                                     )
                                 }
                             }

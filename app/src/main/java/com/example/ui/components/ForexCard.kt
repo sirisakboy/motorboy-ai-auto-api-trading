@@ -68,15 +68,15 @@ fun ForexCard(
                     Text(
                         text = String.format(Locale.US, "%,.4f", forex.price),
                         color = TextWhite,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp
+                        fontWeight = FontWeight.Black,
+                        fontSize = 18.sp
                     )
                     val isPositive = forex.change >= 0
                     Text(
                         text = String.format(Locale.US, "%s%.2f%%", if (isPositive) "+" else "", forex.change),
-                        color = if (isPositive) GreenText else RedText,
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 12.sp
+                        color = if (isPositive) GreenProfit else RedLoss,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 14.sp
                     )
                 }
             }
