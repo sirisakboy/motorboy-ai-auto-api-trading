@@ -22,14 +22,6 @@ jobs:
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
 
-    - name: Download fresh gradle-wrapper.jar
-      run: |
-        mkdir -p gradle/wrapper
-        curl -f -L https://github.com/gradle/gradle/raw/v8.7/gradle/wrapper/gradle-wrapper.jar -o gradle/wrapper/gradle-wrapper.jar
-        ls -l gradle/wrapper/gradle-wrapper.jar
-        # Verify file size (should be around 300KB)
-        [ $(stat -c%s gradle/wrapper/gradle-wrapper.jar) -gt 100000 ] || (echo "Jar file is too small or corrupt" && exit 1)
-
     - name: Build with Gradle
       run: ./gradlew assembleDebug
 
