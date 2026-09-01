@@ -21,9 +21,9 @@ jobs:
         distribution: 'temurin'
 
     - name: Build with Gradle
-      uses: gradle/gradle-build-action@v3
+      uses: gradle/actions/setup-gradle@v4
       with:
-        gradle-version: '8.7'
+        gradle-version: '8.11.1'
         arguments: assembleDebug
 
     - name: Upload APK
