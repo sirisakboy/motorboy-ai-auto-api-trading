@@ -98,7 +98,13 @@ class TradingViewModel : ViewModel() {
         loadChart("bitcoin")
     }
 
+    fun reconnectWebSocket() {
+        binanceWs?.close(1000, "Reconnecting")
+        initWebSocket()
+    }
+
     private fun initWebSocket() {
+        binanceWs?.close(1000, "Reconnecting")
         binanceWs = ApiClient.startBinanceWebSocket(
             onUpdate = { updatedCoin ->
                 _cryptoList.update { currentList ->

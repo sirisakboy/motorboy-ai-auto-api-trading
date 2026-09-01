@@ -131,7 +131,7 @@ object ApiClient {
 
         // Fallback: Binance 24h ticker
         try {
-            val symbolsJson = "[${CRYPTO_INITIAL.joinToString(",") { "\"${it.binanceSymbol}\"" }}]"
+            val symbolsJson = java.net.URLEncoder.encode("[${CRYPTO_INITIAL.joinToString(",") { "\"${it.binanceSymbol}\"" }}]", "UTF-8")
             val url = "https://api.binance.com/api/v3/ticker/24hr?symbols=$symbolsJson"
             val request = Request.Builder().url(url).build()
             val response = client.newCall(request).execute()
