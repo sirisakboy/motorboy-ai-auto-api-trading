@@ -1,0 +1,350 @@
+export type TranslationKeys = {
+  common: {
+    crypto: string;
+    forex: string;
+    thai_stocks: string;
+    foreign_stocks: string;
+    indices: string;
+    live: string;
+    backup: string;
+    loading_auth: string;
+    close_window: string;
+    save: string;
+    success: string;
+    error: string;
+  };
+  auth: {
+    welcome_title: string;
+    welcome_desc: string;
+    login_error_popup_closed: string;
+    login_error_generic: string;
+    sign_in_google: string;
+  };
+  trading: {
+    price_alert_toast: string;
+    graph_live: string;
+    graph_backup: string;
+    update_at: string;
+    backup_price_info: string;
+  };
+  settings: {
+    title: string;
+    google_account: string;
+    synced: string;
+    google_search_info: string;
+    live_grounding: string;
+    api_section_title: string;
+    api_section_desc: string;
+    api_section_status_exists: string;
+    api_section_status_missing: string;
+    api_label: string;
+    api_info: string;
+    api_get_key: string;
+    api_save_btn: string;
+    api_test_btn: string;
+    api_saving: string;
+    api_testing: string;
+    api_save_success: string;
+    api_test_required: string;
+    currency_label: string;
+    currency_thb: string;
+    currency_usd: string;
+    notif_label: string;
+    notif_on: string;
+    notif_off: string;
+    notif_btn_on: string;
+    notif_btn_off: string;
+    alert_title: string;
+    alert_coin_label: string;
+    alert_price_label: string;
+    alert_save_btn: string;
+    alert_saved_success: string;
+    alert_list_header: string;
+    alert_target: string;
+    sync_footer: string;
+  };
+  risk_calc: {
+    title: string;
+    labels: {
+      signal_picker: string;
+      manual_entry: string;
+      direction: string;
+      account_size: string;
+      risk_per_trade: string;
+      entry_price: string;
+      sl_price: string;
+      rr_ratio: string;
+      leverage: string;
+    };
+    checklist: {
+      header: string;
+      risk_limit_title: string;
+      risk_limit_ok: string;
+      risk_limit_fail: string;
+      consistent_long_title: string;
+      consistent_short_title: string;
+      consistent_ok: string;
+      consistent_fail: string;
+      sl_dist_title: string;
+      sl_dist_ok: string;
+      sl_dist_fail: string;
+      rr_title: string;
+      rr_ok: string;
+      rr_fail: string;
+      lev_spot_title: string;
+      lev_margin_title: string;
+      lev_spot_tip: string;
+      lev_margin_tip: string;
+    },
+    results: {
+      notional: string;
+      units: string;
+      risk: string;
+      reward: string;
+      margin: string;
+      summary: string;
+      invalid_input: string;
+    };
+    ai: {
+      header: string;
+      desc: string;
+      analyze_btn: string;
+      analyze_loading: string;
+      reanalyze_btn: string;
+      api_missing: string;
+      error: string;
+    };
+    save: {
+      success: string;
+      error: string;
+      btn: string;
+    };
+  };
+  signal_detail: {
+    tabs: {
+      ai: string;
+      tech: string;
+      risk: string;
+      similarity: string;
+    };
+    sentiment: {
+      header: string;
+      whale_acc: string;
+      whale_dist: string;
+      whale_neutral: string;
+      social_high: string;
+      social_low: string;
+      social_mid: string;
+      loading: string;
+    };
+    ai_analysis: {
+      forex_header: string;
+      crypto_header: string;
+      forex_desc: string;
+      crypto_desc: string;
+      analyze_btn: string;
+      analyze_loading: string;
+      rec_signal: string;
+      confidence: string;
+      strategy: string;
+      ai_support: string;
+      ai_resistance: string;
+      saved_success: string;
+    };
+    general: {
+      confidence: string;
+      sr_grid_header: string;
+      support_label: string;
+      support_tip: string;
+      resistance_label: string;
+      resistance_tip: string;
+    };
+  };
+};
+
+export const translations: Record<'th', TranslationKeys> = {
+  th: {
+    common: {
+      crypto: 'คริปโต',
+      forex: 'คู่เงิน',
+      thai_stocks: 'หุ้นไทย',
+      foreign_stocks: 'หุ้นต่างประเทศ',
+      indices: 'ดัชนี',
+      live: 'LIVE',
+      backup: 'สำรอง',
+      loading_auth: 'กำลังตรวจสอบสิทธิ์การเข้าใช้งาน...',
+      close_window: 'ปิดหน้าต่าง',
+      save: 'บันทึก',
+      success: 'สำเร็จ',
+      error: 'เกิดข้อผิดพลาด',
+    },
+    auth: {
+      welcome_title: 'TRADING ENGINE PRO',
+      welcome_desc: 'ระบบส่งสัญญาณการเทรด Multi-Asset Engine วิเคราะห์ข้อมูลแบบเรียลไทม์ กรุณาเข้าสู่ระบบเพื่อเริ่มต้นใช้งาน',
+      login_error_popup_closed: 'หน้าต่างเข้าสู่ระบบถูกปิดโดยผู้ใช้ กรุณาลองใหม่อีกครั้ง',
+      login_error_generic: 'เกิดข้อผิดพลาดในการเข้าสู่ระบบด้วย Google',
+      sign_in_google: 'เข้าสู่ระบบด้วย Google',
+    },
+    trading: {
+      price_alert_toast: '🔔 แจ้งเตือนราคา: {symbol} ถึงเป้าหมายที่ {price} แล้ว! (ปัจจุบัน: {current})',
+      graph_live: 'กราฟแสดงข้อมูลแบบเรียลไทม์',
+      graph_backup: 'ตลาดปิดหรือออฟไลน์ • ใช้ราคาสำรอง',
+      update_at: 'อัปเดตเมื่อ: {time}',
+      backup_price_info: 'ใช้ราคาสำรอง (ยังไม่ได้ดึงข้อมูล Live)',
+    },
+    settings: {
+      title: 'การตั้งค่า และการซิงค์บัญชี Google',
+      google_account: 'บัญชี Google',
+      synced: 'ซิงค์แล้ว',
+      google_search_info: 'Google Search เชื่อมโยงบัญชี Email: เปิดใช้งานค้นหาข้อมูลตลาดสด',
+      live_grounding: 'Live Grounding',
+      api_section_title: 'การจัดการรหัส API (API Key Management)',
+      api_section_desc: 'ระบุรหัส API เพื่อเปิดใช้งานการวิเคราะห์สัญญาณตลาดแบบเรียลไทม์ (ข้อมูลจะถูกเข้ารหัสและซิงค์ผ่านบัญชีของคุณเท่านั้น)',
+      api_section_status_exists: 'เชื่อมต่อและซิงค์รหัสเรียบร้อยแล้ว (คลิกเพื่อแก้ไข)',
+      api_section_status_missing: 'ยังไม่มีการระบุรหัส API (คลิกเพื่อตั้งค่า)',
+      api_label: 'รหัส API (API Key - ซิงค์กับบัญชี Google)',
+      api_info: 'รับ API Key ได้ที่ poolside AI Platform',
+      api_get_key: 'รับ API Key ได้ที่ poolside AI Platform',
+      api_save_btn: 'บันทึกและซิงค์รหัส',
+      api_test_btn: 'ทดสอบการเชื่อมต่อ',
+      api_saving: 'กำลังซิงค์...',
+      api_testing: 'กำลังทดสอบ...',
+      api_save_success: 'บันทึกและซิงค์ API Key ไปยังบัญชี Google สำเร็จเรียบร้อย',
+      api_test_required: 'กรุณาระบุ API Key ก่อนเริ่มการทดสอบการเชื่อมต่อ',
+      currency_label: 'สกุลเงินแสดงผล',
+      currency_thb: 'บาทไทย (฿ THB)',
+      currency_usd: 'ดอลลาร์สหรัฐ ($ USD)',
+      notif_label: 'การแจ้งเตือนสัญญาณ',
+      notif_on: 'เปิดใช้งานและส่งการแจ้งเตือน',
+      notif_off: 'ปิดการแจ้งเตือนอยู่',
+      notif_btn_on: 'เปิดใช้งานอยู่ ✓',
+      notif_btn_off: 'เปิดการแจ้งเตือน',
+      alert_title: 'ตั้งเป้าหมายแจ้งเตือนราคา (Price Alert - Cloud Sync)',
+      alert_coin_label: 'เหรียญ',
+      alert_price_label: 'ราคาเป้าหมาย ($ USD)',
+      alert_save_btn: 'บันทึกการแจ้งเตือนราคา',
+      alert_saved_success: 'บันทึกการแจ้งเตือน {symbol} ที่ {price} สำเร็จ!',
+      alert_list_header: 'รายการแจ้งเตือนที่ตั้งไว้:',
+      alert_target: 'เป้าหมาย:',
+      sync_footer: 'ข้อมูลทั้งหมดซิงค์ผ่านบัญชี Google ของคุณ',
+    },
+    risk_calc: {
+      title: 'คำนวณความเสี่ยง',
+      labels: {
+        signal_picker: 'ดึงราคาจากสัญญาณ (ถ้ามี)',
+        manual_entry: '— พิมพ์เอง —',
+        direction: 'ทิศทาง',
+        account_size: 'ขนาดบัญชี ({currency})',
+        risk_per_trade: 'ความเสี่ยงต่อการเทรด (%) — แนะนำ 1–2%',
+        entry_price: 'จุดเข้าซื้อ/ขาย (Entry Price) ($)',
+        sl_price: 'จุดตัดขาดทุน (Stop Loss) ($)',
+        rr_ratio: 'อัตรากำไรต่อความเสี่ยง (Risk:Reward)',
+        leverage: 'เลเวอเรจ (Leverage x) — 1 = Spot ปลอดภัยที่สุด',
+      },
+      checklist: {
+        header: 'เช็กลิสต์ป้องกันพอร์ต',
+        risk_limit_title: 'ความเสี่ยงไม่เกิน 2% ของพอร์ต',
+        risk_limit_ok: 'ระดับนี้ปลอดภัย แม้แพ้ติดต่อกัน 10 ครั้งพอร์ตยังคงอยู่',
+        risk_limit_fail: 'ความเสี่ยงสูงเกินไป ลดขนาด position เพื่อป้องกันพอร์ตเสียหายรุนแรง',
+        consistent_long_title: 'Stop Loss อยู่ใต้ Entry (ฝั่ง LONG)',
+        consistent_short_title: 'Stop Loss อยู่เหนือ Entry (ฝั่ง SHORT)',
+        consistent_ok: 'วาง SL ถูกฝั่งตามกลยุทธ์แล้ว',
+        consistent_fail: 'ตำแหน่ง SL ผิดฝั่ง โปรดตรวจสอบราคา Entry และ SL อีกครั้ง',
+        sl_dist_title: 'ระยะ SL {dist}% (ไม่ชิดเกินไป)',
+        sl_dist_ok: 'ระยะนี้เพียงพอที่จะหลบ Noise ของราคาในระยะสั้นได้',
+        sl_dist_fail: 'SL ชิดเกินไป มีโอกาสถูก Stop Out ได้ง่าย ควรขยับ SL ให้พ้น Swing ล่าสุด',
+        rr_title: 'Risk:Reward 1:{rr}',
+        rr_ok: 'อัตราผลตอบแทนคุ้มค่า ชนะเพียง 4 ใน 10 ครั้งก็ยังสร้างกำไรได้',
+        rr_fail: 'กำไรไม่คุ้มความเสี่ยง ควรขยับ TP ให้ได้อย่างน้อย 2R หรือพิจารณาข้ามไม้นี้',
+        lev_spot_title: 'Spot (ไม่ใช้ Leverage)',
+        lev_margin_title: 'ใช้ Leverage x{lev}',
+        lev_spot_tip: 'ไม่มีความเสี่ยงในการถูกล้างพอร์ต (Liquidation)',
+        lev_margin_tip: 'ใช้เงินหลักประกัน {margin} โปรดตั้ง SL ทุกครั้งเนื่องจาก Leverage ขยายทั้งกำไรและขาดทุน',
+      },
+      results: {
+        notional: 'มูลค่าสัญญา (Position Notional)',
+        units: 'จำนวนหน่วย (Units)',
+        risk: 'จำนวนเงินที่เสี่ยง',
+        reward: 'เป้าหมายกำไร (Target Reward)',
+        margin: 'เงินหลักประกัน (Required Margin)',
+        summary: 'สรุป: เปิดไม้ {notional} หากผิดทางจะเสีย {risk} ({riskPct}% ของพอร์ต) หากถูกทางจะได้ {reward} — เสี่ยง 1 ได้ {rr} เท่า',
+        invalid_input: 'กรุณากรอกข้อมูลให้ครบถ้วน: บัญชี > 0, เสี่ยง 0–100%, Entry/SL > 0 และไม่เท่ากัน, Leverage ≥ 1',
+      },
+      ai: {
+        header: 'AI ประเมินแผนแบบเรียลไทม์',
+        desc: 'AI จะวิเคราะห์ทิศทาง โมเมนตัม และระดับ SL/TP เพื่อแนะนำว่าควรเข้าเทรด รอ หรือข้าม พร้อมเทคนิคป้องกันเฉพาะแผน',
+        analyze_btn: 'ให้ AI ประเมินแผนนี้',
+        analyze_loading: 'AI กำลังวิเคราะห์แผน...',
+        reanalyze_btn: 'ประเมินแผนใหม่อีกครั้ง',
+        api_missing: 'ยังไม่มี Gemini API Key — โปรดตั้งค่าใน Settings เพื่อให้ AI ประเมินผลแม่นยำขึ้น',
+        error: 'AI ประเมินไม่สำเร็จ กรุณาลองใหม่อีกครั้ง',
+      },
+      save: {
+        success: 'บันทึกแผนการเทรดลงประวัติเรียบร้อยแล้ว',
+        error: 'บันทึกไม่สำเร็จ กรุณาลองใหม่อีกครั้ง',
+        btn: 'บันทึกแผนการเทรดลงประวัติ',
+      },
+    },
+    signal_detail: {
+      tabs: {
+        ai: 'AI Analysis',
+        tech: 'เทคนิคอล',
+        risk: 'SL / TP',
+        similarity: 'ความแม่นยำ',
+      },
+      sentiment: {
+        header: 'คะแนนความเชื่อมั่นตลาด (Market Sentiment)',
+        whale_acc: 'สะสมซื้อ',
+        whale_dist: 'ระบายขาย',
+        whale_neutral: 'ทรงตัว',
+        social_high: 'คึกคักสูง',
+        social_low: 'ซบเซา',
+        social_mid: 'ปานกลาง',
+        loading: 'กำลังดึงคะแนน Market Sentiment จาก Gemini API...',
+      },
+      ai_analysis: {
+        forex_header: 'Forex Macro & Live AI Intelligence',
+        crypto_header: 'AI Market Intelligence Live Analysis',
+        forex_desc: 'วิเคราะห์คู่เงิน อัตราดอกเบี้ยธนาคารกลาง ดัชนีเงินเฟ้อ CPI/GDP และระดับแนวรับแนวต้านด้วย AI Engine',
+        crypto_desc: 'ประมวลผลข้อมูลราคาเรียลไทม์ ค้นหาข้อมูลตลาดสด และวิเคราะห์ด้วย AI Engine พร้อมบันทึกประวัติซิงค์กับบัญชี Google อัตโนมัติ',
+        analyze_btn: 'วิเคราะห์ด้วย AI และบันทึกลงประวัติ',
+        analyze_loading: 'กำลังประมวลผลด้วย AI Engine...',
+        rec_signal: 'สัญญาณแนะนำ: {action}',
+        confidence: 'ความมั่นใจ {conf}%',
+        strategy: 'กลยุทธ์ที่แนะนำ:',
+        ai_support: 'แนวรับ AI (Support)',
+        ai_resistance: 'แนวต้าน AI (Resistance)',
+        saved_success: 'บันทึกการวิเคราะห์ลงในประวัติบัญชี Google เรียบร้อยแล้ว',
+      },
+      general: {
+        confidence: '% มั่นใจ',
+        sr_grid_header: 'กรอบราคาแนวรับ - แนวต้าน (Support & Resistance)',
+        support_label: 'แนวรับ (Support)',
+        support_tip: 'จุดพิจารณาตั้ง SL / รองรับแรงซื้อ',
+        resistance_label: 'แนวต้าน (Resistance)',
+        resistance_tip: 'จุดพิจารณาแบ่งทำกำไร (TP)',
+      },
+    },
+  },
+};
+
+export function t(keyPath: string, params?: Record<string, string>): string {
+  const keys = keyPath.split('.');
+  let current: any = translations.th;
+
+  for (const key of keys) {
+    current = current?.[key];
+  }
+
+  if (typeof current !== 'string') {
+    return keyPath;
+  }
+
+  if (params) {
+    Object.entries(params).forEach(([k, v]) => {
+      current = current.replace(`{${k}}`, v);
+    });
+  }
+
+  return current;
+}

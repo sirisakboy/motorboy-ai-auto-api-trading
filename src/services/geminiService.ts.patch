@@ -1,0 +1,89 @@
+--- src/services/geminiService.ts
++++ src/services/geminiService.ts
+@@ -2,6 +2,7 @@
+ import {
+   CryptoCoin,
+   TradingSignal,
++  ForexPair,
+   NewsArticle,
+   HolisticMarketAdvice,
+   AutoMarketSynthesisResult,
+@@ -259,6 +260,78 @@
+   }
+ }
+ 
++export async function analyzeForexWithGemini(
++  apiKey: string,
++  forex: ForexPair
++): Promise<AiAnalysisResult> {
++  if (Date.now() < geminiQuotaCooldownUntil) {
++    throw new Error('Gemini API Quota Exhausted. Using fallback engine.');
++  }
++
++  if (!apiKey || apiKey.length < 5) {
++    throw new Error('Invalid or missing Poolside/Gemini API key');
++  }
++
++  const ai = new GoogleGenAI({ apiKey });
++
++  const prompt = `
++คุณคือนักวิเคราะห์เศรษฐศาสตร์มหภาคและเทรดเดอร์ Forex มืออาชีพ
++ฉันต้องการให้คุณวิเคราะห์คู่เงินต่อไปนี้แบบเรียลไทม์ (คุณมี Google Search grounding ดังนั้นจงใช้ข้อมูลข่าวสารทางเศรษฐกิจล่าสุด นโยบายการเงิน และตัวเลข CPI/GDP)
++
++ข้อมูลคู่เงินปัจจุบัน:
++คู่เงิน (Pair): ${forex.pair}
++ราคาปัจจุบัน: ${forex.price.toFixed(4)}
++การเปลี่ยนแปลงรายวัน: ${forex.change.toFixed(2)}%
++
++สิ่งที่คุณต้องวิเคราะห์:
++1. ทิศทางแนวโน้ม (action): LONG, SHORT, หรือ NEUTRAL
++2. ความมั่นใจในสัญญาณ (confidence): 0 - 100
++3. บทสรุปภาพรวมทางเทคนิคและพื้นฐาน (summary) สั้นๆ
++4. ปัจจัยผลักดันหลัก (keyDrivers) อย่างน้อย 2-3 ข้อ
++5. ปัจจัยเสี่ยงที่ต้องระวัง (risks) อย่างน้อย 2 ข้อ
++
++ตอบกลับเป็น JSON format เท่านั้น โดยใช้โครงสร้างนี้เป๊ะๆ:
++{
++  "symbol": "${forex.pair}",
++  "action": "LONG" | "SHORT" | "NEUTRAL",
++  "confidence": number,
++  "summary": "...",
++  "keyDrivers": ["...", "..."],
++  "risks": ["...", "..."]
++}
++  `;
++
++  try {
++    const response = await ai.models.generateContent({
++      model: 'gemini-3.8-flash',
++      contents: prompt,
++      config: {
++        tools: [{ googleSearch: {} }],
++        temperature: 0.2,
++      },
++    });
++
++    const text = response.text;
++    if (!text) throw new Error('Empty AI response');
++
++    const parsed = extractJsonFromResponse<AiAnalysisResult>(text);
++    return parsed;
++  } catch (error) {
++    handleQuotaCooldown(error);
++    console.warn('Forex AI analysis failed, generating fallback:', error);
++    
++    // Fallback logic
++    const isUp = forex.change > 0;
++    return {
++      symbol: forex.pair,
++      action: isUp ? 'LONG' : 'SHORT',
++      confidence: Math.min(80, Math.max(40, 50 + Math.abs(forex.change) * 10)),
++      summary: `วิเคราะห์จากความผันผวนของราคาล่าสุดที่ ${forex.change.toFixed(2)}% (ข้อมูลสำรองอัตโนมัติ เนื่องจาก API จำกัดการใช้งาน)`,
++      keyDrivers: ['การอ่อนค่า/แข็งค่าทางเทคนิคตามรอบการซื้อขายรายวัน', 'ส่วนต่างอัตราดอกเบี้ยและนโยบายจากธนาคารกลาง'],
++      risks: ['ความผันผวนจากข่าวเศรษฐกิจนอกตาราง (Non-farm, CPI)', 'สภาพคล่องในช่วงรอยต่อเซสชั่นข้ามทวีป']
++    };
++  }
++}
+ 
+ /**
+  * AI-driven holistic sentiment generator based on real-time price & volume structure.
