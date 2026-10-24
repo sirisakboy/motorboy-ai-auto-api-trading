@@ -346,3 +346,44 @@ export interface NewsAnalysisResult {
   riskFactors: string[];
   timestamp: string;
 }
+
+/** Drawdown Monitor & Peak-to-Trough Analytics Types */
+export type DrawdownRiskStatus = 'NORMAL' | 'WARNING' | 'CRITICAL' | 'EXTREME';
+
+export interface DrawdownAsset {
+  id: string;
+  symbol: string;
+  name: string;
+  category: 'CRYPTO' | 'THAI_STOCK' | 'FOREIGN_STOCK' | 'FOREX';
+  currentPrice: number;
+  peakPrice: number;
+  troughPrice: number;
+  currentDrawdownPct: number;
+  maxDrawdownPct: number;
+  recoveryNeededPct: number;
+  declineAmount: number;
+  status: DrawdownRiskStatus;
+  daysInDrawdown: number;
+  underwaterCurve: number[];
+  allocationPct?: number;
+  lastUpdated: string;
+}
+
+export interface DrawdownThresholds {
+  warning: number;  // e.g. -10
+  critical: number; // e.g. -20
+  extreme: number;  // e.g. -35
+  soundEnabled: boolean;
+}
+
+export interface PortfolioDrawdownSummary {
+  monitoredCount: number;
+  warningCount: number;
+  criticalCount: number;
+  extremeCount: number;
+  worstAssetSymbol: string;
+  worstDrawdownPct: number;
+  avgDrawdownPct: number;
+  portfolioStatus: DrawdownRiskStatus;
+  recommendedActionTh: string;
+}

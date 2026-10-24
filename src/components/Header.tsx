@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Moon, Sun, Bell, Settings, Zap, LogOut, User as UserIcon, Mail, Calendar as CalendarIcon, MessageSquare, Calculator, LayoutGrid, X, Radio } from 'lucide-react';
+import { Moon, Sun, Bell, Settings, Zap, LogOut, User as UserIcon, Mail, Calendar as CalendarIcon, MessageSquare, Calculator, LayoutGrid, X, Radio, TrendingDown } from 'lucide-react';
 import { CryptoCoin } from '../types';
 import { TickerBar } from './TickerBar';
 
@@ -20,8 +20,10 @@ interface HeaderProps {
   onOpenCalendar?: () => void;
   onOpenChat?: () => void;
   onOpenRiskCalc?: () => void;
+  onOpenDrawdown?: () => void;
   onOpenAtsMatrix?: () => void;
   onSignOut?: () => void;
+  drawdownBreachCount?: number;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -41,8 +43,10 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenCalendar,
   onOpenChat,
   onOpenRiskCalc,
+  onOpenDrawdown,
   onOpenAtsMatrix,
   onSignOut,
+  drawdownBreachCount = 0,
 }) => {
   // Tools dropdown — groups Gmail/Calendar/Chat/Risk so the bar fits 360px screens
   const [toolsOpen, setToolsOpen] = useState(false);
@@ -108,6 +112,15 @@ export const Header: React.FC<HeaderProps> = ({
       accent: 'hover:border-[#22C55E]/60',
       badge: 'AI 100%',
       onOpen: onOpenChat,
+    },
+    {
+      key: 'drawdown',
+      label: 'Drawdown Monitor',
+      desc: 'ตรวจวัด Peak-to-Trough & คุมความเสี่ยง',
+      icon: <TrendingDown className="w-4 h-4 text-[#EF4444]" />,
+      accent: 'hover:border-[#EF4444]/60',
+      badge: drawdownBreachCount > 0 ? `! ${drawdownBreachCount}` : undefined,
+      onOpen: onOpenDrawdown,
     },
     {
       key: 'risk',
@@ -214,6 +227,11 @@ export const Header: React.FC<HeaderProps> = ({
                 title="เครื่องมือ (Gmail / ปฏิทิน / แชท / คำนวณเสี่ยง)"
               >
                 {toolsOpen ? <X className="w-4 h-4" /> : <LayoutGrid className="w-4 h-4" />}
+                {drawdownBreachCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#EF4444] text-white text-[9px] font-bold flex items-center justify-center animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.8)]">
+                    !
+                  </span>
+                )}
               </button>
               {toolsOpen && (
                 <div className={`absolute right-0 top-full mt-2 w-64 rounded-2xl border shadow-2xl overflow-hidden z-50 ${

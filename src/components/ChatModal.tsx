@@ -422,6 +422,14 @@ export const ChatModal: React.FC<ChatModalProps> = ({
           >
             ⚡ ข่าวเศรษฐกิจโลก
           </button>
+          <button
+            type="button"
+            onClick={() => handleSend('วิเคราะห์ Drawdown พอร์ตและความเสี่ยง Peak-to-Trough')}
+            disabled={isSending || isAiThinking}
+            className="px-2 py-0.5 rounded-md bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 shrink-0 whitespace-nowrap transition-colors cursor-pointer"
+          >
+            📉 ตรวจ Drawdown พอร์ต
+          </button>
         </div>
 
         {/* Input Bar */}

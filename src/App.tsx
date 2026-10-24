@@ -59,6 +59,18 @@ import { GmailModal } from './components/GmailModal';
 import { CalendarModal } from './components/CalendarModal';
 import { ChatModal } from './components/ChatModal';
 import { RiskCalculatorModal } from './components/RiskCalculatorModal';
+import { DrawdownAlertBanner } from './components/DrawdownAlertBanner';
+import { DrawdownMonitorModal } from './components/DrawdownMonitorModal';
+import {
+  buildDrawdownAssets,
+  computePortfolioDrawdownSummary,
+  loadThresholds,
+  saveThresholds,
+  loadCustomPeaks,
+  saveCustomPeak,
+  playDrawdownAlertChime,
+} from './services/drawdownService';
+import { DrawdownThresholds } from './types';
 import {
   subscribeUserSettings,
   saveUserSettings,
@@ -100,6 +112,14 @@ export const App: React.FC = () => {
       }
       if (err?.code === 'auth/popup-blocked') {
         setAuthError('เบราว์เซอร์บล็อกหน้าต่างป็อปอัป กรุณาอนุญาตป็อปอัปสำหรับเว็บไซต์นี้แล้วลองใหม่อีกครั้ง');
+        return;
+      }
+      if (err?.code === 'auth/unauthorized-domain') {
+        setAuthError('โดเมนของแอปนี้ยังไม่ได้ถูกเพิ่มใน Authorized Domains ของ Firebase Authentication');
+        return;
+      }
+      if (err?.code === 'auth/api-key-not-valid' || err?.message?.includes('api-key-not-valid')) {
+        setAuthError('API Key ของ Firebase ไม่ถูกต้องหรือถูกปิดใช้งาน กรุณาตรวจสอบการตั้งค่า Firebase Authentication');
         return;
       }
       console.error('Error signing in with Google:', error);
@@ -173,8 +193,74 @@ export const App: React.FC = () => {
   const [showCalendar, setShowCalendar] = useState<boolean>(false);
   const [showChat, setShowChat] = useState<boolean>(false);
   const [showRiskCalc, setShowRiskCalc] = useState<boolean>(false);
+  const [showDrawdownModal, setShowDrawdownModal] = useState<boolean>(false);
+  const [drawdownDismissed, setDrawdownDismissed] = useState<boolean>(false);
+  const [drawdownThresholds, setDrawdownThresholds] = useState<DrawdownThresholds>(loadThresholds);
+  const [customPeaks, setCustomPeaks] = useState<Record<string, number>>(loadCustomPeaks);
   const [geminiApiKey, setGeminiApiKey] = useState<string>('');
   const [historyEntries, setHistoryEntries] = useState<TradingHistoryEntry[]>([]);
+
+  // Computed Drawdown Assets & Portfolio Risk Summary
+  const drawdownAssets = useMemo(
+    () =>
+      buildDrawdownAssets({
+        cryptoList,
+        thaiStocks,
+        foreignStocks,
+        forexRates,
+        thresholds: drawdownThresholds,
+        customPeaks,
+      }),
+    [cryptoList, thaiStocks, foreignStocks, forexRates, drawdownThresholds, customPeaks]
+  );
+
+  const portfolioDrawdownSummary = useMemo(
+    () => computePortfolioDrawdownSummary(drawdownAssets),
+    [drawdownAssets]
+  );
+
+  const breachedDrawdownAssets = useMemo(
+    () => drawdownAssets.filter((a) => a.status !== 'NORMAL'),
+    [drawdownAssets]
+  );
+
+  const criticalOrExtremeAssets = useMemo(
+    () => drawdownAssets.filter((a) => a.status === 'CRITICAL' || a.status === 'EXTREME'),
+    [drawdownAssets]
+  );
+
+  // Play audio chime when critical drawdown threshold is newly breached
+  const prevBreachedCountRef = useRef<number>(0);
+  useEffect(() => {
+    const criticalCount = criticalOrExtremeAssets.length;
+    if (
+      criticalCount > 0 &&
+      criticalCount > prevBreachedCountRef.current &&
+      drawdownThresholds.soundEnabled
+    ) {
+      playDrawdownAlertChime('CRITICAL');
+    }
+    prevBreachedCountRef.current = criticalCount;
+  }, [criticalOrExtremeAssets.length, drawdownThresholds.soundEnabled]);
+
+  const handleSendDrawdownToChat = async (reportText: string) => {
+    try {
+      const senderUid = user?.uid || 'local';
+      const senderName = user?.displayName || user?.email || 'Trader';
+      await sendRoomMessage(GLOBAL_ROOM_ID, {
+        uid: senderUid,
+        name: senderName,
+        photoURL: user?.photoURL ?? null,
+        text: reportText,
+      });
+      setAlertToast('⚡ ส่งรายงาน Drawdown เข้าห้อง AI Deep Analyze เรียบร้อยแล้ว');
+      setTimeout(() => setAlertToast(null), 3000);
+    } catch (err: unknown) {
+      console.error('Failed to send Drawdown report to chat', err);
+      setAlertToast(err instanceof Error ? err.message : 'ส่งข้อความไม่สำเร็จ');
+      setTimeout(() => setAlertToast(null), 3500);
+    }
+  };
 
   const handleSendAtsToChat = async (reportText: string) => {
     if (!user) {
@@ -864,9 +950,27 @@ export const App: React.FC = () => {
             onOpenCalendar={() => setShowCalendar(true)}
             onOpenChat={() => setShowChat(true)}
             onOpenRiskCalc={() => setShowRiskCalc(true)}
+            onOpenDrawdown={() => setShowDrawdownModal(true)}
             onOpenAtsMatrix={() => setShowAtsMatrixModal(true)}
             onSignOut={handleSignOut}
+            drawdownBreachCount={breachedDrawdownAssets.length}
           />
+
+          {/* Drawdown Visual Alert Banner */}
+          {!drawdownDismissed && criticalOrExtremeAssets.length > 0 && (
+            <DrawdownAlertBanner
+              summary={portfolioDrawdownSummary}
+              breachedAssets={criticalOrExtremeAssets}
+              onOpenMonitor={() => setShowDrawdownModal(true)}
+              onDismiss={() => setDrawdownDismissed(true)}
+              soundEnabled={drawdownThresholds.soundEnabled}
+              onToggleSound={() => {
+                const next = { ...drawdownThresholds, soundEnabled: !drawdownThresholds.soundEnabled };
+                setDrawdownThresholds(next);
+                saveThresholds(next);
+              }}
+            />
+          )}
 
           {/* Main Container */}
           <main className="flex-1 max-w-7xl w-full mx-auto px-4 py-6 overflow-x-hidden">
@@ -1363,6 +1467,25 @@ export const App: React.FC = () => {
             signals={allSignals}
             geminiApiKey={geminiApiKey}
             onSaveToHistory={handleSaveToHistory}
+          />
+
+          {/* Dedicated Drawdown Monitor Modal */}
+          <DrawdownMonitorModal
+            isOpen={showDrawdownModal}
+            onClose={() => setShowDrawdownModal(false)}
+            assets={drawdownAssets}
+            summary={portfolioDrawdownSummary}
+            thresholds={drawdownThresholds}
+            onUpdateThresholds={(next) => {
+              setDrawdownThresholds(next);
+              saveThresholds(next);
+            }}
+            onUpdateCustomPeak={(symbol, peak) => {
+              setCustomPeaks((prev) => ({ ...prev, [symbol]: peak }));
+              saveCustomPeak(symbol, peak);
+            }}
+            onSendReportToChat={handleSendDrawdownToChat}
+            isDark={isDark}
           />
 
           {/* Gmail Trading Alert Hub */}

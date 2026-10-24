@@ -188,7 +188,24 @@ function generateAlgorithmicReply(query: string, upper: string, ctx: AiChatConte
 ⚠️ การเทรดมีความเสี่ยง โปรดบริหารความเสี่ยงอย่างรอบคอบ`;
   }
 
-  // E. News & Macro Analysis Query (ข่าว, เศรษฐกิจ, เงินเฟ้อ, สงคราม, ข่าวโลก)
+  // E. Drawdown & Portfolio Decline Query (Drawdown, MDD, ย่อตัว, Peak to Trough)
+  if (upper.includes('DRAWDOWN') || upper.includes('MDD') || upper.includes('ย่อตัว') || upper.includes('PEAK TO TROUGH') || upper.includes('ขาดทุนสะสม')) {
+    return `📉 [AI DEEP ANALYZE // DRAWDOWN MONITOR ADVISORY]
+- นิยาม Peak-to-Trough Drawdown: วัดการปรับลดลงจากจุดสูงสุดสู่จุดต่ำสุดเพื่อประเมินความเสียหายเชิงลึก
+- หลักคณิตศาสตร์การฟื้นตัว (Recovery Math):
+  • ย่อตัว -10%: ต้องการผลตอบแทน +11.1% เพื่อคืนทุน
+  • ย่อตัว -20%: ต้องการผลตอบแทน +25.0% เพื่อคืนทุน (ระดับ Critical)
+  • ย่อตัว -35%: ต้องการผลตอบแทน +53.8% เพื่อคืนทุน (ระดับ Extreme)
+  • ย่อตัว -50%: ต้องการผลตอบแทน +100.0% เพื่อคืนทุน
+- คำแนะนำกลยุทธ์ป้องกันพอร์ต:
+  1. เปิดโมดูล "Drawdown Monitor" จากเมนูเครื่องมือเพื่อตรวจดูระดับ underwater curve ทุกสินทรัพย์
+  2. วาง Hard Stop Loss ไม่เกิน 1-2% ของเงินทุนรวมต่อการเทรด 1 ไม้
+  3. เมื่อพอร์ตย่อตัวแตะระดับ Warning ให้ลดขนาด Lot size ลง 50% จนกว่าจะกลับสู่สถิติปกติ
+
+⚠️ การเทรดมีความเสี่ยง โปรดบริหารความเสี่ยงอย่างรอบคอบ`;
+  }
+
+  // F. News & Macro Analysis Query (ข่าว, เศรษฐกิจ, เงินเฟ้อ, สงคราม, ข่าวโลก)
   if (upper.includes('ข่าว') || upper.includes('NEWS') || upper.includes('เศรษฐกิจ') || upper.includes('MACRO') || upper.includes('เงินเฟ้อ') || upper.includes('ดอกเบี้ย')) {
     const topArticles = ctx.articles?.slice(0, 3) || [];
     const articleBullets = topArticles.length > 0
