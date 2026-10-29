@@ -100,8 +100,12 @@ export const App: React.FC = () => {
     try {
       const result = await signInWithPopup(auth, googleProvider);
       const credential = GoogleAuthProvider.credentialFromResult(result);
-      if (credential?.accessToken) {
-        setCachedAccessToken(credential.accessToken);
+      if (credential) {
+        // @ts-ignore
+        const token = credential.accessToken;
+        if (token) {
+          setCachedAccessToken(token as string);
+        }
       }
     } catch (error: unknown) {
       const err = error as { code?: string; message?: string };
@@ -1451,7 +1455,7 @@ export const App: React.FC = () => {
               onSetAlert={handleSetAlert}
               geminiApiKey={geminiApiKey}
               onSaveApiKey={handleSaveApiKey}
-              userEmail={user.email}
+              userEmail={user?.email ?? null}
               priceAlerts={priceAlerts}
               onRemoveAlert={handleRemoveAlert}
               onDismiss={() => setShowSettings(false)}
@@ -1504,7 +1508,7 @@ export const App: React.FC = () => {
             <CalendarModal
               isOpen={showCalendar}
               onClose={() => setShowCalendar(false)}
-              userEmail={user.email}
+              userEmail={user?.email ?? null}
               isDark
             />
           )}
@@ -1698,7 +1702,7 @@ export const App: React.FC = () => {
                 <div className="p-4 overflow-y-auto flex-1">
                   <HistoryList
                     entries={historyEntries}
-                    userEmail={user.email}
+                    userEmail={user?.email ?? null}
                     useThb={useThb}
                     usdThbRate={usdThbRate}
                     onDeleteEntry={handleDeleteHistoryEntry}
