@@ -17,8 +17,10 @@ import {
   BarChart2,
   X,
   Sparkles,
+  Cpu,
 } from 'lucide-react';
 import { CryptoCoin } from '../types';
+import { BacktestingDashboard } from './BacktestingDashboard';
 import {
   computeAtsMatrixAnalysis,
   getBtcFromCryptoList,
@@ -54,6 +56,7 @@ export const AtsMatrixDashboard: React.FC<AtsMatrixDashboardProps> = ({
   const [copied, setCopied] = useState(false);
   const [sentToChat, setSentToChat] = useState(false);
   const [torusRotation, setTorusRotation] = useState(0);
+  const [activeTab, setActiveTab] = useState<'LIVE_MATRIX' | 'BACKTEST'>('LIVE_MATRIX');
 
   // Sync when cryptoList updates
   useEffect(() => {
@@ -190,10 +193,49 @@ export const AtsMatrixDashboard: React.FC<AtsMatrixDashboardProps> = ({
         </div>
       </div>
 
+      {/* View Switcher: Live Matrix vs Backtesting Strategy Lab */}
+      <div className="px-4 sm:px-6 pt-3 pb-0 flex items-center gap-2 border-b border-slate-800/80 bg-[#0F141F]">
+        <button
+          type="button"
+          onClick={() => setActiveTab('LIVE_MATRIX')}
+          className={`pb-2.5 px-3 font-mono text-xs font-bold border-b-2 flex items-center gap-1.5 transition-all cursor-pointer ${
+            activeTab === 'LIVE_MATRIX'
+              ? 'border-[#00FF66] text-[#00FF66]'
+              : 'border-transparent text-slate-400 hover:text-white'
+          }`}
+        >
+          <Zap className="w-3.5 h-3.5" />
+          <span>ATS Matrix &amp; Niulai4 (Live Feed)</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('BACKTEST')}
+          className={`pb-2.5 px-3 font-mono text-xs font-bold border-b-2 flex items-center gap-1.5 transition-all cursor-pointer ${
+            activeTab === 'BACKTEST'
+              ? 'border-[#00F0FF] text-[#00F0FF]'
+              : 'border-transparent text-slate-400 hover:text-white'
+          }`}
+        >
+          <Cpu className="w-3.5 h-3.5" />
+          <span>Backtesting Dashboard (Strategy Lab &amp; Live Ticker)</span>
+          <span className="text-[9px] px-1.5 py-0.2 rounded-sm bg-[#00F0FF]/20 text-[#00F0FF] border border-[#00F0FF]/40 font-black">
+            LIVE TICKER
+          </span>
+        </button>
+      </div>
+
       {/* Main Content Body */}
       <div className={`space-y-6 ${isModal ? 'p-4 sm:p-6 overflow-y-auto flex-1' : ''}`}>
-        {/* SECTION 1: ATS DASHBOARD 4 KEY METRICS */}
-        <div>
+        {activeTab === 'BACKTEST' ? (
+          <BacktestingDashboard
+            cryptoList={cryptoList}
+            isDark={isDark}
+            onSendToChat={onSendToChat}
+          />
+        ) : (
+          <>
+            {/* SECTION 1: ATS DASHBOARD 4 KEY METRICS */}
+            <div>
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-xs font-mono font-black text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
               <Zap className="w-3.5 h-3.5 text-[#00FF66]" />
@@ -638,7 +680,9 @@ export const AtsMatrixDashboard: React.FC<AtsMatrixDashboardProps> = ({
             </span>
           </div>
         </div>
-      </div>
-    </div>
-  );
+      </>
+    )}
+  </div>
+</div>
+);
 };
