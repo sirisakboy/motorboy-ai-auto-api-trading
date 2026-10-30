@@ -3,7 +3,7 @@ import { X, Send, Sticker as StickerIcon, Radio, Bot, Sparkles, Copy, Check, Use
 import { ChatMessage, CryptoCoin, ForexPair, ThaiStock, ForeignStock, StockIndex, NewsArticle } from '../types';
 import { GLOBAL_ROOM_ID, subscribeRoomMessages, sendRoomMessage } from '../services/chatRoomService';
 import { STICKERS, STICKER_MAP, parseStickerCode, stickerCode } from './ChatStickers';
-import { generateAiChatReply } from '../services/aiChatService';
+import { generateAiChatReply, getAiEngineStatus } from '../services/aiChatService';
 
 interface ChatUser {
   uid: string;
@@ -25,6 +25,7 @@ export interface ChatModalProps {
   articles?: NewsArticle[];
   geminiApiKey?: string;
   onOpenAtsMatrix?: () => void;
+  onOpenSettings?: () => void;
 }
 
 function formatTime(iso: string): string {
@@ -49,7 +50,9 @@ export const ChatModal: React.FC<ChatModalProps> = ({
   articles = [],
   geminiApiKey = '',
   onOpenAtsMatrix,
+  onOpenSettings,
 }) => {
+  const engineStatus = getAiEngineStatus(geminiApiKey);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState('');
   const [isSending, setIsSending] = useState(false);
@@ -233,8 +236,8 @@ export const ChatModal: React.FC<ChatModalProps> = ({
           </div>
         </div>
 
-        {/* Identity bar */}
-        <div className="px-4 py-2 text-[11px] text-[#9CA3AF] border-b border-[#252A3A]/60 flex items-center justify-between bg-[#0A0D14]">
+        {/* Identity & Live Engine bar */}
+        <div className="px-4 py-2 text-[11px] text-[#9CA3AF] border-b border-[#252A3A]/60 flex items-center justify-between bg-[#0A0D14] flex-wrap gap-2">
           <div className="flex items-center gap-2">
             {user ? (
               <>
@@ -245,18 +248,38 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                     {(user.displayName || user.email || 'T').charAt(0)}
                   </span>
                 )}
-                <span>คุณ: <strong className="text-white">{user.displayName || user.email}</strong> (Google SSO)</span>
+                <span>คุณ: <strong className="text-white">{user.displayName || user.email}</strong></span>
               </>
             ) : (
               <div className="flex items-center gap-1.5 text-[#34D399]">
                 <UserIcon className="w-3.5 h-3.5" />
-                <span>โหมด Guest Trader • สนทนากับ AI 100% ได้ทันที</span>
+                <span>โหมด Trader • วิเคราะห์สด 100%</span>
               </div>
             )}
           </div>
-          <span className="text-[10px] font-mono text-[#00F0FF] bg-[#00F0FF]/10 px-1.5 py-0.5 rounded border border-[#00F0FF]/30">
-            Realtime AI Feed
-          </span>
+          <div className="flex items-center gap-2">
+            <span
+              className={`text-[10px] font-mono px-2 py-0.5 rounded font-bold border flex items-center gap-1 ${
+                engineStatus.isOnlineLlm
+                  ? 'bg-purple-500/15 text-purple-300 border-purple-500/40'
+                  : 'bg-[#00FF66]/15 text-[#00FF66] border-[#00FF66]/40'
+              }`}
+              title={engineStatus.labelTh}
+            >
+              <span className={`w-1.5 h-1.5 rounded-full ${engineStatus.isOnlineLlm ? 'bg-purple-400' : 'bg-[#00FF66] animate-pulse'}`} />
+              {engineStatus.badgeTh}
+            </span>
+            {onOpenSettings && !engineStatus.isOnlineLlm && (
+              <button
+                type="button"
+                onClick={onOpenSettings}
+                className="text-[10px] font-mono text-[#38BDF8] hover:underline cursor-pointer"
+                title="ใส่ Gemini API Key ในตั้งค่าเพื่อเปิดระบบประมวลผล LLM ออนไลน์"
+              >
+                ⚙️ ใส่ API Key
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Messages list */}

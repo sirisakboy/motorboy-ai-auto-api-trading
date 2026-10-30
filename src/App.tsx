@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Search, ShieldCheck, Zap, Sparkles, X, Star, History, Radio } from 'lucide-react';
-import { signInWithPopup, signOut, onAuthStateChanged, User, GoogleAuthProvider } from 'firebase/auth';
-import { auth, googleProvider } from './firebase';
+import { Search, Sparkles, X, Star, History, Radio } from 'lucide-react';
+import { signOut, User } from 'firebase/auth';
+import { auth } from './firebase';
 import { AtsMatrixDashboard } from './components/AtsMatrixDashboard';
 import { isAtsMatrixTrigger } from './services/atsMatrixService';
 import { GLOBAL_ROOM_ID, sendRoomMessage } from './services/chatRoomService';
@@ -38,7 +38,6 @@ import {
 } from './services/apiClient';
 import { t } from './i18n';
 import { getLiveUsdThb } from './utils';
-import { setCachedAccessToken } from './services/gmailService';
 import { Header } from './components/Header';
 import { CryptoCard } from './components/CryptoCard';
 import { ForexCard } from './components/ForexCard';
@@ -81,61 +80,17 @@ import {
 } from './services/firebaseSync';
 
 export const App: React.FC = () => {
-  const [user, setUser] = useState<User | null>(null);
-  const [authLoading, setAuthLoading] = useState<boolean>(true);
-  const [isSigningIn, setIsSigningIn] = useState<boolean>(false);
-  const [authError, setAuthError] = useState<string | null>(null);
+  const [user, setUser] = useState<User | null>({ uid: 'guest', displayName: 'Guest' } as unknown as User);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      setAuthLoading(false);
-    });
-    return () => unsubscribe();
+    // Auth bypass: just set guest user
+    setUser({ uid: 'guest', displayName: 'Guest' } as unknown as User);
   }, []);
-
-  const handleGoogleSignIn = async () => {
-    setIsSigningIn(true);
-    setAuthError(null);
-    try {
-      const result = await signInWithPopup(auth, googleProvider);
-      const credential = GoogleAuthProvider.credentialFromResult(result);
-      if (credential) {
-        // @ts-ignore
-        const token = credential.accessToken;
-        if (token) {
-          setCachedAccessToken(token as string);
-        }
-      }
-    } catch (error: unknown) {
-      const err = error as { code?: string; message?: string };
-      // If the user closed or cancelled the popup, do not log an error or show an alarming error banner
-      if (err?.code === 'auth/popup-closed-by-user' || err?.code === 'auth/cancelled-popup-request') {
-        console.info('Google sign-in popup closed by user');
-        return;
-      }
-      if (err?.code === 'auth/popup-blocked') {
-        setAuthError('เบราว์เซอร์บล็อกหน้าต่างป็อปอัป กรุณาอนุญาตป็อปอัปสำหรับเว็บไซต์นี้แล้วลองใหม่อีกครั้ง');
-        return;
-      }
-      if (err?.code === 'auth/unauthorized-domain') {
-        setAuthError('โดเมนของแอปนี้ยังไม่ได้ถูกเพิ่มใน Authorized Domains ของ Firebase Authentication');
-        return;
-      }
-      if (err?.code === 'auth/api-key-not-valid' || err?.message?.includes('api-key-not-valid')) {
-        setAuthError('API Key ของ Firebase ไม่ถูกต้องหรือถูกปิดใช้งาน กรุณาตรวจสอบการตั้งค่า Firebase Authentication');
-        return;
-      }
-      console.error('Error signing in with Google:', error);
-      setAuthError(err?.message || t('auth.login_error_generic'));
-    } finally {
-      setIsSigningIn(false);
-    }
-  };
 
   const handleSignOut = async () => {
     try {
       await signOut(auth);
+      setUser(null);
     } catch (error) {
       console.error('Error signing out', error);
     }
@@ -267,16 +222,13 @@ export const App: React.FC = () => {
   };
 
   const handleSendAtsToChat = async (reportText: string) => {
-    if (!user) {
-      setAlertToast('กรุณาเข้าสู่ระบบด้วย Google ก่อนส่งรายงานเข้าห้องแชท');
-      setTimeout(() => setAlertToast(null), 3500);
-      return;
-    }
     try {
+      const senderUid = user?.uid || 'guest';
+      const senderName = user?.displayName || user?.email || 'Trader (Guest)';
       await sendRoomMessage(GLOBAL_ROOM_ID, {
-        uid: user.uid,
-        name: user.displayName || user.email || 'Trader',
-        photoURL: user.photoURL ?? null,
+        uid: senderUid,
+        name: senderName,
+        photoURL: user?.photoURL ?? null,
         text: reportText,
       });
       setAlertToast('⚡ ส่งรายงาน ATS Matrix เข้าห้อง AI Deep Analyze เรียบร้อยแล้ว');
@@ -832,95 +784,7 @@ export const App: React.FC = () => {
         isDark ? 'bg-[#0F1117] text-white' : 'bg-[#F8FAFC] text-[#0F172A]'
       } flex flex-col font-sans transition-colors duration-200 overflow-x-hidden w-full max-w-[100vw]`}
     >
-      {authLoading ? (
-        <div className="flex-1 flex flex-col items-center justify-center p-6">
-          <div className="w-10 h-10 border-3 border-[#7C6CFF] border-t-transparent rounded-full animate-spin mb-3" />
-          <p className="text-xs text-[#9CA3AF] font-medium animate-pulse">
-            {t('common.loading_auth')}
-          </p>
-        </div>
-      ) : !user ? (
-        <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-6">
-          <div className="w-full max-w-md rounded-3xl bg-[#1A1D29] border border-[#252A3A] p-6 sm:p-8 shadow-2xl text-center space-y-6">
-            {/* Brand icon */}
-            <div className="mx-auto w-14 h-14 rounded-2xl bg-[#7C6CFF]/20 border border-[#7C6CFF]/40 flex items-center justify-center shadow-lg">
-              <Zap className="w-8 h-8 text-[#7C6CFF] fill-[#7C6CFF]" />
-            </div>
-
-            {/* Title & Desc */}
-            <div>
-              <div className="flex items-center justify-center space-x-2">
-                <span className="font-black text-xl sm:text-2xl text-white tracking-tight">
-                  {t('auth.welcome_title').split(' ')[0]}
-                </span>
-                <span className="font-black text-xl sm:text-2xl text-[#7C6CFF] tracking-tight">
-                  {t('auth.welcome_title').split(' ')[1]}
-                </span>
-                <span className="bg-[#7C6CFF]/20 border border-[#7C6CFF]/40 text-[#A5B4FC] text-[10px] font-extrabold px-2 py-0.5 rounded-md">
-                  {t('auth.welcome_title').split(' ')[2]}
-                </span>
-              </div>
-              <p className="text-xs text-[#9CA3AF] mt-2 leading-relaxed">
-                {t('auth.welcome_desc')}
-              </p>
-            </div>
-
-            {/* Error notice */}
-            {authError && (
-              <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs text-left">
-                {authError}
-              </div>
-            )}
-
-            {/* Google Sign-in button */}
-            <div className="pt-2">
-              <button
-                type="button"
-                onClick={handleGoogleSignIn}
-                disabled={isSigningIn}
-                className="w-full py-3.5 px-4 rounded-2xl bg-white hover:bg-slate-100 text-slate-900 font-bold text-sm transition-all shadow-md hover:shadow-lg flex items-center justify-center space-x-3 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                {isSigningIn ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-slate-900 border-t-transparent rounded-full animate-spin" />
-                    <span>กำลังเข้าสู่ระบบ...</span>
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-5 h-5" viewBox="0 0 24 24">
-                      <path
-                        fill="#4285F4"
-                        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                      />
-                      <path
-                        fill="#34A853"
-                        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                      />
-                      <path
-                        fill="#FBBC05"
-                        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-                      />
-                      <path
-                        fill="#EA4335"
-                        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-                      />
-                    </svg>
-                    <span>เข้าสู่ระบบด้วย Google</span>
-                  </>
-                )}
-              </button>
-            </div>
-
-            {/* Security note */}
-            <div className="pt-2 border-t border-[#252A3A]/70 flex items-center justify-center space-x-1.5 text-[11px] text-[#6B7280]">
-              <ShieldCheck className="w-3.5 h-3.5 text-[#22C55E]" />
-              <span>เข้าสู่ระบบปลอดภัยผ่าน Firebase Authentication</span>
-            </div>
-          </div>
-        </div>
-      ) : (
-        <>
-          {/* Toast Notification */}
+      {/* Toast Notification */}
           {alertToast && (
             <div className="fixed top-4 right-4 left-4 sm:left-auto z-[60] sm:max-w-sm bg-[#7C6CFF] text-white px-4 py-3 rounded-2xl shadow-xl border border-white/20 flex items-center justify-between space-x-3 animate-fade-in">
               <span className="text-xs font-semibold">{alertToast}</span>
@@ -1527,6 +1391,7 @@ export const App: React.FC = () => {
               articles={newsList}
               geminiApiKey={geminiApiKey}
               onOpenAtsMatrix={() => setShowAtsMatrixModal(true)}
+              onOpenSettings={() => setShowSettings(true)}
               isDark
             />
           )}
@@ -1727,8 +1592,6 @@ export const App: React.FC = () => {
               </div>
             </div>
           )}
-        </>
-      )}
     </div>
   );
 };
@@ -1854,6 +1717,9 @@ function initBgMusic(): void {
       const tag = document.createElement('script');
       tag.src = 'https://www.youtube.com/iframe_api';
       tag.async = true;
+      tag.onerror = () => {
+        // Silently ignore if YouTube API cannot be reached in sandbox
+      };
       document.head.appendChild(tag);
     }
     const prevReady = (window as any).onYouTubeIframeAPIReady;

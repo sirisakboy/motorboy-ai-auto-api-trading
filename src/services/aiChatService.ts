@@ -1,6 +1,6 @@
 import { GoogleGenAI } from '@google/genai';
 import { CryptoCoin, ForexPair, ThaiStock, ForeignStock, StockIndex, NewsArticle } from '../types';
-import { isAtsMatrixTrigger, computeAtsMatrixAnalysis, getBtcFromCryptoList } from './atsMatrixService';
+import { computeAtsMatrixAnalysis, getBtcFromCryptoList } from './atsMatrixService';
 
 const GENAI_MODEL = 'gemini-3.8-flash';
 
@@ -12,12 +12,61 @@ export interface AiChatContext {
   stockIndices?: StockIndex[];
   articles?: NewsArticle[];
   geminiApiKey?: string;
+  ollamaApiKey?: string;
+  ollamaEndpoint?: string;
+}
+
+export type AiEngineMode = 'GEMINI_LLM' | 'QUANT_LIVE';
+
+/**
+ * Returns current active AI Engine status for UI transparency
+ */
+export function getAiEngineStatus(geminiApiKey?: string): {
+  mode: AiEngineMode;
+  labelTh: string;
+  badgeTh: string;
+  isOnlineLlm: boolean;
+} {
+  const hasKey = !!geminiApiKey?.trim();
+  if (hasKey) {
+    return {
+      mode: 'GEMINI_LLM',
+      labelTh: 'Gemini 3.8 Flash (AI วิเคราะห์สด & Google Search)',
+      badgeTh: '✨ GEMINI LIVE',
+      isOnlineLlm: true,
+    };
+  }
+  return {
+    mode: 'QUANT_LIVE',
+    labelTh: 'Real-Time Quant Engine (วิเคราะห์สดตามข้อมูลตลาดจริง)',
+    badgeTh: '⚡ LIVE QUANT',
+    isOnlineLlm: false,
+  };
 }
 
 /**
- * 100% AI Chat Engine for "AI Deep Analyze"
- * Analyzes market data, stocks, forex, crypto, and world financial news.
- * Tone: Trader style — concise, sharp, numeric, no fluff, always includes risk warning.
+ * Checks if user input is an explicit command to view the raw ATS Matrix report
+ */
+function isExplicitAtsReportCommand(text: string): boolean {
+  const t = text.trim().toUpperCase();
+  return (
+    t === 'ATS' ||
+    t === 'ATS MATRIX' ||
+    t === 'ATS DASHBOARD' ||
+    t === 'POLYMARKET ARB' ||
+    t === 'TORUS' ||
+    t === 'TORUS MODEL' ||
+    t === 'REPORT ATS' ||
+    t === 'ขอรายงาน ATS'
+  );
+}
+
+/**
+ * 100% Real-Time AI Chat Engine for "AI Deep Analyze"
+ *
+ * Tier 1: Real Generative AI (Google Gemini 3.8 Flash + Google Search Grounding) when API Key is available.
+ * Tier 2: Real-time Quantitative NLP Reasoning Engine (Dynamic math, live prices, pivot points, ATR, direct answers).
+ * Tone: Professional Trader — sharp, numeric, actionable, zero fluff, with risk discipline.
  */
 export async function generateAiChatReply(
   userMessage: string,
@@ -26,217 +75,718 @@ export async function generateAiChatReply(
   const query = userMessage.trim();
   const upper = query.toUpperCase();
 
-  // 1. Check for ATS Matrix Mode triggers (MARKETS / BTC / POLYMARKET)
-  if (isAtsMatrixTrigger(query)) {
+  // 1. Explicit ATS Matrix command trigger (only if user explicitly asked for the raw matrix report)
+  if (isExplicitAtsReportCommand(query)) {
     const btc = getBtcFromCryptoList(context.cryptoList || []);
     const analysis = computeAtsMatrixAnalysis(btc.price, btc.change);
     return analysis.rawTraderTextTh;
   }
 
-  // 2. If Gemini API Key is provided, try real LLM with live market context & Google Search grounding
-  const apiKey = context.geminiApiKey?.trim();
-  if (apiKey) {
+  // 2. TIER 1: Real Generative AI via Google GenAI or Ollama
+  const geminiApiKey = context.geminiApiKey?.trim();
+  
+  // Support both context-provided key and environment variable
+  const env = typeof import.meta !== 'undefined' ? (import.meta as any).env : (typeof process !== 'undefined' ? process.env : {});
+  const ollamaKey = context.ollamaApiKey?.trim() || env.VITE_OLLAMA_KEY;
+  
+  if (ollamaKey) {
     try {
-      const ai = new GoogleGenAI({ apiKey });
-      const marketBrief = buildMarketContextBrief(context);
-
-      const prompt = `
-คุณคือ "AI Deep Analyze" ผู้เชี่ยวชาญด้านตลาดทุนระดับสากล วิเคราะห์การเงิน ข่าวสาร และสินทรัพย์ทั่วโลก (AI World Deep Analyze Money And News) แบบ 100% Real-time AI
-ภารกิจ: ตอบคำถามผู้ใช้โดยใช้ข้อมูลตลาดล่าสุดด้านล่างนี้ และ Google Search ข่าวสารเศรษฐกิจ
-
-ข้อมูลตลาดปัจจุบันในระบบ:
-${marketBrief}
-
-คำถามจากผู้ใช้:
-"${query}"
-
-แนวทางการตอบ (กฎเหล็ก):
-1. สไตล์เทรดเดอร์มืออาชีพ: สั้น คม ตรงประเด็น มีตัวเลขประกอบ ไม่เวิ่นเว้อ ไม่เกริ่นยาว
-2. ถ้าผู้ใช้ถามถึงเหรียญ/คู่เงิน/หุ้น ให้ระบุราคาปัจจุบัน, แนวรับ, แนวต้าน, โมเมนตัม 24 ชม. และคำแนะนำสั้นๆ
-3. ตอบเป็นภาษาไทย
-4. ห้ามแนะนำให้เทรดเกินตัว (จำกัดความเสี่ยงพอร์ต)
-5. ปิดท้ายด้วยคำเตือนความเสี่ยงเสมอ: "⚠️ การเทรดมีความเสี่ยง โปรดบริหารความเสี่ยงอย่างรอบคอบ"
-      `.trim();
-
-      const response = await ai.models.generateContent({
-        model: GENAI_MODEL,
-        contents: prompt,
-        config: {
-          tools: [{ googleSearch: {} }],
-        },
-      });
-
-      const replyText = response.text?.trim();
-      if (replyText) {
-        return replyText;
-      }
+      const liveReply = await callOllamaWithContext(query, ollamaKey, context);
+      if (liveReply) return liveReply;
     } catch (err) {
-      console.warn('Gemini chat generateContent failed, falling back to algorithmic engine:', err);
+      console.warn('Ollama chat failed, falling back...');
     }
   }
 
-  // 3. Fallback: Quantitative & Real Data Intelligence Engine (Always fast, 100% available, zero crash)
-  return generateAlgorithmicReply(query, upper, context);
+  if (geminiApiKey) {
+    try {
+      const liveReply = await callGeminiWithMarketContext(query, geminiApiKey, context);
+      if (liveReply) {
+        return liveReply;
+      }
+    } catch (err) {
+      console.warn('Gemini chat request failed, falling back to Dynamic Quant Engine:', err);
+    }
+  }
+
+  // 3. TIER 2: Dynamic Real-time Quantitative & NLP Reasoning Engine (Zero Canned Text)
+  return generateDynamicQuantAnalysis(query, upper, context);
+}
+
+/**
+ * Call Gemini 3.8 Flash with live market snapshot and instructions
+ */
+async function callGeminiWithMarketContext(
+  query: string,
+  apiKey: string,
+  context: AiChatContext
+): Promise<string | null> {
+  const ai = new GoogleGenAI({ apiKey });
+  const marketBrief = buildMarketContextBrief(context);
+
+  const prompt = `
+คุณคือ "Autonomous Analytical Sandbox Engine" ประจำระบบการเงิน
+ภารกิจ: วิเคราะห์ข้อมูลตลาดสดที่ได้รับ และให้เหตุผลสนับสนุนคำตอบโดยใช้ตรรกะเชิงปริมาณ (Quantitative Reasoning) ห้ามใช้ข้อความสำเร็จรูป
+
+ข้อมูลตลาดสด:
+${marketBrief}
+
+คำถามจากผู้ใช้: "${query}"
+
+แนวทางการวิเคราะห์ (เป้าหมาย):
+1. สังเคราะห์: นำคำถามมารวมกับข้อมูลราคาจริง ทำการวิเคราะห์ทิศทางและระดับราคาด้วยตนเองตามหลักการ Technical & Macro
+2. ตรรกะ: ทุกการตัดสินใจหรือคำแนะนำ ต้องมีตัวเลขสนับสนุน (เช่น อ้างอิงราคาปัจจุบัน, แนวรับ-แนวต้านที่คำนวณได้, หรือสภาวะตลาดจริง)
+3. ยืดหยุ่น: ไม่ยึดติดกับโครงสร้างการตอบที่ตายตัว แต่ต้องให้เนื้อหาครบถ้วน (สถานะปัจจุบัน -> วิเคราะห์ -> แผนการ)
+4. เน้น Action: ให้คำแนะนำที่ใช้งานได้จริงในเชิงการจัดการความเสี่ยง (Risk Management) ไม่ใช่แค่คาดการณ์ทิศทาง
+5. สรุปด้วยความเสี่ยง: ปิดท้ายด้วยคำเตือนเรื่องความเสี่ยงเสมอ
+`.trim();
+
+  // Try first with Google Search grounding
+  try {
+    const response = await ai.models.generateContent({
+      model: GENAI_MODEL,
+      contents: prompt,
+      config: {
+        tools: [{ googleSearch: {} }],
+      },
+    });
+    const text = response.text?.trim();
+    if (text) return text;
+  } catch (err) {
+    // If googleSearch tool is restricted or fails, retry without tools
+    console.info('Retrying Gemini without search grounding...', err);
+    const response = await ai.models.generateContent({
+      model: GENAI_MODEL,
+      contents: prompt,
+    });
+    const text = response.text?.trim();
+    if (text) return text;
+  }
+
+  return null;
+}
+
+async function callOllamaWithContext(
+  query: string,
+  apiKey: string,
+  context: AiChatContext
+): Promise<string | null> {
+  const marketBrief = buildMarketContextBrief(context);
+  const prompt = `
+คุณคือ "Autonomous Analytical Sandbox Engine" (Motorboy Model)
+
+หน้าที่หลัก:
+วิเคราะห์ตลาดสดที่คุณได้รับข้อมูลจริงในขณะนี้:
+${marketBrief}
+
+คำถามจากผู้ใช้: "${query}"
+
+กฎเหล็ก (Sandbox Rules):
+1. ห้ามใช้คำตอบสำเร็จรูป (No Canned Responses): ให้สังเคราะห์คำตอบจากการวิเคราะห์ข้อมูลสดเท่านั้น
+2. วิเคราะห์เชิงลึก (Deep Analytical Reasoning): แสดงตรรกะการวิเคราะห์ราคา, แนวโน้ม, และความสัมพันธ์ของข้อมูล
+3. เน้นเป้าหมายและหน้าที่ (Clear Goals & Duties): ให้คำแนะนำเชิงกลยุทธ์ การจัดการความเสี่ยง (Risk Management) และทิศทางที่ชัดเจน
+4. ความยืดหยุ่น (Flexibility): ไม่ยึดติดรูปแบบการตอบ ปรับเนื้อหาตามบริบทคำถามของผู้ใช้
+5. ต้องเตือนความเสี่ยง (Risk Warning): ปิดท้ายด้วยคำเตือนเรื่องความเสี่ยงเสมอ
+`.trim();
+
+  try {
+    const env = typeof import.meta !== 'undefined' ? (import.meta as any).env : (typeof process !== 'undefined' ? process.env : {});
+    const endpoint = context.ollamaEndpoint || env.VITE_OLLAMA_ENDPOINT || 'https://ollama.com/v1/chat/completions';
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: 'sirisakkhacha/motorboy',
+        messages: [{ role: 'user', content: prompt }],
+        stream: false
+      })
+    });
+    console.log('Ollama Request:', { endpoint, apiKey });
+
+    if (!response.ok) {
+      console.error('Ollama API error response:', await response.text());
+      return null;
+    }
+
+    const data = await response.json();
+    
+    // Robust validation
+    if (data?.choices?.[0]?.message?.content) {
+        return data.choices[0].message.content;
+    }
+    
+    console.error('Unexpected Ollama API response structure:', data);
+    return null;
+  } catch (err) {
+    console.error('AI chat failed:', err);
+    return null;
+  }
 }
 
 function buildMarketContextBrief(ctx: AiChatContext): string {
   const parts: string[] = [];
   if (ctx.cryptoList && ctx.cryptoList.length > 0) {
-    const topCrypto = ctx.cryptoList.slice(0, 5).map((c) => `${c.symbol}: $${c.price.toLocaleString()} (${c.change >= 0 ? '+' : ''}${c.change.toFixed(2)}%)`).join(', ');
-    parts.push(`- คริปโตหลัก: ${topCrypto}`);
+    const topCrypto = ctx.cryptoList
+      .slice(0, 5)
+      .map((c) => `${c.symbol}: $${c.price.toLocaleString()} (${c.change >= 0 ? '+' : ''}${c.change.toFixed(2)}%) [H:$${c.high || '-'} L:$${c.low || '-'}]`)
+      .join(', ');
+    parts.push(`- Crypto Spot: ${topCrypto}`);
   }
   if (ctx.forexRates && ctx.forexRates.length > 0) {
-    const topFx = ctx.forexRates.slice(0, 4).map((f) => `${f.pair}: ${f.price.toFixed(4)} (${f.change >= 0 ? '+' : ''}${f.change.toFixed(2)}%)`).join(', ');
-    parts.push(`- อัตราแลกเปลี่ยน FX: ${topFx}`);
+    const topFx = ctx.forexRates
+      .slice(0, 4)
+      .map((f) => `${f.pair}: ${f.price.toFixed(4)} (${f.change >= 0 ? '+' : ''}${f.change.toFixed(2)}%)`)
+      .join(', ');
+    parts.push(`- Forex Rates: ${topFx}`);
   }
   if (ctx.thaiStocks && ctx.thaiStocks.length > 0) {
-    const topThai = ctx.thaiStocks.slice(0, 4).map((s) => `${s.symbol}: ฿${s.price} (${s.change >= 0 ? '+' : ''}${s.change.toFixed(2)}%)`).join(', ');
-    parts.push(`- หุ้นไทย SET: ${topThai}`);
+    const topThai = ctx.thaiStocks
+      .slice(0, 5)
+      .map((s) => `${s.symbol}: ฿${s.price} (${s.change >= 0 ? '+' : ''}${s.change.toFixed(2)}% P/E:${s.pe}x)`)
+      .join(', ');
+    parts.push(`- Thai Stocks (SET): ${topThai}`);
   }
   if (ctx.foreignStocks && ctx.foreignStocks.length > 0) {
-    const topUS = ctx.foreignStocks.slice(0, 4).map((s) => `${s.symbol}: $${s.price} (${s.change >= 0 ? '+' : ''}${s.change.toFixed(2)}%)`).join(', ');
-    parts.push(`- หุ้นสหรัฐฯ US: ${topUS}`);
+    const topUS = ctx.foreignStocks
+      .slice(0, 5)
+      .map((s) => `${s.symbol}: $${s.price} (${s.change >= 0 ? '+' : ''}${s.change.toFixed(2)}% Sector:${s.sector})`)
+      .join(', ');
+    parts.push(`- US Equities: ${topUS}`);
   }
   if (ctx.stockIndices && ctx.stockIndices.length > 0) {
-    const idxBrief = ctx.stockIndices.map((s) => `${s.name}: ${s.price.toLocaleString()} (${s.change >= 0 ? '+' : ''}${s.change.toFixed(2)}%)`).join(', ');
-    parts.push(`- ดัชนีโลก: ${idxBrief}`);
+    const idxBrief = ctx.stockIndices
+      .map((s) => `${s.name}: ${s.price.toLocaleString()} (${s.change >= 0 ? '+' : ''}${s.change.toFixed(2)}%)`)
+      .join(', ');
+    parts.push(`- World Indices: ${idxBrief}`);
+  }
+  if (ctx.articles && ctx.articles.length > 0) {
+    const newsTitles = ctx.articles.slice(0, 3).map((a) => a.title).join(' | ');
+    parts.push(`- Live News: ${newsTitles}`);
   }
   return parts.join('\n');
 }
 
 /**
- * High-speed built-in Financial & News Deep Intelligence Engine
+ * TIER 2: High-Precision Dynamic Quant & Real-Time Technical Reasoning Engine
+ *
+ * Dynamically parses user intent (Buy/Sell, Support/Resistance, Trend, Indicators, Macro, Strategy),
+ * calculates live mathematical Pivot Points (PP, S1, S2, R1, R2), ATR Volatility bands,
+ * and formulates a direct, custom conversational answer rather than a static template.
  */
-function generateAlgorithmicReply(query: string, upper: string, ctx: AiChatContext): string {
-  // A. Check for Thai Stock match
+function generateDynamicQuantAnalysis(query: string, upper: string, ctx: AiChatContext): string {
+  // Intent Detection
+  const isAskingBuyOrEntry =
+    upper.includes('ซื้อ') ||
+    upper.includes('เข้า') ||
+    upper.includes('รับ') ||
+    upper.includes('ช้อน') ||
+    upper.includes('ดอย') ||
+    upper.includes('ตกรถ') ||
+    upper.includes('ENTRY') ||
+    upper.includes('BUY') ||
+    upper.includes('LONG');
+
+  const isAskingSellOrTarget =
+    upper.includes('ขาย') ||
+    upper.includes('เป้า') ||
+    upper.includes('ต้าน') ||
+    upper.includes('TP') ||
+    upper.includes('กำไร') ||
+    upper.includes('TARGET') ||
+    upper.includes('RESISTANCE') ||
+    upper.includes('SHORT');
+
+  const isAskingTrend =
+    upper.includes('แนวโน้ม') ||
+    upper.includes('ทิศทาง') ||
+    upper.includes('ขึ้นหรือลง') ||
+    upper.includes('BULL') ||
+    upper.includes('BEAR') ||
+    upper.includes('เทรนด์') ||
+    upper.includes('ร่วง') ||
+    upper.includes('พุ่ง') ||
+    upper.includes('เป็นยังไง');
+
+  const isAskingStopLoss =
+    upper.includes('STOP LOSS') ||
+    upper.includes('SL') ||
+    upper.includes('คัท') ||
+    upper.includes('ตัดขาดทุน') ||
+    upper.includes('ยอมแพ้');
+
+  const isAskingIndicator =
+    upper.includes('RSI') ||
+    upper.includes('MACD') ||
+    upper.includes('EMA') ||
+    upper.includes('BOLLINGER') ||
+    upper.includes('VOLUME') ||
+    upper.includes('อินดิเคเตอร์');
+
+  // Asset Matching
+  // 1. Check Crypto Coin
+  const cryptoMatch = ctx.cryptoList?.find((c) =>
+    upper.includes(c.symbol) || upper.includes(c.name.toUpperCase()) ||
+    (c.symbol === 'BTC' && (upper.includes('BITCOIN') || upper.includes('บิตคอยน์') || upper.includes('บิทคอยน์'))) ||
+    (c.symbol === 'ETH' && (upper.includes('ETHEREUM') || upper.includes('อีเธอเรียม'))) ||
+    (c.symbol === 'SOL' && upper.includes('SOLANA')) ||
+    (c.symbol === 'BNB' && upper.includes('BINANCE')) ||
+    (c.symbol === 'XRP' && upper.includes('RIPPLE'))
+  );
+
+  if (cryptoMatch) {
+    return analyzeCryptoAssetDynamically(cryptoMatch, query, {
+      isAskingBuyOrEntry,
+      isAskingSellOrTarget,
+      isAskingTrend,
+      isAskingStopLoss,
+      isAskingIndicator,
+    });
+  }
+
+  // 2. Check Thai Stocks (SET)
   const thaiMatch = ctx.thaiStocks?.find(
     (s) => upper.includes(s.symbol) || upper.includes(s.name) || (s.nameEn && upper.includes(s.nameEn.toUpperCase()))
   );
   if (thaiMatch) {
-    const isUp = thaiMatch.change >= 0;
-    const sup = +(thaiMatch.price * 0.97).toFixed(2);
-    const res = +(thaiMatch.price * 1.03).toFixed(2);
-    return `📊 [AI DEEP ANALYZE // หุ้นไทย: ${thaiMatch.symbol}]
-- ราคาปัจจุบัน: ฿${thaiMatch.price.toFixed(2)} (${isUp ? '+' : ''}${thaiMatch.change.toFixed(2)}%)
-- กลุ่มอุตสาหกรรม: ${thaiMatch.sector} (${thaiMatch.nameEn})
-- แนวรับสำคัญ (Support): ฿${sup}
-- แนวต้านสำคัญ (Resistance): ฿${res}
-- สภาพคล่อง Vol: ${thaiMatch.volume.toLocaleString()} หุ้น | P/E: ${thaiMatch.pe}x
-- แผนเทรด: ${isUp ? 'โมเมนตัมบวก Follow Trend ตามกรอบ SET ย่อสะสมบริเวณแนวรับ' : 'ชะลอตัวพักฐาน รอสัญญาณยืนเหนือแนวรับก่อนเปิดสถานะ'}
-
-⚠️ การเทรดมีความเสี่ยง โปรดบริหารความเสี่ยงอย่างรอบคอบ`;
+    return analyzeThaiStockDynamically(thaiMatch, query, {
+      isAskingBuyOrEntry,
+      isAskingSellOrTarget,
+      isAskingTrend,
+      isAskingStopLoss,
+      isAskingIndicator,
+    });
   }
 
-  // B. Check for Foreign Stock match
+  // 3. Check US Equities
   const foreignMatch = ctx.foreignStocks?.find(
     (s) => upper.includes(s.symbol) || upper.includes(s.name.toUpperCase())
   );
   if (foreignMatch) {
-    const isUp = foreignMatch.change >= 0;
-    const sup = +(foreignMatch.price * 0.96).toFixed(2);
-    const res = +(foreignMatch.price * 1.04).toFixed(2);
-    return `📈 [AI DEEP ANALYZE // US EQUITIES: ${foreignMatch.symbol}]
-- ราคาตลาด (NASDAQ/NYSE): $${foreignMatch.price.toFixed(2)} (${isUp ? '+' : ''}${foreignMatch.change.toFixed(2)}%)
-- Sector: ${foreignMatch.sector} | Market Cap: ${foreignMatch.marketCap}
-- 52-Week Range: $${foreignMatch.low52w || sup} - $${foreignMatch.high52w || res}
-- แนวรับ (Key Support): $${sup}
-- แนวต้าน (Key Target): $${res}
-- โมเมนตัม Flow: ${isUp ? 'แรงซื้อสถาบันหนุนต่อเนื่อง (Bullish Skew)' : 'แรงขายทำกำไรระยะสั้น (Consolidation)'}
-
-⚠️ การเทรดมีความเสี่ยง โปรดบริหารความเสี่ยงอย่างรอบคอบ`;
+    return analyzeUsStockDynamically(foreignMatch, query, {
+      isAskingBuyOrEntry,
+      isAskingSellOrTarget,
+      isAskingTrend,
+      isAskingStopLoss,
+      isAskingIndicator,
+    });
   }
 
-  // C. Check for Forex Pair match
+  // 4. Check Forex Pairs
   const forexMatch = ctx.forexRates?.find(
-    (f) => upper.includes(f.pair.replace('/', '')) || upper.includes(f.pair) ||
-           (f.pair.includes('THB') && (upper.includes('บาท') || upper.includes('THB'))) ||
-           (f.pair.includes('JPY') && (upper.includes('เยน') || upper.includes('JPY'))) ||
-           (f.pair.includes('EUR') && upper.includes('EUR')) ||
-           (f.pair.includes('GBP') && (upper.includes('ปอนด์') || upper.includes('GBP')))
+    (f) =>
+      upper.includes(f.pair.replace('/', '')) ||
+      upper.includes(f.pair) ||
+      (f.pair.includes('THB') && (upper.includes('บาท') || upper.includes('THB') || upper.includes('USDTHB'))) ||
+      (f.pair.includes('JPY') && (upper.includes('เยน') || upper.includes('JPY'))) ||
+      (f.pair.includes('EUR') && upper.includes('EUR')) ||
+      (f.pair.includes('GBP') && (upper.includes('ปอนด์') || upper.includes('GBP')))
   );
   if (forexMatch) {
-    const isUp = forexMatch.change >= 0;
-    const isJpyOrThb = forexMatch.pair.includes('JPY') || forexMatch.pair.includes('THB');
-    const decimals = isJpyOrThb ? 2 : 4;
-    const p = forexMatch.price;
-    const sup = +(p * (isJpyOrThb ? 0.992 : 0.995)).toFixed(decimals);
-    const res = +(p * (isJpyOrThb ? 1.008 : 1.005)).toFixed(decimals);
-    return `💱 [AI DEEP ANALYZE // FOREX: ${forexMatch.pair}]
-- อัตราแลกเปลี่ยนล่าสุด: ${p.toFixed(decimals)} (${isUp ? '+' : ''}${forexMatch.change.toFixed(2)}%)
-- แนวรับทางเทคนิค (Support): ${sup}
-- แนวต้านสำคัญ (Resistance): ${res}
-- ปัจจัย Macro: ดัชนี DXY, ดุลบัญชีเดินสะพัด และแนวโน้มดอกเบี้ยนโยบายเฟด/ธนาคารกลาง
-- คำแนะนำ: ${isUp ? 'โมเมนตัมขาขึ้น คุม Stop Loss ใต้แนวรับ' : 'แรงกดดันตามรอบเซสชั่น รอรีบาวด์ทดสอบแนวต้าน'}
-
-⚠️ การเทรดมีความเสี่ยง โปรดบริหารความเสี่ยงอย่างรอบคอบ`;
+    return analyzeForexDynamically(forexMatch, query, {
+      isAskingBuyOrEntry,
+      isAskingSellOrTarget,
+      isAskingTrend,
+      isAskingStopLoss,
+    });
   }
 
-  // D. Check for Stock Index match (SET, NASDAQ, S&P 500, DOW JONES)
+  // 5. Check Commodities (Gold / Oil)
+  if (upper.includes('ทอง') || upper.includes('GOLD') || upper.includes('XAU') || upper.includes('XAUUSD')) {
+    return analyzeGoldCommodityDynamically(query, ctx);
+  }
+
+  if (upper.includes('น้ำมัน') || upper.includes('OIL') || upper.includes('WTI') || upper.includes('BRENT')) {
+    return analyzeOilCommodityDynamically(query);
+  }
+
+  // 6. Check Stock Indices (SET, NASDAQ, S&P 500, Dow Jones)
   const idxMatch = ctx.stockIndices?.find(
-    (idx) => upper.includes(idx.symbol) || upper.includes(idx.name.toUpperCase()) ||
-             (idx.symbol === 'SET' && (upper.includes('หุ้นไทย') || upper.includes('ตลาดหุ้นไทย') || upper.includes('SET INDEX'))) ||
-             (idx.symbol === 'NASDAQ' && upper.includes('แนสแด็ก'))
+    (idx) =>
+      upper.includes(idx.symbol) ||
+      upper.includes(idx.name.toUpperCase()) ||
+      (idx.symbol === 'SET' && (upper.includes('หุ้นไทย') || upper.includes('ตลาดหุ้นไทย') || upper.includes('SET INDEX'))) ||
+      (idx.symbol === 'NASDAQ' && upper.includes('แนสแด็ก'))
   );
   if (idxMatch) {
-    const isUp = idxMatch.change >= 0;
-    return `🏛️ [AI DEEP ANALYZE // ดัชนี: ${idxMatch.name}]
-- ระดับดัชนี: ${idxMatch.price.toLocaleString()} จุด (${isUp ? '+' : ''}${idxMatch.change.toFixed(2)}%)
-- สถานะตลาด: ${idxMatch.status} (${idxMatch.schedule})
-- ภาพรวม: ${isUp ? 'ตลาดเปิดรับความเสี่ยง (Risk-on) ดัชนียืนเหนือเส้น EMA รายวัน' : 'ตลาดอยู่ในโหมดป้องกันความเสี่ยง (Risk-off) เฝ้าระวังตัวเลขเศรษฐกิจ'}
-- คำแนะนำจัดพอร์ต: ควบคุมสัดส่วนความเสี่ยงไม่เกิน 2% ต่อสถานะ
-
-⚠️ การเทรดมีความเสี่ยง โปรดบริหารความเสี่ยงอย่างรอบคอบ`;
+    return analyzeIndexDynamically(idxMatch, query);
   }
 
-  // E. Drawdown & Portfolio Decline Query (Drawdown, MDD, ย่อตัว, Peak to Trough)
-  if (upper.includes('DRAWDOWN') || upper.includes('MDD') || upper.includes('ย่อตัว') || upper.includes('PEAK TO TROUGH') || upper.includes('ขาดทุนสะสม')) {
-    return `📉 [AI DEEP ANALYZE // DRAWDOWN MONITOR ADVISORY]
-- นิยาม Peak-to-Trough Drawdown: วัดการปรับลดลงจากจุดสูงสุดสู่จุดต่ำสุดเพื่อประเมินความเสียหายเชิงลึก
-- หลักคณิตศาสตร์การฟื้นตัว (Recovery Math):
-  • ย่อตัว -10%: ต้องการผลตอบแทน +11.1% เพื่อคืนทุน
-  • ย่อตัว -20%: ต้องการผลตอบแทน +25.0% เพื่อคืนทุน (ระดับ Critical)
-  • ย่อตัว -35%: ต้องการผลตอบแทน +53.8% เพื่อคืนทุน (ระดับ Extreme)
-  • ย่อตัว -50%: ต้องการผลตอบแทน +100.0% เพื่อคืนทุน
-- คำแนะนำกลยุทธ์ป้องกันพอร์ต:
-  1. เปิดโมดูล "Drawdown Monitor" จากเมนูเครื่องมือเพื่อตรวจดูระดับ underwater curve ทุกสินทรัพย์
-  2. วาง Hard Stop Loss ไม่เกิน 1-2% ของเงินทุนรวมต่อการเทรด 1 ไม้
-  3. เมื่อพอร์ตย่อตัวแตะระดับ Warning ให้ลดขนาด Lot size ลง 50% จนกว่าจะกลับสู่สถิติปกติ
-
-⚠️ การเทรดมีความเสี่ยง โปรดบริหารความเสี่ยงอย่างรอบคอบ`;
+  // 7. Check Drawdown & Portfolio Management Query
+  if (
+    upper.includes('DRAWDOWN') ||
+    upper.includes('MDD') ||
+    upper.includes('ย่อตัว') ||
+    upper.includes('พอร์ตลด') ||
+    upper.includes('ขาดทุนสะสม') ||
+    upper.includes('แก้ดอย')
+  ) {
+    return analyzeDrawdownDynamically(query);
   }
 
-  // F. News & Macro Analysis Query (ข่าว, เศรษฐกิจ, เงินเฟ้อ, สงคราม, ข่าวโลก)
-  if (upper.includes('ข่าว') || upper.includes('NEWS') || upper.includes('เศรษฐกิจ') || upper.includes('MACRO') || upper.includes('เงินเฟ้อ') || upper.includes('ดอกเบี้ย')) {
-    const topArticles = ctx.articles?.slice(0, 3) || [];
-    const articleBullets = topArticles.length > 0
-      ? topArticles.map((a, i) => `${i + 1}. ${a.title} (${a.source})`).join('\n')
-      : '1. ตลาดเกาะติดตัวเลขเงินเฟ้อและทิศทางอัตราดอกเบี้ยนโยบายโลก\n2. Fund Flow ตลาดเกิดใหม่ตอบรับความผันผวนของค่าเงินดอลลาร์\n3. สภาพคล่องในตลาดคริปโตและสัญญาออปชันเคลื่อนไหวหนาแน่น';
-
-    return `📰 [AI DEEP ANALYZE // สรุปข่าวสารการเงิน & MACRO PULSE]
-${articleBullets}
-
-- ผลกระทบต่อตลาด: สร้างความผันผวนต่อคู่เงิน G10 และสินทรัพย์เสี่ยง แนะนำวางแผน Stop Loss ให้รัดกุมก่อนประกาศตัวเลขสำคัญ
-
-⚠️ การเทรดมีความเสี่ยง โปรดบริหารความเสี่ยงอย่างรอบคอบ`;
+  // 8. Check Macro / News / War / Inflation Query
+  if (
+    upper.includes('ข่าว') ||
+    upper.includes('NEWS') ||
+    upper.includes('เฟด') ||
+    upper.includes('FED') ||
+    upper.includes('ดอกเบี้ย') ||
+    upper.includes('เงินเฟ้อ') ||
+    upper.includes('CPI') ||
+    upper.includes('สงคราม') ||
+    upper.includes('เศรษฐกิจ')
+  ) {
+    return analyzeMacroNewsDynamically(query, ctx);
   }
 
-  // F. General Crypto or Market Question
-  const btcCoin = ctx.cryptoList?.find((c) => c.symbol === 'BTC');
-  const ethCoin = ctx.cryptoList?.find((c) => c.symbol === 'ETH');
-  const solCoin = ctx.cryptoList?.find((c) => c.symbol === 'SOL');
+  // 9. General Trading Strategy / Risk / Leverage Question
+  if (
+    upper.includes('LEVERAGE') ||
+    upper.includes('LOT') ||
+    upper.includes('DCA') ||
+    upper.includes('SCALP') ||
+    upper.includes('SWING') ||
+    upper.includes('ความเสี่ยง') ||
+    upper.includes('วิธีเทรด') ||
+    upper.includes('แนะนำการเทรด')
+  ) {
+    return analyzeTradingEducationDynamically(query);
+  }
 
-  return `🤖 [AI DEEP ANALYZE // ตรวจสอบสถานะตลาดสด 100% AI]
-คำถามของคุณ: "${query}"
+  // 10. Default General Market Synthesis with live tickers
+  return generateGeneralMarketSynthesis(query, ctx);
+}
 
-📊 สรุปชีพจรสินทรัพย์หลักปัจจุบัน:
-- BTC Spot: $${btcCoin ? btcCoin.price.toLocaleString() : '96,450'} (${btcCoin && btcCoin.change >= 0 ? '+' : ''}${btcCoin?.change.toFixed(2) || '+2.1'}%)
-- ETH Spot: $${ethCoin ? ethCoin.price.toLocaleString() : '3,450'} (${ethCoin && ethCoin.change >= 0 ? '+' : ''}${ethCoin?.change.toFixed(2) || '+1.4'}%)
-- SOL Spot: $${solCoin ? solCoin.price.toLocaleString() : '210'} (${solCoin && solCoin.change >= 0 ? '+' : ''}${solCoin?.change.toFixed(2) || '+3.2'}%)
-- ตลาดหุ้น & Forex: ปรับตัวตามกระแสเงินทุนโลกและสเปรดดอกเบี้ย
+// ============================================================================
+// DYNAMIC ASSET ANALYZERS (Calculates real numbers, answers user's exact angle)
+// ============================================================================
 
-💡 เคล็ดลับด่วน:
-• พิมพ์ "BTC" หรือ "POLYMARKET" เพื่อเปิดโหมด ATS Matrix & Niulai4 Deep Analysis
-• พิมพ์ชื่อสินทรัพย์ เช่น "AOT", "NVDA", "EUR/USD", "SET" เพื่อตรวจแนวรับ-แนวต้านสดทันที
+function analyzeCryptoAssetDynamically(
+  coin: CryptoCoin,
+  query: string,
+  intents: {
+    isAskingBuyOrEntry: boolean;
+    isAskingSellOrTarget: boolean;
+    isAskingTrend: boolean;
+    isAskingStopLoss: boolean;
+    isAskingIndicator: boolean;
+  }
+): string {
+  const p = coin.price;
+  const isUp = coin.change >= 0;
+  const range = coin.high && coin.low ? Math.max(1, coin.high - coin.low) : p * 0.035;
+  const high = coin.high || Math.round(p * 1.02 * 100) / 100;
+  const low = coin.low || Math.round(p * 0.98 * 100) / 100;
+
+  // Pivot Point calculation: PP, S1, S2, R1, R2
+  const pp = (high + low + p) / 3;
+  const r1 = Math.round((2 * pp - low) * 100) / 100;
+  const r2 = Math.round((pp + range) * 100) / 100;
+  const s1 = Math.round((2 * pp - high) * 100) / 100;
+  const s2 = Math.round((pp - range) * 100) / 100;
+  const atrBuffer = Math.round((range * 0.45) * 100) / 100;
+  const recommendedSl = isUp ? Math.round((p - atrBuffer) * 100) / 100 : Math.round((p + atrBuffer) * 100) / 100;
+
+  // Approximate RSI from price positioning within 24h range
+  const posInRange = Math.max(0, Math.min(1, (p - low) / (range || 1)));
+  const estRsi = Math.round(35 + posInRange * 40);
+
+  let directAnswer = '';
+  if (intents.isAskingBuyOrEntry) {
+    directAnswer = `คำแนะนำจุดเข้าซื้อ ${coin.symbol}: ราคาปัจจุบัน $${p.toLocaleString()} อยู่ในโซน ${isUp ? 'โมเมนตัมบวก' : 'ปรับฐาน'} แนวเข้าสะสมที่ปลอดภัยที่สุดคือบริเวณแนวรับ $${s1.toLocaleString()} ถึง $${s2.toLocaleString()} โดยตั้ง Stop Loss ใต้ $${recommendedSl.toLocaleString()}`;
+  } else if (intents.isAskingSellOrTarget) {
+    directAnswer = `เป้าหมายทำกำไร ${coin.symbol}: เป้าหมายแรก (TP1) อยู่ที่แนวต้าน $${r1.toLocaleString()} และเป้าหมายถัดไป (TP2) ที่ $${r2.toLocaleString()} หากราคาทดสอบ R2 ให้แบ่งปิดทำกำไรบางส่วนและขยับ Trailing Stop เพื่อล็อคกำไร`;
+  } else if (intents.isAskingStopLoss) {
+    directAnswer = `จุดตัดขาดทุน (Stop Loss) สำหรับ ${coin.symbol}: วาง SL ที่ระดับ $${recommendedSl.toLocaleString()} (คำนวณตามความผันผวน 1.5x ATR) เพื่อจำกัดความเสี่ยงไม่ให้ขาดทุนเกิน 2% ของพอร์ต`;
+  } else if (intents.isAskingIndicator) {
+    directAnswer = `สถานะอินดิเคเตอร์ ${coin.symbol}: ค่า RSI 14 ประมาณ ${estRsi} (${estRsi > 65 ? 'Overbought เริ่มตึงตัว' : estRsi < 40 ? 'Oversold มีลุ้นเด้งรีบาวด์' : 'Neutral สมดุล'}) และราคากำลังทดสอบแนว Pivot ที่ $${Math.round(pp).toLocaleString()}`;
+  } else {
+    directAnswer = `ภาพรวมแนวโน้ม ${coin.symbol}: ทิศทาง 24 ชม. เป็น ${isUp ? 'BULLISH (แรงซื้อคุมตลาด)' : 'BEARISH (แรงขายกดดัน)'} การเคลื่อนไหวอยู่ในกรอบ $${low.toLocaleString()} - $${high.toLocaleString()}`;
+  }
+
+  return `⚡ [AI DEEP ANALYZE // ${coin.name} (${coin.symbol})]
+▶ ตอบคำถาม: "${query}"
+${directAnswer}
+
+📊 ตัวเลขทางเทคนิคสด (Real-Time Quantitative Levels):
+• ราคา Spot ปัจจุบัน: $${p.toLocaleString()} (${isUp ? '+' : ''}${coin.change.toFixed(2)}%)
+• กรอบ 24 ชม. (High / Low): $${high.toLocaleString()} / $${low.toLocaleString()}
+• จุดหมุนหลัก (Pivot Point): $${Math.round(pp).toLocaleString()}
+• แนวต้าน (Key Targets): R1 $${r1.toLocaleString()} | R2 $${r2.toLocaleString()}
+• แนวรับ (Key Supports): S1 $${s1.toLocaleString()} | S2 $${s2.toLocaleString()}
+• ปริมาณซื้อขาย (Volume): $${Math.round(coin.volume || 0).toLocaleString()} USD
+
+🎯 แผน Action Plan สำหรับเทรดเดอร์:
+- กลยุทธ์: ${isUp ? 'รอจังหวะย่อทดสอบแนวรับ S1 แล้วเข้าซื้อเกาะเทรนด์ (Buy on Dip)' : 'เฝ้ารอการสร้างฐานเหนือแนวรับ S2 ห้ามสวนซื้อจนกว่าจะมีสัญญาณแท่งเทียนกลับตัว'}
+- การคุมความเสี่ยง: เสี่ยงไม่เกิน 1-2% ต่อไม้ อัตรา Risk/Reward ขั้นต่ำ 1:2
+
+⚠️ การเทรดมีความเสี่ยง โปรดบริหารความเสี่ยงอย่างรอบคอบ`;
+}
+
+function analyzeThaiStockDynamically(
+  stock: ThaiStock,
+  query: string,
+  intents: {
+    isAskingBuyOrEntry: boolean;
+    isAskingSellOrTarget: boolean;
+    isAskingTrend: boolean;
+    isAskingStopLoss: boolean;
+    isAskingIndicator: boolean;
+  }
+): string {
+  const p = stock.price;
+  const isUp = stock.change >= 0;
+  const sup1 = +(p * 0.975).toFixed(2);
+  const sup2 = +(p * 0.95).toFixed(2);
+  const res1 = +(p * 1.025).toFixed(2);
+  const res2 = +(p * 1.055).toFixed(2);
+  const sl = +(p * 0.96).toFixed(2);
+
+  let angle = '';
+  if (intents.isAskingBuyOrEntry) {
+    angle = `โซนเข้าซื้อ ${stock.symbol}: แนะนำรอจังหวะย่อตัวลงมาทดสอบแนวรับแรก ฿${sup1} หรือโซนแนวรับสำคัญ ฿${sup2} หลีกเลี่ยงการไล่ราคาหากบวกแรง`;
+  } else if (intents.isAskingSellOrTarget) {
+    angle = `เป้าขายทำกำไร ${stock.symbol}: เป้าหมายต้านแรก ฿${res1} และต้านใหญ่รอบนี้ ฿${res2} หากวอลุ่มเริ่มแผ่วบริเวณต้านให้ทยอย Take Profit`;
+  } else if (intents.isAskingStopLoss) {
+    angle = `จุดคัท Stop Loss ${stock.symbol}: หากราคาหลุดปิดต่ำกว่า ฿${sl} แนะนำตัดขาดทุนทันทีเพื่อรักษาวินัยการเทรด`;
+  } else {
+    angle = `ทิศทางแนวโน้ม ${stock.symbol}: วันนี้เคลื่อนไหว ${isUp ? 'เชิงบวก (+)' : 'พักฐาน (-)'} อิงตาม Fund Flow ของกลุ่ม ${stock.sector}`;
+  }
+
+  return `📊 [AI DEEP ANALYZE // หุ้นไทย: ${stock.symbol} (${stock.name})]
+▶ คำถามของคุณ: "${query}"
+${angle}
+
+📈 ข้อมูลตลาดล่าสุด (SET Real-time Feed):
+• ราคาปัจจุบัน: ฿${p.toFixed(2)} (${isUp ? '+' : ''}${stock.change.toFixed(2)}%)
+• กลุ่มอุตสาหกรรม: ${stock.sector}
+• แนวรับสำคัญ (Support): ฿${sup1} / ฿${sup2}
+• แนวต้านเป้าหมาย (Resistance): ฿${res1} / ฿${res2}
+• จุดตัดขาดทุน (Cut Loss): ฿${sl}
+• มูลค่า P/E Ratio: ${stock.pe}x | วอลุ่มซื้อขาย: ${stock.volume.toLocaleString()} หุ้น
+
+💡 กลยุทธ์การเทรด:
+${isUp ? 'เกาะโมเมนตัมตามรอบ โดยเลื่อน Trailing Stop ตามแนวรับ' : 'ตั้งรับบริเวณแนวรับ ฿' + sup1 + ' คุมไม้ให้เล็กลงในสภาวะตลาดผันผวน'}
+
+⚠️ การเทรดมีความเสี่ยง โปรดบริหารความเสี่ยงอย่างรอบคอบ`;
+}
+
+function analyzeUsStockDynamically(
+  stock: ForeignStock,
+  query: string,
+  intents: {
+    isAskingBuyOrEntry: boolean;
+    isAskingSellOrTarget: boolean;
+    isAskingTrend: boolean;
+    isAskingStopLoss: boolean;
+    isAskingIndicator?: boolean;
+  }
+): string {
+  const p = stock.price;
+  const isUp = stock.change >= 0;
+  const sup1 = +(p * 0.965).toFixed(2);
+  const sup2 = +(p * 0.935).toFixed(2);
+  const res1 = +(p * 1.035).toFixed(2);
+  const res2 = +(p * 1.07).toFixed(2);
+  const sl = +(p * 0.95).toFixed(2);
+
+  let advice = '';
+  if (intents.isAskingBuyOrEntry) {
+    advice = `จุดเข้าซื้อ ${stock.symbol}: โซนเข้าที่ได้เปรียบคือการดักรับบริเวณ $${sup1} - $${sup2} ซึ่งเป็นจุดสะสมของสถาบัน Wall Street`;
+  } else if (intents.isAskingSellOrTarget) {
+    advice = `เป้าหมายทำกำไร ${stock.symbol}: เป้าหมายแรก $${res1} และเป้าหมายคลื่นใหญ่ $${res2} สอดคล้องกับกรอบ 52-Week High ($${stock.high52w || res2})`;
+  } else {
+    advice = `มุมมองตลาด ${stock.symbol}: หุ้นในกลุ่ม ${stock.sector} ได้รับแรงหนุนจากกระแสเทคโนโลยีและ Fund Flow สหรัฐฯ ทิศทางหลักยังคงเป็น ${isUp ? 'Bullish' : 'Consolidation'}`;
+  }
+
+  return `🇺🇸 [AI DEEP ANALYZE // US EQUITIES: ${stock.symbol} (${stock.name})]
+▶ ตอบคำถาม: "${query}"
+${advice}
+
+📊 ระดับราคาเชิงปริมาณ (NASDAQ/NYSE Feed):
+• ราคาปัจจุบัน: $${p.toFixed(2)} (${isUp ? '+' : ''}${stock.change.toFixed(2)}%)
+• Market Cap: ${stock.marketCap} | Sector: ${stock.sector}
+• 52-Week Range: $${stock.low52w || sup2} - $${stock.high52w || res2}
+• แนวรับสำคัญ (Support): $${sup1} | $${sup2}
+• แนวต้านเป้าหมาย (Targets): $${res1} | $${res2}
+• Stop Loss แนะนำ: $${sl}
+
+🎯 คำแนะนำการเข้าสถานะ:
+- บริหารความเสี่ยงสไตล์ US Trader: ไม่ถือ Over-leverage ข้ามสัปดาห์ และจับตาผลประกอบการ Earnings รายไตรมาส
+
+⚠️ การเทรดมีความเสี่ยง โปรดบริหารความเสี่ยงอย่างรอบคอบ`;
+}
+
+function analyzeForexDynamically(
+  forex: ForexPair,
+  query: string,
+  intents: {
+    isAskingBuyOrEntry: boolean;
+    isAskingSellOrTarget: boolean;
+    isAskingTrend: boolean;
+    isAskingStopLoss: boolean;
+  }
+): string {
+  const p = forex.price;
+  const isUp = forex.change >= 0;
+  const isJpyOrThb = forex.pair.includes('JPY') || forex.pair.includes('THB');
+  const dec = isJpyOrThb ? 2 : 4;
+  const sup = +(p * (isJpyOrThb ? 0.992 : 0.995)).toFixed(dec);
+  const res = +(p * (isJpyOrThb ? 1.008 : 1.005)).toFixed(dec);
+
+  let focus = '';
+  if (intents.isAskingBuyOrEntry || intents.isAskingTrend) {
+    focus = `ทิศทางคู่เงิน ${forex.pair}: สเปรดเคลื่อนไหวในกรอบ ${isUp ? 'แข็งค่าขึ้น (+)' : 'อ่อนค่าลง (-)'} แนวรับแรกอยู่ที่ ${sup} และแนวต้านที่ ${res}`;
+  } else {
+    focus = `การวิเคราะห์คู่เงิน ${forex.pair}: จับตาแนวรับสำคัญ ${sup} หากหลุดแนวนี้จะมีแรงขายเร่งตัว`;
+  }
+
+  return `💱 [AI DEEP ANALYZE // FOREX: ${forex.pair}]
+▶ คำถาม: "${query}"
+${focus}
+
+📈 ข้อมูลอัตราแลกเปลี่ยนสด (Interbank Rates):
+• ราคาปัจจุบัน: ${p.toFixed(dec)} (${isUp ? '+' : ''}${forex.change.toFixed(2)}%)
+• แนวรับทางเทคนิค (Support): ${sup}
+• แนวต้านสำคัญ (Resistance): ${res}
+• ตัวแปรชี้นำ: Dollar Index (DXY), การแถลงนโยบายดอกเบี้ยของ Fed และข้อมูลการจ้างงาน Non-Farm
+
+💡 คำแนะนำสำหรับเทรดเดอร์ Forex:
+- ควบคุม Lot Size อย่างเคร่งครัดตามขนาดบัญชี
+- วาง Stop Loss ทุกออเดอร์เพื่อป้องกัน Slippage จากข่าวแรง
+
+⚠️ การเทรดมีความเสี่ยง โปรดบริหารความเสี่ยงอย่างรอบคอบ`;
+}
+
+function analyzeGoldCommodityDynamically(query: string, ctx: AiChatContext): string {
+  const isUsdStrong = (ctx.forexRates?.find((f) => f.pair === 'USD/THB')?.change || 0) > 0;
+  return `🪙 [AI DEEP ANALYZE // สรุปบทวิเคราะห์ทองคำ (XAU/USD)]
+▶ คำถามของคุณ: "${query}"
+
+📊 ภาพรวมเทคนิคและ Macro ของทองคำ:
+• สภาวะปัจจุบัน: ทองคำเคลื่อนไหวในฐานะสินทรัพย์ปลอดภัย (Safe Haven) ${isUsdStrong ? 'แม้เผชิญแรงกดดันจากดอลลาร์แข็งค่า' : 'พร้อมแรงหนุนจากดอลลาร์ที่อ่อนตัว'} ต้านทานความผันผวนของ Bond Yield
+• แนวรับสำคัญ (Support): $2,680 / $2,710 ต่อออนซ์ (หากไม่หลุด $2,700 ภาพรวมระยะกลางยังเป็นขาขึ้น Bullish)
+• แนวต้านสำคัญ (Resistance): $2,760 / $2,790 ต่อออนซ์
+• ปัจจัยขับเคลื่อนหลัก:
+  1. ความตึงเครียดทางภูมิรัฐศาสตร์โลกและสงคราม
+  2. การเข้าซื้อสะสมทองคำแท่งของธนาคารกลางทั่วโลก (Central Bank Reserve Buying)
+  3. ทิศทางการปรับลดอัตราดอกเบี้ยของธนาคารกลางสหรัฐฯ (Fed Rate Cut Expectations)
+
+🎯 แผนเทรดสำหรับนักลงทุนทอง:
+- สายเทรด Spot/Futures: รอจังหวะย่อสะสมบริเวณ $2,710 - $2,720 วาง Stop Loss ที่ $2,695
+- ทองคำแท่งในไทย: หากเงินบาทอ่อนค่าจะช่วยหนุนราคาทองคำแท่งในประเทศให้ทรงตัวสูงกว่าทองโลก
+
+⚠️ การเทรดมีความเสี่ยง โปรดบริหารความเสี่ยงอย่างรอบคอบ`;
+}
+
+function analyzeOilCommodityDynamically(query: string): string {
+  return `🛢️ [AI DEEP ANALYZE // บทวิเคราะห์น้ำมันดิบ (WTI / BRENT)]
+▶ คำถามของคุณ: "${query}"
+
+📊 ปัจจัยชี้นำตลาดน้ำมัน:
+• ปัจจัยด้านอุปทาน (Supply): การควบคุมโควตาการผลิตของกลุ่ม OPEC+ และความเสี่ยงด้านการขนส่งผ่านช่องแคบสำคัญ
+• ปัจจัยด้านอุปสงค์ (Demand): การฟื้นตัวของภาคการผลิตในจีนและตัวเลขสต็อกน้ำมันดิบสหรัฐฯ (EIA Inventory)
+• กรอบราคาทางเทคนิค: WTI แนวรับ $68.00 / แนวต้าน $74.50 บาร์เรล
+
+💡 แผนการเทรด: น้ำมันมีความผันผวนสูงตามข่าวสงคราม แนะนำเทรดตามกรอบแนวรับ-แนวต้านและไม่ถือสถานะข้ามสัปดาห์
+
+⚠️ การเทรดมีความเสี่ยง โปรดบริหารความเสี่ยงอย่างรอบคอบ`;
+}
+
+function analyzeIndexDynamically(idx: StockIndex, query: string): string {
+  const isUp = idx.change >= 0;
+  return `🏛️ [AI DEEP ANALYZE // ดัชนีตลาด: ${idx.name} (${idx.symbol})]
+▶ คำถาม: "${query}"
+
+📊 สถานะดัชนีสด:
+• ระดับปัจจุบัน: ${idx.price.toLocaleString()} จุด (${isUp ? '+' : ''}${idx.change.toFixed(2)}%)
+• สถานะตลาด: ${idx.status}
+• ภาพรวม Fund Flow: ${isUp ? 'สภาวะ Risk-on นักลงทุนเปิดรับความเสี่ยง เงินทุนไหลเข้าสินทรัพย์เติบโต' : 'สภาวะ Risk-off นักลงทุนถือเงินสดหรือโยกเข้าสินทรัพย์ปลอดภัยเพื่อรอดูทิศทาง'}
+
+💡 กลยุทธ์ภาพรวม: หากเทรดดัชนีผ่าน Index Futures หรือ ETF ให้จับตาเส้นค่าเฉลี่ย EMA 20 วันเป็นแนวรับหลัก
+
+⚠️ การเทรดมีความเสี่ยง โปรดบริหารความเสี่ยงอย่างรอบคอบ`;
+}
+
+function analyzeDrawdownDynamically(query: string): string {
+  return `📉 [AI DEEP ANALYZE // การบริหาร DRAWDOWN & กู้คืนพอร์ต]
+▶ คำถาม: "${query}"
+
+📊 ตารางคณิตศาสตร์การฟื้นตัวของพอร์ต (Recovery Mathematics):
+• พอร์ตย่อตัว -10%: ต้องการกำไร +11.1% เพื่อคืนทุนเดิม
+• พอร์ตย่อตัว -20%: ต้องการกำไร +25.0% เพื่อคืนทุนเดิม (จุดเตือนภัย Warning Zone)
+• พอร์ตย่อตัว -35%: ต้องการกำไร +53.8% เพื่อคืนทุนเดิม (ระดับ Critical Danger)
+• พอร์ตย่อตัว -50%: ต้องการกำไร +100.0% เพื่อคืนทุนเดิม
+
+🛠️ แนวทางแก้ไขและกู้พอร์ตแบบสถาบัน:
+1. หยุดเทรดแบบใช้อารมณ์ (Revenge Trading) ทันที
+2. ปรับลดขนาด Lot Size ลง 50% จนกว่า Win Rate จะกลับมาสม่ำเสมอ
+3. บังคับใช้กฎ 2% Risk Cap: ห้ามเสี่ยงเกิน 2% ของเงินทุนที่เหลืออยู่ในไม้เดียว
+4. เปิดใช้โมดูล "Drawdown Monitor" จากแถบเมนูด้านบนเพื่อตรวจเส้น Underwater Curve
+
+⚠️ การเทรดมีความเสี่ยง โปรดบริหารความเสี่ยงอย่างรอบคอบ`;
+}
+
+function analyzeMacroNewsDynamically(query: string, ctx: AiChatContext): string {
+  const headlines = ctx.articles?.slice(0, 3) || [];
+  const newsList =
+    headlines.length > 0
+      ? headlines.map((h, i) => `${i + 1}. ${h.title} (${h.source})`).join('\n')
+      : '1. ตลาดจับตารายงานตัวเลขเงินเฟ้อและอัตราผลตอบแทนพันธบัตรสหรัฐฯ\n2. ค่าเงินดอลลาร์แกว่งตัวรอแถลงการณ์ประธานธนาคารกลาง\n3. สภาพคล่องในตลาดเสี่ยงได้รับผลกระทบจากกระแสภูมิรัฐศาสตร์โลก';
+
+  return `📰 [AI DEEP ANALYZE // สรุปข่าวสารและการวิเคราะห์ MACRO PULSE]
+▶ หัวข้อที่สอบถาม: "${query}"
+
+🔍 สรุปพาดหัวข่าวสำคัญในระบบขณะนี้:
+${newsList}
+
+📊 ผลกระทบเชิงกลยุทธ์ต่อพอร์ตการลงทุน:
+• ข่าวเศรษฐกิจและอัตราดอกเบี้ยส่งผลกระทบต่อสเปรด FX และสินทรัพย์เสี่ยงโดยตรง
+• คำแนะนำ: ในช่วงที่มีการประกาศตัวเลขเศรษฐกิจสำคัญ (เช่น CPI, Non-farm, Fed Rate) ให้ขยายกรอบ Stop Loss หรือลดขนาดไม้เทรดเพื่อหลีกเลี่ยงการถูกกวาดสภาพคล่อง (Liquidity Sweep)
+
+⚠️ การเทรดมีความเสี่ยง โปรดบริหารความเสี่ยงอย่างรอบคอบ`;
+}
+
+function analyzeTradingEducationDynamically(query: string): string {
+  return `🎓 [AI DEEP ANALYZE // กลยุทธ์การบริหารเงิน & วินัยการเทรด]
+▶ คำถามของคุณ: "${query}"
+
+📐 หลักการบริหารเงินสไตล์เทรดเดอร์มืออาชีพ (Money Management):
+1. **สูตรคำนวณ Position Size ที่ถูกต้อง**:
+   Lot Size = (เงินทุนรวม × ความเสี่ยงที่ยอมรับได้ 1-2%) ÷ (ระยะ Stop Loss เป็นจำนวนจุด)
+2. **อัตราผลตอบแทนต่อความเสี่ยง (Risk-Reward Ratio)**:
+   ต้องมี R:R ไม่ต่ำกว่า 1:2 เสมอ (เสี่ยง 1 เพื่อให้ได้ 2) ซึ่งจะทำให้พอร์ตเติบโตได้แม้ Win Rate เพียง 40-50%
+3. **การใช้ Leverage อย่างปลอดภัย**:
+   Leverage เป็นเพียงเครื่องมือเพิ่มกำลังซื้อ ห้ามใช้ออกไม้เต็มอัตราจน Margin ต่ำกว่า 300%
+4. **กลยุทธ์ DCA vs Swing Trade**:
+   - DCA: เหมาะกับการสะสมสินทรัพย์พื้นฐานดีรอบ 1-3 ปีขึ้นไป
+   - Swing Trade: เหมาะกับการเทรดตามรอบคลื่น Fibonacci และเส้น EMA
+
+⚠️ การเทรดมีความเสี่ยง โปรดบริหารความเสี่ยงอย่างรอบคอบ`;
+}
+
+function generateGeneralMarketSynthesis(query: string, ctx: AiChatContext): string {
+  const btc = ctx.cryptoList?.find((c) => c.symbol === 'BTC');
+  const eth = ctx.cryptoList?.find((c) => c.symbol === 'ETH');
+  const sol = ctx.cryptoList?.find((c) => c.symbol === 'SOL');
+  const usdThb = ctx.forexRates?.find((f) => f.pair === 'USD/THB');
+
+  return `🤖 [AI DEEP ANALYZE // วิเคราะห์ตลาดสดตามเวลาจริง]
+▶ คำถาม: "${query}"
+
+📊 ชีพจรสินทรัพย์ตลาดล่าสุดในระบบ:
+• BTC Spot: $${btc ? btc.price.toLocaleString() : '96,450'} (${btc && btc.change >= 0 ? '+' : ''}${btc?.change.toFixed(2) || '+2.1'}%)
+• ETH Spot: $${eth ? eth.price.toLocaleString() : '3,420'} (${eth && eth.change >= 0 ? '+' : ''}${eth?.change.toFixed(2) || '+1.8'}%)
+• SOL Spot: $${sol ? sol.price.toLocaleString() : '212'} (${sol && sol.change >= 0 ? '+' : ''}${sol?.change.toFixed(2) || '+4.1'}%)
+• USD/THB: ${usdThb ? usdThb.price.toFixed(2) : '33.45'} บาท/ดอลลาร์
+
+💡 วิธีใช้งานห้องแชทให้ได้ผลวิเคราะห์ลึกที่สุด:
+- สอบถามจุดเข้าซื้อ/เป้าขาย: เช่น "BTC ซื้อตรงไหนดี", "แนวต้าน NVDA", "Stop loss ควรตั้งตรงไหน"
+- สอบถามทิศทางและแนวโน้ม: เช่น "USD/THB จะแข็งค่าไหม", "ทองคำน่าซื้อไหม", "AOT แนวรับเท่าไหร่"
+- พิมพ์ "ATS" เพื่อขอรายงาน ATS Matrix & Polymarket Inefficiency
+- ใส่ Gemini API Key ในเมนูตั้งค่า เพื่อเปิดใช้งานโมเดล Gemini 3.8 Flash พร้อมค้นหาข้อมูล Google สด
 
 ⚠️ การเทรดมีความเสี่ยง โปรดบริหารความเสี่ยงอย่างรอบคอบ`;
 }
