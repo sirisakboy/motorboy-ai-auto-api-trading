@@ -31,6 +31,16 @@
         "timestamp": { "type": "string" }
       },
       "required": ["id", "userId", "symbol", "timestamp"]
+    },
+    "AppSession": {
+      "title": "AppSession",
+      "description": "Read-only global session configuration",
+      "type": "object",
+      "properties": {
+        "sessionId": { "type": "string" },
+        "title": { "type": "string" }
+      },
+      "required": ["sessionId"]
     }
   },
   "firestore": {
@@ -41,6 +51,10 @@
     "/users/{userId}/history/{historyId}": {
       "schema": "TradingHistoryItem",
       "description": "Stores user signal analysis and trading history entries"
+    },
+    "/sessions/{sessionId}": {
+      "schema": "AppSession",
+      "description": "Global read-only session data"
     }
   }
 }

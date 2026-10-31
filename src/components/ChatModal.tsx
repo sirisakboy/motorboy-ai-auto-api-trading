@@ -52,7 +52,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
   onOpenAtsMatrix,
   onOpenSettings,
 }) => {
-  const engineStatus = getAiEngineStatus(geminiApiKey);
+  const engineStatus = getAiEngineStatus();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState('');
   const [isSending, setIsSending] = useState(false);

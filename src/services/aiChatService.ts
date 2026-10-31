@@ -1,8 +1,15 @@
-import { GoogleGenAI } from '@google/genai';
+import OpenAI from "openai";
 import { CryptoCoin, ForexPair, ThaiStock, ForeignStock, StockIndex, NewsArticle } from '../types';
 import { computeAtsMatrixAnalysis, getBtcFromCryptoList } from './atsMatrixService';
 
-const GENAI_MODEL = 'gemini-3.8-flash';
+const POOLSIDE_MODEL = 'poolside/laguna-xs-2.1';
+
+// Initialize Poolside client
+const client = new OpenAI({
+  apiKey: process.env.POOLSIDE_API_KEY || 'dummy_key',
+  baseURL: "https://inference.poolside.ai/v1",
+  dangerouslyAllowBrowser: true,
+});
 
 export interface AiChatContext {
   cryptoList?: CryptoCoin[];
@@ -16,31 +23,22 @@ export interface AiChatContext {
   ollamaEndpoint?: string;
 }
 
-export type AiEngineMode = 'GEMINI_LLM' | 'QUANT_LIVE';
+export type AiEngineMode = 'POOLIDE_LLM' | 'QUANT_LIVE';
 
 /**
  * Returns current active AI Engine status for UI transparency
  */
-export function getAiEngineStatus(geminiApiKey?: string): {
+export function getAiEngineStatus(): {
   mode: AiEngineMode;
   labelTh: string;
   badgeTh: string;
   isOnlineLlm: boolean;
 } {
-  const hasKey = !!geminiApiKey?.trim();
-  if (hasKey) {
-    return {
-      mode: 'GEMINI_LLM',
-      labelTh: 'Gemini 3.8 Flash (AI วิเคราะห์สด & Google Search)',
-      badgeTh: '✨ GEMINI LIVE',
-      isOnlineLlm: true,
-    };
-  }
   return {
-    mode: 'QUANT_LIVE',
-    labelTh: 'Real-Time Quant Engine (วิเคราะห์สดตามข้อมูลตลาดจริง)',
-    badgeTh: '⚡ LIVE QUANT',
-    isOnlineLlm: false,
+    mode: 'POOLIDE_LLM',
+    labelTh: 'Poolside AI (Financial Analyst)',
+    badgeTh: '✨ POOLSIDE',
+    isOnlineLlm: true,
   };
 }
 
@@ -64,9 +62,8 @@ function isExplicitAtsReportCommand(text: string): boolean {
 /**
  * 100% Real-Time AI Chat Engine for "AI Deep Analyze"
  *
- * Tier 1: Real Generative AI (Google Gemini 3.8 Flash + Google Search Grounding) when API Key is available.
- * Tier 2: Real-time Quantitative NLP Reasoning Engine (Dynamic math, live prices, pivot points, ATR, direct answers).
- * Tone: Professional Trader — sharp, numeric, actionable, zero fluff, with risk discipline.
+ * Tier 1: Real Generative AI (Poolside)
+ * Tier 2: Real-time Quantitative NLP Reasoning Engine
  */
 export async function generateAiChatReply(
   userMessage: string,
@@ -75,156 +72,66 @@ export async function generateAiChatReply(
   const query = userMessage.trim();
   const upper = query.toUpperCase();
 
-  // 1. Explicit ATS Matrix command trigger (only if user explicitly asked for the raw matrix report)
+  // 1. Explicit ATS Matrix command trigger
   if (isExplicitAtsReportCommand(query)) {
     const btc = getBtcFromCryptoList(context.cryptoList || []);
     const analysis = computeAtsMatrixAnalysis(btc.price, btc.change);
     return analysis.rawTraderTextTh;
   }
 
-  // 2. TIER 1: Real Generative AI via Google GenAI or Ollama
-  const geminiApiKey = context.geminiApiKey?.trim();
-  
-  // Support both context-provided key and environment variable
-  const env = typeof import.meta !== 'undefined' ? (import.meta as any).env : (typeof process !== 'undefined' ? process.env : {});
-  const ollamaKey = context.ollamaApiKey?.trim() || env.VITE_OLLAMA_KEY;
-  
-  if (ollamaKey) {
-    try {
-      const liveReply = await callOllamaWithContext(query, ollamaKey, context);
-      if (liveReply) return liveReply;
-    } catch (err) {
-      console.warn('Ollama chat failed, falling back...');
-    }
-  }
-
-  if (geminiApiKey) {
-    try {
-      const liveReply = await callGeminiWithMarketContext(query, geminiApiKey, context);
+  // 2. TIER 1: Real Generative AI via Poolside
+  try {
+      const liveReply = await callPoolsideWithMarketContext(query, context);
       if (liveReply) {
         return liveReply;
       }
     } catch (err) {
-      console.warn('Gemini chat request failed, falling back to Dynamic Quant Engine:', err);
+      console.warn('Poolside chat request failed, falling back to Dynamic Quant Engine:', err);
     }
-  }
 
-  // 3. TIER 2: Dynamic Real-time Quantitative & NLP Reasoning Engine (Zero Canned Text)
+  // 3. TIER 2: Dynamic Real-time Quantitative & NLP Reasoning Engine
   return generateDynamicQuantAnalysis(query, upper, context);
 }
 
 /**
- * Call Gemini 3.8 Flash with live market snapshot and instructions
+ * Call Poolside with live market snapshot and instructions
  */
-async function callGeminiWithMarketContext(
+async function callPoolsideWithMarketContext(
   query: string,
-  apiKey: string,
   context: AiChatContext
 ): Promise<string | null> {
-  const ai = new GoogleGenAI({ apiKey });
   const marketBrief = buildMarketContextBrief(context);
 
   const prompt = `
-คุณคือ "Autonomous Analytical Sandbox Engine" ประจำระบบการเงิน
-ภารกิจ: วิเคราะห์ข้อมูลตลาดสดที่ได้รับ และให้เหตุผลสนับสนุนคำตอบโดยใช้ตรรกะเชิงปริมาณ (Quantitative Reasoning) ห้ามใช้ข้อความสำเร็จรูป
+คุณคือผู้เชี่ยวชาญด้านการวางแผนตลาดการเงินและการวิเคราะห์ข่าวเศรษฐกิจระดับมืออาชีพ
+ภารกิจ: ให้คำปรึกษา แนะนำ และวิเคราะห์ข่าวสารการเงินและทิศทางตลาดด้วยความเป็นมืออาชีพ เน้นความชัดเจน เข้าใจง่าย แต่อยู่บนพื้นฐานของตรรกะและข้อมูลจริง
 
-ข้อมูลตลาดสด:
+ข้อมูลตลาดสดประกอบการวิเคราะห์:
 ${marketBrief}
 
 คำถามจากผู้ใช้: "${query}"
 
-แนวทางการวิเคราะห์ (เป้าหมาย):
-1. สังเคราะห์: นำคำถามมารวมกับข้อมูลราคาจริง ทำการวิเคราะห์ทิศทางและระดับราคาด้วยตนเองตามหลักการ Technical & Macro
-2. ตรรกะ: ทุกการตัดสินใจหรือคำแนะนำ ต้องมีตัวเลขสนับสนุน (เช่น อ้างอิงราคาปัจจุบัน, แนวรับ-แนวต้านที่คำนวณได้, หรือสภาวะตลาดจริง)
-3. ยืดหยุ่น: ไม่ยึดติดกับโครงสร้างการตอบที่ตายตัว แต่ต้องให้เนื้อหาครบถ้วน (สถานะปัจจุบัน -> วิเคราะห์ -> แผนการ)
-4. เน้น Action: ให้คำแนะนำที่ใช้งานได้จริงในเชิงการจัดการความเสี่ยง (Risk Management) ไม่ใช่แค่คาดการณ์ทิศทาง
-5. สรุปด้วยความเสี่ยง: ปิดท้ายด้วยคำเตือนเรื่องความเสี่ยงเสมอ
-`.trim();
-
-  // Try first with Google Search grounding
-  try {
-    const response = await ai.models.generateContent({
-      model: GENAI_MODEL,
-      contents: prompt,
-      config: {
-        tools: [{ googleSearch: {} }],
-      },
-    });
-    const text = response.text?.trim();
-    if (text) return text;
-  } catch (err) {
-    // If googleSearch tool is restricted or fails, retry without tools
-    console.info('Retrying Gemini without search grounding...', err);
-    const response = await ai.models.generateContent({
-      model: GENAI_MODEL,
-      contents: prompt,
-    });
-    const text = response.text?.trim();
-    if (text) return text;
-  }
-
-  return null;
-}
-
-async function callOllamaWithContext(
-  query: string,
-  apiKey: string,
-  context: AiChatContext
-): Promise<string | null> {
-  const marketBrief = buildMarketContextBrief(context);
-  const prompt = `
-คุณคือ "Autonomous Analytical Sandbox Engine" (Motorboy Model)
-
-หน้าที่หลัก:
-วิเคราะห์ตลาดสดที่คุณได้รับข้อมูลจริงในขณะนี้:
-${marketBrief}
-
-คำถามจากผู้ใช้: "${query}"
-
-กฎเหล็ก (Sandbox Rules):
-1. ห้ามใช้คำตอบสำเร็จรูป (No Canned Responses): ให้สังเคราะห์คำตอบจากการวิเคราะห์ข้อมูลสดเท่านั้น
-2. วิเคราะห์เชิงลึก (Deep Analytical Reasoning): แสดงตรรกะการวิเคราะห์ราคา, แนวโน้ม, และความสัมพันธ์ของข้อมูล
-3. เน้นเป้าหมายและหน้าที่ (Clear Goals & Duties): ให้คำแนะนำเชิงกลยุทธ์ การจัดการความเสี่ยง (Risk Management) และทิศทางที่ชัดเจน
-4. ความยืดหยุ่น (Flexibility): ไม่ยึดติดรูปแบบการตอบ ปรับเนื้อหาตามบริบทคำถามของผู้ใช้
-5. ต้องเตือนความเสี่ยง (Risk Warning): ปิดท้ายด้วยคำเตือนเรื่องความเสี่ยงเสมอ
+แนวทางการวิเคราะห์:
+1. วิเคราะห์ด้วยข้อมูล: ใช้ข้อมูลตลาดจริงประกอบการอธิบาย
+2. ชัดเจนและตรงประเด็น: ตอบคำถามให้ตรงจุด เน้นการวางแผนและการจัดการความเสี่ยง
+3. ความยืดหยุ่น: เป็นการสนทนาแลกเปลี่ยนมุมมอง ไม่ใช้คำตอบสำเร็จรูป
+4. สรุปความเสี่ยง: ทุกครั้งที่มีคำแนะนำด้านการลงทุน ต้องปิดท้ายด้วยคำเตือนเรื่องความเสี่ยงเสมอ
 `.trim();
 
   try {
-    const env = typeof import.meta !== 'undefined' ? (import.meta as any).env : (typeof process !== 'undefined' ? process.env : {});
-    const endpoint = context.ollamaEndpoint || env.VITE_OLLAMA_ENDPOINT || 'https://ollama.com/v1/chat/completions';
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        model: 'sirisakkhacha/motorboy',
-        messages: [{ role: 'user', content: prompt }],
-        stream: false
-      })
+    const response = await client.chat.completions.create({
+      model: POOLSIDE_MODEL,
+      messages: [{ role: "user", content: prompt }],
+      stream: false,
     });
-    console.log('Ollama Request:', { endpoint, apiKey });
-
-    if (!response.ok) {
-      console.error('Ollama API error response:', await response.text());
-      return null;
-    }
-
-    const data = await response.json();
     
-    // Robust validation
-    if (data?.choices?.[0]?.message?.content) {
-        return data.choices[0].message.content;
-    }
-    
-    console.error('Unexpected Ollama API response structure:', data);
-    return null;
+    return response.choices[0].message.content;
   } catch (err) {
-    console.error('AI chat failed:', err);
+    console.error('Poolside API error:', err);
     return null;
   }
 }
+
 
 function buildMarketContextBrief(ctx: AiChatContext): string {
   const parts: string[] = [];

@@ -1,11 +1,26 @@
 rules_version = '2';
 
-// Google Cloud Firestore is CLOSED / DISABLED.
-// All read and write access is completely denied.
 service cloud.firestore {
   match /databases/{database}/documents {
+    // 1. Global Safety Net
     match /{document=**} {
       allow read, write: if false;
+    }
+
+    // 2. Sessions (Read-Only)
+    match /sessions/{sessionId} {
+      allow read: if true;
+      allow write: if false;
+    }
+    
+    // 3. User Profiles
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // 4. User History
+    match /users/{userId}/history/{historyId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
     }
   }
 }

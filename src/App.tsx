@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Search, Sparkles, X, Star, History, Radio } from 'lucide-react';
 import { signOut, User } from 'firebase/auth';
-import { auth } from './firebase';
+import { auth, db } from './firebase';
+import { doc, onSnapshot } from 'firebase/firestore';
 import { AtsMatrixDashboard } from './components/AtsMatrixDashboard';
 import { isAtsMatrixTrigger } from './services/atsMatrixService';
 import { GLOBAL_ROOM_ID, sendRoomMessage } from './services/chatRoomService';
@@ -158,6 +159,27 @@ export const App: React.FC = () => {
   const [customPeaks, setCustomPeaks] = useState<Record<string, number>>(loadCustomPeaks);
   const [geminiApiKey, setGeminiApiKey] = useState<string>('');
   const [historyEntries, setHistoryEntries] = useState<TradingHistoryEntry[]>([]);
+  const [globalSession, setGlobalSession] = useState<any>(null);
+
+  useEffect(() => {
+    const docRef = doc(db, 'sessions', 'global');
+    const unsubscribe = onSnapshot(
+      docRef,
+      (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          setGlobalSession(data);
+          console.log('Global Session Data Updated:', data);
+        } else {
+          console.warn('Global session document does not exist.');
+        }
+      },
+      (e) => {
+        console.error('Error in onSnapshot for global session:', e);
+      }
+    );
+    return () => unsubscribe();
+  }, []);
 
   // Computed Drawdown Assets & Portfolio Risk Summary
   const drawdownAssets = useMemo(
@@ -784,6 +806,12 @@ export const App: React.FC = () => {
         isDark ? 'bg-[#0F1117] text-white' : 'bg-[#F8FAFC] text-[#0F172A]'
       } flex flex-col font-sans transition-colors duration-200 overflow-x-hidden w-full max-w-[100vw]`}
     >
+      {/* Session Debug Header */}
+      {globalSession && (
+        <div className="bg-slate-900 text-white text-[10px] p-1 text-center">
+          Session: {globalSession.title}
+        </div>
+      )}
       {/* Toast Notification */}
           {alertToast && (
             <div className="fixed top-4 right-4 left-4 sm:left-auto z-[60] sm:max-w-sm bg-[#7C6CFF] text-white px-4 py-3 rounded-2xl shadow-xl border border-white/20 flex items-center justify-between space-x-3 animate-fade-in">
