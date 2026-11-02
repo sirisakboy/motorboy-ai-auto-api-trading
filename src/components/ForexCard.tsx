@@ -26,7 +26,7 @@ export const ForexCard: React.FC<ForexCardProps> = ({
     forex.flash === 'UP'
       ? 'bg-[#22C55E]/20'
       : forex.flash === 'DOWN'
-      ? 'bg-[#EF4444]/20'
+      ? 'bg-[#f9df7b]/20'
       : 'bg-[#1A1D29]';
 
   // Currency decimal formatting (4 decimals for pairs under 10 like EUR/USD, 2 for JPY/THB)
@@ -110,7 +110,7 @@ export const ForexCard: React.FC<ForexCardProps> = ({
             className={`px-2 py-0.5 rounded-xl text-xs font-bold border flex items-center space-x-1 ${
               isLong
                 ? 'bg-[#22C55E]/15 border-[#22C55E]/40 text-[#4ADE80]'
-                : 'bg-[#EF4444]/15 border-[#EF4444]/40 text-[#F87171]'
+                : 'bg-[#f9df7b]/15 border-[#f9df7b]/40 text-[#f9df7b]'
             }`}
           >
             {isLong ? (
@@ -140,7 +140,7 @@ export const ForexCard: React.FC<ForexCardProps> = ({
         </span>
         <span
           className={`text-base font-extrabold ${
-            isPositive ? 'text-[#22C55E]' : 'text-[#EF4444]'
+            isPositive ? 'text-[#22C55E]' : 'text-[#f9df7b]'
           }`}
         >
           {isPositive ? '+' : ''}{forex.change.toFixed(2)}%
@@ -166,8 +166,8 @@ export const ForexCard: React.FC<ForexCardProps> = ({
             <span className="text-[#34D399] text-[11px] font-medium">แนวรับ (Support)</span>
             <span className="text-white font-mono font-bold text-[11px]">{displaySupport}</span>
           </div>
-          <div className="bg-[#F43F5E]/10 border border-[#F43F5E]/25 rounded-lg px-2.5 py-1.5 flex items-center justify-between">
-            <span className="text-[#FB7185] text-[11px] font-medium">แนวต้าน (Resistance)</span>
+          <div className="bg-[#f9df7b]/10 border border-[#f9df7b]/25 rounded-lg px-2.5 py-1.5 flex items-center justify-between">
+            <span className="text-[#f9df7b] text-[11px] font-medium">แนวต้าน (Resistance)</span>
             <span className="text-white font-mono font-bold text-[11px]">{displayResistance}</span>
           </div>
         </div>
@@ -177,7 +177,7 @@ export const ForexCard: React.FC<ForexCardProps> = ({
       {displaySl && displayTp && (
         <div className="mt-2.5 flex flex-wrap items-center justify-between text-xs gap-2">
           <div className="flex items-center space-x-3">
-            <span className="font-semibold text-[#EF4444]">
+            <span className="font-semibold text-[#f9df7b]">
               SL: {displaySl}
             </span>
             <span className="font-semibold text-[#22C55E]">

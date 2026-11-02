@@ -164,7 +164,7 @@ export const CalendarModal: React.FC<CalendarModalProps> = ({ isOpen, onClose, i
         <div className="p-4 sm:p-5 overflow-y-auto max-h-[60vh]">
           {error && (
             <div className="flex flex-col gap-2 mb-3">
-              <div className="text-red-400 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2 text-sm">
+              <div className="text-[#f9df7b] bg-[#f9df7b]/10 border border-[#f9df7b]/30 rounded-lg px-3 py-2 text-sm">
                 {error}
               </div>
               {error.includes('กรุณาลองใหม่อีกครั้ง') && (
@@ -285,7 +285,7 @@ export const CalendarModal: React.FC<CalendarModalProps> = ({ isOpen, onClose, i
                   className="w-full bg-[#1A1D29] border border-[#252A3A] rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#7C6CFF] resize-none" />
               </div>
               {createMsg && (
-                <div className={`rounded-lg px-3 py-2 text-xs border ${createMsg.ok ? 'text-[#4ADE80] bg-[#22C55E]/10 border-[#22C55E]/30' : 'text-red-400 bg-red-500/10 border-red-500/30'}`}>
+                <div className={`rounded-lg px-3 py-2 text-xs border ${createMsg.ok ? 'text-[#4ADE80] bg-[#22C55E]/10 border-[#22C55E]/30' : 'text-[#f9df7b] bg-[#f9df7b]/10 border-[#f9df7b]/30'}`}>
                   {createMsg.text}
                 </div>
               )}
@@ -338,7 +338,7 @@ export const CalendarModal: React.FC<CalendarModalProps> = ({ isOpen, onClose, i
                 </ul>
               </div>
 
-              <button onClick={handleDisconnect} className="w-full py-2 rounded-xl border border-red-500/40 text-red-400 hover:bg-red-500/10 text-xs font-bold inline-flex items-center justify-center gap-2">
+              <button onClick={handleDisconnect} className="w-full py-2 rounded-xl border border-[#f9df7b]/40 text-[#f9df7b] hover:bg-[#f9df7b]/10 text-xs font-bold inline-flex items-center justify-center gap-2">
                 <LogOut className="w-4 h-4" />
                 <span>ตัดการเชื่อมต่อโทเค็น Google ในแอปนี้</span>
               </button>

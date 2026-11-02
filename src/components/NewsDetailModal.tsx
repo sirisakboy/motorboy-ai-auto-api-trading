@@ -183,7 +183,7 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
     analysis?.sentiment === 'BULLISH' ? (
       <TrendingUp className="w-5 h-5 text-[#22C55E]" />
     ) : analysis?.sentiment === 'BEARISH' ? (
-      <TrendingDown className="w-5 h-5 text-[#EF4444]" />
+      <TrendingDown className="w-5 h-5 text-[#f9df7b]" />
     ) : (
       <Minus className="w-5 h-5 text-[#94A3B8]" />
     );
@@ -192,7 +192,7 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
     analysis?.sentiment === 'BULLISH'
       ? 'bg-[#22C55E]/10 border-[#22C55E]/30 text-[#22C55E]'
       : analysis?.sentiment === 'BEARISH'
-      ? 'bg-[#EF4444]/10 border-[#EF4444]/30 text-[#EF4444]'
+      ? 'bg-[#f9df7b]/10 border-[#f9df7b]/30 text-[#f9df7b]'
       : 'bg-[#94A3B8]/10 border-[#94A3B8]/30 text-[#94A3B8]';
 
   return (
@@ -443,7 +443,7 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
 
               {/* Strategic Risk */}
               <div className="p-4 rounded-xl bg-[#1E222D] border border-[#2A2E39]">
-                <h4 className="text-xs font-semibold text-[#EF4444] uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                <h4 className="text-xs font-semibold text-[#f9df7b] uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
                   <AlertTriangle className="w-3.5 h-3.5" />
                   ความเสี่ยงเชิงกลยุทธ์และการก่อสร้างที่ต้องติดตาม
                 </h4>
@@ -512,7 +512,7 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
                     <span
                       className={`px-2.5 py-1 rounded-lg text-xs font-black ${
                         analysis.marketImpact === 'HIGH'
-                          ? 'bg-[#EF4444]/20 text-[#F87171] border border-[#EF4444]/40'
+                          ? 'bg-[#f9df7b]/20 text-[#f9df7b] border border-[#f9df7b]/40'
                           : analysis.marketImpact === 'MEDIUM'
                           ? 'bg-[#F59E0B]/20 text-[#FBBF24] border border-[#F59E0B]/40'
                           : 'bg-[#10B981]/20 text-[#34D399] border border-[#10B981]/40'
@@ -599,7 +599,7 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
               {/* Risk Factors */}
               {analysis.riskFactors && analysis.riskFactors.length > 0 && (
                 <div className="p-4 rounded-xl bg-[#1E222D] border border-[#2A2E39]">
-                  <h4 className="text-xs font-semibold text-[#EF4444] uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                  <h4 className="text-xs font-semibold text-[#f9df7b] uppercase tracking-wider mb-2 flex items-center gap-1.5">
                     <AlertTriangle className="w-3.5 h-3.5" />
                     ปัจจัยเสี่ยงที่ต้องจับตา (Risk Watchlist)
                   </h4>
@@ -609,7 +609,7 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
                         key={idx}
                         className="text-xs text-[#CBD5E1] flex items-start gap-2"
                       >
-                        <span className="text-[#EF4444] font-bold">•</span>
+                        <span className="text-[#f9df7b] font-bold">•</span>
                         <span>{risk}</span>
                       </li>
                     ))}

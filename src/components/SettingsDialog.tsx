@@ -16,6 +16,7 @@ import {
   ChevronDown,
   ChevronUp,
 } from 'lucide-react';
+import { TradingPsychologySettings } from '../types';
 import { testGeminiApiKeyWithSearch } from '../services/geminiService';
 
 interface SettingsDialogProps {
@@ -29,6 +30,8 @@ interface SettingsDialogProps {
   userEmail?: string | null;
   priceAlerts?: Array<{ symbol: string; targetPrice: number }>;
   onRemoveAlert?: (symbol: string, targetPrice: number) => void;
+  psychologySettings: TradingPsychologySettings;
+  onSavePsychologySettings: (settings: TradingPsychologySettings) => void;
   onDismiss: () => void;
 }
 
@@ -43,6 +46,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
   userEmail,
   priceAlerts = [],
   onRemoveAlert,
+  psychologySettings,
+  onSavePsychologySettings,
   onDismiss,
 }) => {
   // Local state
@@ -322,7 +327,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                   className={`p-2.5 rounded-xl text-xs flex items-center space-x-2 ${
                     keyFeedback.type === 'SUCCESS'
                       ? 'bg-[#22C55E]/15 border border-[#22C55E]/30 text-[#4ADE80]'
-                      : 'bg-red-500/15 border border-red-500/30 text-red-400'
+                      : 'bg-[#f9df7b]/15 border border-[#f9df7b]/30 text-[#f9df7b]'
                   }`}
                 >
                   {keyFeedback.type === 'SUCCESS' ? (
@@ -339,7 +344,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                   className={`p-2.5 rounded-xl text-xs flex items-center space-x-2 ${
                     testResult.success
                       ? 'bg-[#22C55E]/15 border border-[#22C55E]/30 text-[#4ADE80]'
-                      : 'bg-red-500/15 border border-red-500/30 text-red-400'
+                      : 'bg-[#f9df7b]/15 border border-[#f9df7b]/30 text-[#f9df7b]'
                   }`}
                 >
                   {testResult.success ? (
@@ -406,6 +411,35 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
 
         <hr className="border-[#252A3A]" />
 
+        {/* Trading Psychology & Risk Settings */}
+        <div className="space-y-3">
+          <h3 className="text-white text-xs font-bold">
+            🧠 จิตวิทยาการเทรด & การควบคุมอารมณ์
+          </h3>
+          <div className="bg-[#0F1117] border border-[#252A3A] rounded-xl p-3 space-y-2 text-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-[#9CA3AF]">ระดับความเสี่ยงที่รับได้</span>
+              <select
+                className="bg-[#1A1D29] text-white rounded-lg p-1"
+                value={psychologySettings.riskToleranceLevel}
+                onChange={(e) => onSavePsychologySettings({ ...psychologySettings, riskToleranceLevel: e.target.value as any })}
+              >
+                <option value="CONSERVATIVE">CONSERVATIVE</option>
+                <option value="MODERATE">MODERATE</option>
+                <option value="AGGRESSIVE">AGGRESSIVE</option>
+              </select>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-[#9CA3AF]">เตือนให้เช็คอารมณ์</span>
+              <input
+                type="checkbox"
+                checked={psychologySettings.enableEmotionalCheckIn}
+                onChange={(e) => onSavePsychologySettings({ ...psychologySettings, enableEmotionalCheckIn: e.target.checked })}
+              />
+            </div>
+          </div>
+        </div>
+
         {/* Price Alert */}
         <div className="space-y-3">
           <h3 className="text-white text-xs font-bold">
@@ -471,7 +505,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                       <button
                         type="button"
                         onClick={() => onRemoveAlert(a.symbol, a.targetPrice)}
-                        className="text-[#6B7280] hover:text-red-400 p-1"
+                        className="text-[#6B7280] hover:text-[#f9df7b] p-1"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>

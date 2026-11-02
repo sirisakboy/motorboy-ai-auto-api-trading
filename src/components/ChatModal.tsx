@@ -375,7 +375,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
 
         {/* Error notification */}
         {error && (
-          <div className="mx-4 mb-2 text-red-400 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2 text-xs">
+          <div className="mx-4 mb-2 text-[#f9df7b] bg-[#f9df7b]/10 border border-[#f9df7b]/30 rounded-lg px-3 py-2 text-xs">
             {error}
           </div>
         )}
@@ -449,7 +449,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
             type="button"
             onClick={() => handleSend('วิเคราะห์ Drawdown พอร์ตและความเสี่ยง Peak-to-Trough')}
             disabled={isSending || isAiThinking}
-            className="px-2 py-0.5 rounded-md bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 shrink-0 whitespace-nowrap transition-colors cursor-pointer"
+            className="px-2 py-0.5 rounded-md bg-[#f9df7b]/10 hover:bg-[#f9df7b]/20 border border-[#f9df7b]/30 text-[#f9df7b] shrink-0 whitespace-nowrap transition-colors cursor-pointer"
           >
             📉 ตรวจ Drawdown พอร์ต
           </button>

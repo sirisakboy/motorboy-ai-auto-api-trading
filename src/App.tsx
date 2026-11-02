@@ -17,6 +17,7 @@ import {
   ApiStatusState,
   ThaiStock,
   ForeignStock,
+  TradingPsychologySettings,
 } from './types';
 import {
   CRYPTO_INITIAL,
@@ -37,6 +38,7 @@ import {
   generateThaiStockSignals,
   generateForeignStockSignals,
 } from './services/apiClient';
+import { categorizeHeadlinesWithGemini } from './services/headlineCategorizationService';
 import { t } from './i18n';
 import { getLiveUsdThb } from './utils';
 import { Header } from './components/Header';
@@ -81,17 +83,23 @@ import {
 } from './services/firebaseSync';
 
 export const App: React.FC = () => {
-  const [user, setUser] = useState<User | null>({ uid: 'guest', displayName: 'Guest' } as unknown as User);
+  const [user, setUser] = useState<User | null>(() => auth.currentUser || ({ uid: 'guest', displayName: 'Guest' } as unknown as User));
 
   useEffect(() => {
-    // Auth bypass: just set guest user
-    setUser({ uid: 'guest', displayName: 'Guest' } as unknown as User);
+    const unsubscribe = auth.onAuthStateChanged((currentUser) => {
+      if (currentUser) {
+        setUser(currentUser);
+      } else {
+        setUser({ uid: 'guest', displayName: 'Guest' } as unknown as User);
+      }
+    });
+    return () => unsubscribe();
   }, []);
 
   const handleSignOut = async () => {
     try {
       await signOut(auth);
-      setUser(null);
+      setUser({ uid: 'guest', displayName: 'Guest' } as unknown as User);
     } catch (error) {
       console.error('Error signing out', error);
     }
@@ -138,7 +146,23 @@ export const App: React.FC = () => {
   const [isAtsMatrixMode, setIsAtsMatrixMode] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [useThb, setUseThb] = useState<boolean>(false);
-  const [isDark, setIsDark] = useState<boolean>(true);
+  const [isDark, setIsDark] = useState<boolean>(() => {
+    const hours = new Date().getHours();
+    return hours < 6 || hours >= 18;
+  });
+
+  // Automatic day/night theme check according to current time (Day: 06:00-18:00 light, Night: 18:00-06:00 dark)
+  useEffect(() => {
+    const updateThemeByTime = () => {
+      const hours = new Date().getHours();
+      const isNight = hours < 6 || hours >= 18;
+      setIsDark(isNight);
+    };
+    updateThemeByTime();
+    const interval = setInterval(updateThemeByTime, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
   const [notificationsEnabled, setNotificationsEnabled] = useState<boolean>(false);
   const [watchlist, setWatchlist] = useState<Set<string>>(new Set());
   const [priceAlerts, setPriceAlerts] = useState<
@@ -160,6 +184,23 @@ export const App: React.FC = () => {
   const [geminiApiKey, setGeminiApiKey] = useState<string>('');
   const [historyEntries, setHistoryEntries] = useState<TradingHistoryEntry[]>([]);
   const [globalSession, setGlobalSession] = useState<any>(null);
+  const [isMusicPlaying, setIsMusicPlaying] = useState<boolean>(true);
+  /* eslint-disable-next-line */
+  const [psychologySettings, setPsychologySettings] = useState<TradingPsychologySettings>({
+    riskToleranceLevel: 'MODERATE',
+    enableEmotionalCheckIn: true,
+    dailyLimitRiskPct: 2,
+  });
+
+  const handleToggleMusic = useCallback(() => {
+    if (isMusicPlaying) {
+      stopBgMusic();
+      setIsMusicPlaying(false);
+    } else {
+      initBgMusic();
+      setIsMusicPlaying(true);
+    }
+  }, [isMusicPlaying]);
 
   useEffect(() => {
     const docRef = doc(db, 'sessions', 'global');
@@ -282,6 +323,8 @@ export const App: React.FC = () => {
       if (data.useThb !== undefined) setUseThb(data.useThb);
       if (data.notificationsEnabled !== undefined)
         setNotificationsEnabled(data.notificationsEnabled);
+      if (data.psychologySettings !== undefined)
+        setPsychologySettings(data.psychologySettings);
     });
 
     // Subscribe to User Trading and AI Analysis History
@@ -533,6 +576,30 @@ export const App: React.FC = () => {
     return () => clearInterval(interval);
   }, [updateNews]);
 
+  // 6.5 Periodic background polling service to categorize global financial headlines into High/Medium/Low market impact using Gemini API
+  useEffect(() => {
+    if (newsList.length === 0) return;
+    let isMounted = true;
+
+    const runHeadlineCategorization = async () => {
+      try {
+        const categorized = await categorizeHeadlinesWithGemini(newsList, geminiApiKey);
+        if (isMounted && Array.isArray(categorized) && categorized.length > 0) {
+          setNewsList(categorized);
+        }
+      } catch (err) {
+        console.warn('Headline impact background polling error:', err);
+      }
+    };
+
+    runHeadlineCategorization();
+    const interval = setInterval(runHeadlineCategorization, 180000); // Categorize headlines every 3 mins
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [newsList.length, geminiApiKey]);
+
   // 7. Clock tick every 1s for Bangkok ICT Market Hours
   useEffect(() => {
     const interval = setInterval(() => {
@@ -725,6 +792,12 @@ export const App: React.FC = () => {
     );
   };
 
+  const handleSavePsychologySettings = async (settings: TradingPsychologySettings) => {
+    setPsychologySettings(settings);
+    const targetUid = user?.uid || 'local';
+    await saveUserSettings(targetUid, { psychologySettings: settings });
+  };
+
   const handleSaveToHistory = async (
     entry: Omit<TradingHistoryEntry, 'id' | 'userId' | 'timestamp'>
   ) => {
@@ -801,56 +874,53 @@ export const App: React.FC = () => {
   ];
 
   return (
+    <>
+
     <div
       className={`min-h-screen ${
-        isDark ? 'bg-[#0F1117] text-white' : 'bg-[#F8FAFC] text-[#0F172A]'
+        isDark ? 'bg-[#0B0F19] text-slate-100' : 'bg-[#F8FAFC] text-[#0F172A]'
       } flex flex-col font-sans transition-colors duration-200 overflow-x-hidden w-full max-w-[100vw]`}
     >
-      {/* Session Debug Header */}
-      {globalSession && (
-        <div className="bg-slate-900 text-white text-[10px] p-1 text-center">
-          Session: {globalSession.title}
+      {/* Toast Notification */}
+      {alertToast && (
+        <div className="fixed top-4 right-4 left-4 sm:left-auto z-[60] sm:max-w-sm bg-[#818CF8] text-white px-4 py-3 rounded-2xl shadow-xl border border-white/20 flex items-center justify-between space-x-3 animate-fade-in">
+          <span className="text-xs font-semibold">{alertToast}</span>
+          <button
+            type="button"
+            onClick={() => setAlertToast(null)}
+            className="text-white/80 hover:text-white text-xs font-bold px-1"
+          >
+            ✕
+          </button>
         </div>
       )}
-      {/* Toast Notification */}
-          {alertToast && (
-            <div className="fixed top-4 right-4 left-4 sm:left-auto z-[60] sm:max-w-sm bg-[#7C6CFF] text-white px-4 py-3 rounded-2xl shadow-xl border border-white/20 flex items-center justify-between space-x-3 animate-fade-in">
-              <span className="text-xs font-semibold">{alertToast}</span>
-              <button
-                type="button"
-                onClick={() => setAlertToast(null)}
-                className="text-white/80 hover:text-white text-xs font-bold px-1"
-              >
-                ✕
-              </button>
-            </div>
-          )}
 
-          {/* Header */}
-          <Header
-            cryptoList={cryptoList}
-            useThb={useThb}
-            usdThbRate={usdThbRate}
-            usdThbLive={usdThbLive}
-            isDark={isDark}
-            notifEnabled={notificationsEnabled}
-            alertCount={priceAlerts.length}
-            user={user}
-            onToggleCurrency={() => setUseThb(!useThb)}
-            onToggleTheme={() => setIsDark(!isDark)}
-            onToggleNotifications={() =>
-              setNotificationsEnabled(!notificationsEnabled)
-            }
-            onOpenSettings={() => setShowSettings(true)}
-            onOpenGmail={() => setShowGmail(true)}
-            onOpenCalendar={() => setShowCalendar(true)}
-            onOpenChat={() => setShowChat(true)}
-            onOpenRiskCalc={() => setShowRiskCalc(true)}
-            onOpenDrawdown={() => setShowDrawdownModal(true)}
-            onOpenAtsMatrix={() => setShowAtsMatrixModal(true)}
-            onSignOut={handleSignOut}
-            drawdownBreachCount={breachedDrawdownAssets.length}
-          />
+      {/* Header */}
+      <Header
+        cryptoList={cryptoList}
+        useThb={useThb}
+        usdThbRate={usdThbRate}
+        usdThbLive={usdThbLive}
+        isDark={isDark}
+        notifEnabled={notificationsEnabled}
+        alertCount={priceAlerts.length}
+        user={user}
+        isMusicPlaying={isMusicPlaying}
+        onToggleMusic={handleToggleMusic}
+        onToggleCurrency={() => setUseThb(!useThb)}
+        onToggleNotifications={() =>
+          setNotificationsEnabled(!notificationsEnabled)
+        }
+        onOpenSettings={() => setShowSettings(true)}
+        onOpenGmail={() => setShowGmail(true)}
+        onOpenCalendar={() => setShowCalendar(true)}
+        onOpenChat={() => setShowChat(true)}
+        onOpenRiskCalc={() => setShowRiskCalc(true)}
+        onOpenDrawdown={() => setShowDrawdownModal(true)}
+        onOpenAtsMatrix={() => setShowAtsMatrixModal(true)}
+        onSignOut={handleSignOut}
+        drawdownBreachCount={breachedDrawdownAssets.length}
+      />
 
           {/* Drawdown Visual Alert Banner */}
           {!drawdownDismissed && criticalOrExtremeAssets.length > 0 && (
@@ -876,10 +946,10 @@ export const App: React.FC = () => {
               <div className="lg:col-span-8 space-y-6">
                 {/* Asset Tabs & Filter — Floating Action Sidebar Style Bar */}
                 <div className="space-y-4">
-                  <div className="rounded-[20px] bg-[#1A1D29] border border-[#252A3A] p-3 shadow-lg">
+                  <div className="rounded-[20px] bg-[#131826] border border-[#1E2638] p-3 shadow-lg">
                     <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
                       {/* Tabs / Filters */}
-                      <div className="flex items-center space-x-1 bg-[#0F1117] p-1 rounded-xl border border-[#252A3A] overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] max-w-full">
+                      <div className="flex items-center space-x-1 bg-[#0B0F19] p-1 rounded-xl border border-[#1E2638] overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] max-w-full">
                         {tabs.map((tab, idx) => (
                           <button
                             key={tab.label}
@@ -894,8 +964,8 @@ export const App: React.FC = () => {
                             }}
                             className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors flex items-center space-x-1.5 shrink-0 ${
                               selectedTab === idx
-                                ? 'bg-[#7C6CFF] text-white font-bold shadow-xs'
-                                : 'text-[#9CA3AF] hover:text-white'
+                                ? 'bg-[#818CF8] text-white font-bold shadow-xs'
+                                : 'text-[#94A3B8] hover:text-white'
                             }`}
                           >
                             <span>{tab.label}</span>
@@ -904,7 +974,7 @@ export const App: React.FC = () => {
                                 className={`text-[10px] px-1.5 py-0.2 rounded-full ${
                                   selectedTab === idx
                                     ? 'bg-black/30 text-white'
-                                    : 'bg-[#252A3A] text-[#A5B4FC]'
+                                    : 'bg-[#1E2638] text-[#A5B4FC]'
                                 }`}
                               >
                                 {tab.count}
@@ -917,23 +987,23 @@ export const App: React.FC = () => {
                       {/* Right Action Group: Search Bar + News & AI Hub Button */}
                       <div className="flex items-center gap-2">
                         <div className="relative flex-1 sm:flex-initial">
-                          <Search className="w-4 h-4 text-[#6B7280] absolute left-3 top-1/2 -translate-y-1/2" />
+                          <Search className="w-4 h-4 text-[#94A3B8] absolute left-3 top-1/2 -translate-y-1/2" />
                           <input
                             type="text"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             placeholder="ค้นหาสินทรัพย์..."
-                            className="w-full sm:w-44 bg-[#0F1117] border border-[#252A3A] focus:border-[#7C6CFF] rounded-xl pl-9 pr-3 py-1.5 text-xs text-white outline-none placeholder-[#6B7280]"
+                            className="w-full sm:w-44 bg-[#0B0F19] border border-[#1E2638] focus:border-[#818CF8] rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-100 outline-none placeholder-[#94A3B8]"
                           />
                         </div>
 
                         <button
                           type="button"
                           onClick={() => setShowWatchlistModal(true)}
-                          className="px-3 py-1.5 bg-[#7C6CFF]/20 hover:bg-[#7C6CFF]/30 border border-[#7C6CFF]/40 text-[#A5B4FC] rounded-xl text-xs font-bold inline-flex items-center gap-1.5 transition-all shrink-0"
+                          className="px-3 py-1.5 bg-[#818CF8]/15 hover:bg-[#818CF8]/25 border border-[#818CF8]/30 text-[#A5B4FC] rounded-xl text-xs font-bold inline-flex items-center gap-1.5 transition-all shrink-0"
                           title="เปิดหน้าต่าง Watchlist (รายการโปรด)"
                         >
-                          <Star className="w-3.5 h-3.5 text-[#7C6CFF] fill-[#7C6CFF]" />
+                          <Star className="w-3.5 h-3.5 text-[#818CF8] fill-[#818CF8]" />
                           <span className="hidden sm:inline">Watchlist</span>
                           {[
                             ...signals.map((s) => s.symbol),
@@ -941,7 +1011,7 @@ export const App: React.FC = () => {
                             ...thaiStocks.map((s) => s.symbol),
                             ...foreignStocks.map((s) => s.symbol),
                           ].filter((sym) => watchlist.has(sym)).length > 0 && (
-                            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[#7C6CFF] text-white">
+                            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[#818CF8] text-white">
                               {[
                                 ...signals.map((s) => s.symbol),
                                 ...forexSignals.map((s) => s.symbol),
@@ -955,7 +1025,7 @@ export const App: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => setShowHistoryModal(true)}
-                          className="px-3 py-1.5 bg-[#10B981]/20 hover:bg-[#10B981]/30 border border-[#10B981]/40 text-[#34D399] rounded-xl text-xs font-bold inline-flex items-center gap-1.5 transition-all shrink-0"
+                          className="px-3 py-1.5 bg-[#10B981]/15 hover:bg-[#10B981]/25 border border-[#10B981]/30 text-[#34D399] rounded-xl text-xs font-bold inline-flex items-center gap-1.5 transition-all shrink-0"
                           title="เปิดหน้าต่างประวัติการวิเคราะห์"
                         >
                           <History className="w-3.5 h-3.5 text-[#10B981]" />
@@ -970,7 +1040,7 @@ export const App: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => setShowNewsModal(true)}
-                          className="px-3 py-1.5 bg-[#0284C7]/20 hover:bg-[#0284C7]/30 border border-[#0284C7]/40 text-[#38BDF8] rounded-xl text-xs font-bold inline-flex items-center gap-1.5 transition-all shrink-0"
+                          className="px-3 py-1.5 bg-[#0284C7]/15 hover:bg-[#0284C7]/25 border border-[#0284C7]/30 text-[#38BDF8] rounded-xl text-xs font-bold inline-flex items-center gap-1.5 transition-all shrink-0"
                           title="เปิดหน้าต่างข่าวสาร & วิเคราะห์ AI"
                         >
                           <Sparkles className="w-3.5 h-3.5" />
@@ -981,12 +1051,12 @@ export const App: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => setShowAtsMatrixModal(true)}
-                          className="px-3 py-1.5 bg-[#00FF66]/20 hover:bg-[#00FF66]/30 border border-[#00FF66]/50 text-[#00FF66] rounded-xl text-xs font-mono font-bold inline-flex items-center gap-1.5 transition-all shrink-0 shadow-[0_0_12px_rgba(0,255,102,0.2)] animate-pulse"
+                          className="px-3 py-1.5 bg-[#10B981]/15 hover:bg-[#10B981]/25 border border-[#10B981]/40 text-[#34D399] rounded-xl text-xs font-mono font-bold inline-flex items-center gap-1.5 transition-all shrink-0 cursor-pointer"
                           title="เปิดโหมด ATS MATRIX (Polymarket & Crypto Arbitrage)"
                         >
-                          <Radio className="w-3.5 h-3.5" />
-                          <span className="hidden sm:inline">⚡ ATS Matrix</span>
-                          <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[#00FF66] text-black font-extrabold">
+                          <Radio className="w-3.5 h-3.5 text-[#34D399]" />
+                          <span className="hidden sm:inline">ATS Matrix</span>
+                          <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[#10B981] text-black font-extrabold">
                             LIVE
                           </span>
                         </button>
@@ -1272,6 +1342,23 @@ export const App: React.FC = () => {
             </div>
           </main>
 
+          {/* Eye-Friendly Footer */}
+          <footer className="py-6 border-t border-[#1E2638] text-xs text-[#94A3B8] transition-colors">
+            <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-slate-300">Trading Engine Pro</span>
+                <span>·</span>
+                <span>Real-Time Multi-Asset & AI Deep Analytics</span>
+              </div>
+              {globalSession?.title && (
+                <div className="text-[11px] px-2.5 py-1 rounded-lg bg-[#131826] border border-[#1E2638] text-slate-400">
+                  Global Session: <span className="font-medium text-slate-200">{globalSession.title}</span>
+                </div>
+              )}
+            </div>
+          </footer>
+        </div>
+
           {/* Signal Detail Modal */}
           {selectedSignal && (
             <SignalDetailModal
@@ -1338,6 +1425,9 @@ export const App: React.FC = () => {
             />
           )}
 
+
+
+
           {showSettings && (
             <SettingsDialog
               useThb={useThb}
@@ -1350,9 +1440,14 @@ export const App: React.FC = () => {
               userEmail={user?.email ?? null}
               priceAlerts={priceAlerts}
               onRemoveAlert={handleRemoveAlert}
+              psychologySettings={psychologySettings}
+              onSavePsychologySettings={handleSavePsychologySettings}
               onDismiss={() => setShowSettings(false)}
             />
           )}
+
+
+
 
           {/* Risk Calculator Modal */}
           <RiskCalculatorModal
@@ -1620,30 +1715,107 @@ export const App: React.FC = () => {
               </div>
             </div>
           )}
-    </div>
+    </>
   );
 };
 
-// Module-level player refs so the fade-in logic survives re-renders.
-let bgPlayer: any = null;
+// Max volume locked at 50% (20% lower than previous 70% level)
+const MAX_LOCKED_VOLUME = 50;
+
+let bgPlayers: any[] = [];
 let bgRampTimer: any = null;
 let bgGestureCleanup: (() => void) | null = null;
+let webAudioCtx: AudioContext | null = null;
+let natureSynthNodes: { gainNode?: GainNode; oscNodes?: OscillatorNode[] } = {};
+
+function startWebAudioNatureSynth() {
+  if (webAudioCtx) return;
+  try {
+    const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioCtx) return;
+    webAudioCtx = new AudioCtx();
+    const masterGain = webAudioCtx.createGain();
+    // 50% max locked volume mapped to soft calming gain
+    masterGain.gain.setValueAtTime(0.08, webAudioCtx.currentTime);
+
+    // Warm 432Hz sine oscillator chord (A4 = 432Hz, E5 = 648Hz, C#5 = 540Hz)
+    const freqs = [432, 540, 648];
+    const oscNodes: OscillatorNode[] = [];
+    freqs.forEach((freq) => {
+      const osc = webAudioCtx!.createOscillator();
+      const oscGain = webAudioCtx!.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, webAudioCtx!.currentTime);
+      oscGain.gain.setValueAtTime(0.02, webAudioCtx!.currentTime);
+      osc.connect(oscGain);
+      oscGain.connect(masterGain);
+      osc.start();
+      oscNodes.push(osc);
+    });
+
+    // Gentle nature pink-noise filter for stream water / rain ambient feel
+    const bufferSize = webAudioCtx.sampleRate * 2;
+    const noiseBuffer = webAudioCtx.createBuffer(1, bufferSize, webAudioCtx.sampleRate);
+    const output = noiseBuffer.getChannelData(0);
+    let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+    for (let i = 0; i < bufferSize; i++) {
+      const white = Math.random() * 2 - 1;
+      b0 = 0.99886 * b0 + white * 0.0555179;
+      b1 = 0.99332 * b1 + white * 0.0750759;
+      b2 = 0.96900 * b2 + white * 0.1538520;
+      b3 = 0.86650 * b3 + white * 0.3104856;
+      b4 = 0.55000 * b4 + white * 0.5329522;
+      b5 = -0.7616 * b5 - white * 0.0168980;
+      output[i] = b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362;
+      output[i] *= 0.03;
+      b6 = white * 0.115926;
+    }
+
+    const whiteNoise = webAudioCtx.createBufferSource();
+    whiteNoise.buffer = noiseBuffer;
+    whiteNoise.loop = true;
+
+    const filter = webAudioCtx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(600, webAudioCtx.currentTime);
+
+    whiteNoise.connect(filter);
+    filter.connect(masterGain);
+    masterGain.connect(webAudioCtx.destination);
+    whiteNoise.start();
+
+    natureSynthNodes = { gainNode: masterGain, oscNodes };
+  } catch (err) {
+    console.warn('Web Audio Nature Synth init warning:', err);
+  }
+}
+
+function stopWebAudioNatureSynth() {
+  if (webAudioCtx) {
+    try {
+      natureSynthNodes.oscNodes?.forEach((n) => n.stop());
+      webAudioCtx.close();
+    } catch {}
+    webAudioCtx = null;
+    natureSynthNodes = {};
+  }
+}
 
 /**
- * Start / restart the calming background music with a soft fade-in.
- * Volume is ramped up to 70%; video loops forever.
- * Includes user-gesture fallback for browsers blocking unmuted autoplay.
- * The player container is mounted directly to document.body outside React's
- * tree so YouTube's DOM modifications never cause React reconciliation errors.
+ * Start / restart the calming nature healing background audio with soft ramp up.
+ * Volume locked at maximum 50% (reduced 20% from previous 70%).
+ * Loops continuously without stopping or stuttering.
  */
 function initBgMusic(): void {
   const launch = () => {
-    if (bgPlayer || bgRampTimer) return;
+    // Start nature sound synth as ambient audio layer
+    startWebAudioNatureSynth();
+
+    if (bgPlayers.length > 0) return;
     try {
       const YT = (window as any).YT;
       if (!YT || !YT.Player) return;
 
-      // Ensure the container is mounted outside React's DOM tree (#root)
       let host = document.getElementById('bg-music-host');
       if (!host) {
         host = document.createElement('div');
@@ -1659,78 +1831,65 @@ function initBgMusic(): void {
         document.body.appendChild(host);
       }
 
-      let playerTarget = document.getElementById('bg-music-target');
-      if (!playerTarget) {
-        playerTarget = document.createElement('div');
-        playerTarget.id = 'bg-music-target';
-        host.appendChild(playerTarget);
-      }
+      // Nature Healing Ambient Stream Video IDs
+      const musicIds = ['lE6RYpe9IT0', 'XA_EYOPNJqI', 'hK-OPtECSkw', 'xrvEs5q1vKQ'];
 
-      const rampVolume = (player: any) => {
-        if (bgRampTimer) return;
-        try {
-          player.unMute();
-        } catch {}
-        let vol = 0;
-        bgRampTimer = setInterval(() => {
-          vol += 3;
-          if (vol >= 70) {
-            try { player.setVolume(70); } catch {}
-            clearInterval(bgRampTimer);
-            bgRampTimer = null;
-          } else {
-            try { player.setVolume(vol); } catch {}
-          }
-        }, 80);
-      };
+      musicIds.forEach((videoId, index) => {
+        const targetId = `bg-music-target-${index}`;
+        let playerTarget = document.getElementById(targetId);
+        if (!playerTarget) {
+          playerTarget = document.createElement('div');
+          playerTarget.id = targetId;
+          host!.appendChild(playerTarget);
+        }
 
-      bgPlayer = new YT.Player('bg-music-target', {
-        videoId: 'TM9WY22YAaw',
-        playerVars: {
-          autoplay: 1,
-          loop: 1,
-          playlist: 'TM9WY22YAaw',
-          controls: 0,
-        },
-        events: {
-          onReady: (event: any) => {
-            try {
-              event.target.mute();
-              event.target.setVolume(0);
-              event.target.playVideo();
-            } catch {}
-
-            // Attempt initial unmuted ramp
-            rampVolume(event.target);
-
-            // In case the browser autoplay policy blocks unmuted audio before user gesture:
-            const onGesture = () => {
+        const player = new YT.Player(targetId, {
+          videoId: videoId,
+          playerVars: {
+            autoplay: 1,
+            loop: 1,
+            playlist: videoId,
+            controls: 0,
+          },
+          events: {
+            onReady: (event: any) => {
               try {
+                event.target.mute();
+                event.target.setVolume(MAX_LOCKED_VOLUME);
                 event.target.playVideo();
-                rampVolume(event.target);
               } catch {}
-              cleanupGesture();
-            };
+              
+              const onGesture = () => {
+                if (webAudioCtx && webAudioCtx.state === 'suspended') {
+                  webAudioCtx.resume();
+                }
+                cleanupGesture();
+              };
 
-            const cleanupGesture = () => {
-              window.removeEventListener('click', onGesture);
-              window.removeEventListener('keydown', onGesture);
-              window.removeEventListener('touchstart', onGesture);
-              bgGestureCleanup = null;
-            };
+              const cleanupGesture = () => {
+                window.removeEventListener('click', onGesture);
+                window.removeEventListener('keydown', onGesture);
+                window.removeEventListener('touchstart', onGesture);
+                bgGestureCleanup = null;
+              };
 
-            bgGestureCleanup = cleanupGesture;
-            window.addEventListener('click', onGesture, { once: true });
-            window.addEventListener('keydown', onGesture, { once: true });
-            window.addEventListener('touchstart', onGesture, { once: true });
+              bgGestureCleanup = cleanupGesture;
+              window.addEventListener('click', onGesture, { once: true });
+              window.addEventListener('keydown', onGesture, { once: true });
+              window.addEventListener('touchstart', onGesture, { once: true });
+            },
+            onStateChange: (event: any) => {
+              // Loop video instantly if ended or paused
+              if (event.data === 0 || event.data === 2) {
+                try {
+                  event.target.playVideo();
+                  event.target.setVolume(MAX_LOCKED_VOLUME);
+                } catch {}
+              }
+            },
           },
-          onStateChange: (event: any) => {
-            // Loop video if ended
-            if (event.data === 0) {
-              try { event.target.playVideo(); } catch {}
-            }
-          },
-        },
+        });
+        bgPlayers.push(player);
       });
     } catch {
       // Silently ignore if API cannot initialize
@@ -1740,14 +1899,10 @@ function initBgMusic(): void {
   if ((window as any).YT && (window as any).YT.Player) {
     launch();
   } else {
-    // If not loaded yet, inject script if needed and hook onYouTubeIframeAPIReady
     if (!document.querySelector('script[src*="youtube.com/iframe_api"]')) {
       const tag = document.createElement('script');
       tag.src = 'https://www.youtube.com/iframe_api';
       tag.async = true;
-      tag.onerror = () => {
-        // Silently ignore if YouTube API cannot be reached in sandbox
-      };
       document.head.appendChild(tag);
     }
     const prevReady = (window as any).onYouTubeIframeAPIReady;
@@ -1760,8 +1915,8 @@ function initBgMusic(): void {
   }
 }
 
-/** Clean up the player on unmount. */
 function stopBgMusic(): void {
+  stopWebAudioNatureSynth();
   if (bgGestureCleanup) {
     bgGestureCleanup();
     bgGestureCleanup = null;
@@ -1770,11 +1925,11 @@ function stopBgMusic(): void {
     clearInterval(bgRampTimer);
     bgRampTimer = null;
   }
-  if (bgPlayer) {
-    try { bgPlayer.stopVideo(); } catch {}
-    try { bgPlayer.destroy(); } catch {}
-    bgPlayer = null;
-  }
+  bgPlayers.forEach(player => {
+    try { player.stopVideo(); } catch {}
+    try { player.destroy(); } catch {}
+  });
+  bgPlayers = [];
   const host = document.getElementById('bg-music-host');
   if (host && host.parentNode) {
     try { host.parentNode.removeChild(host); } catch {}

@@ -240,6 +240,12 @@ export interface HolisticMarketAdvice {
   timestamp: string;
 }
 
+export interface TradingPsychologySettings {
+  riskToleranceLevel: 'CONSERVATIVE' | 'MODERATE' | 'AGGRESSIVE';
+  enableEmotionalCheckIn: boolean;
+  dailyLimitRiskPct: number;
+}
+
 export interface UserSettingsProfile {
   userId: string;
   email?: string | null;
@@ -248,6 +254,7 @@ export interface UserSettingsProfile {
   priceAlerts: Array<{ symbol: string; targetPrice: number }>;
   useThb: boolean;
   notificationsEnabled: boolean;
+  psychologySettings?: TradingPsychologySettings;
   updatedAt: string;
 }
 
@@ -273,6 +280,7 @@ export interface MarketSentimentScore {
   socialMomentum: 'HIGH' | 'MODERATE' | 'LOW';
   whaleActivity: 'ACCUMULATION' | 'DISTRIBUTION' | 'NEUTRAL';
   source: 'GEMINI_AI' | 'TECHNICAL_FALLBACK';
+  safetyMargin: number;
   timestamp: string;
 }
 

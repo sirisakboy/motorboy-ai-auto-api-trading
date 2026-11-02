@@ -239,7 +239,7 @@ export const RiskCalculatorModal: React.FC<Props> = ({
                     direction === d
                       ? d === 'LONG'
                         ? 'bg-[#22C55E]/20 border-[#22C55E]/60 text-[#4ADE80]'
-                        : 'bg-[#EF4444]/20 border-[#EF4444]/60 text-[#F87171]'
+                        : 'bg-[#f9df7b]/20 border-[#f9df7b]/60 text-[#f9df7b]'
                       : 'bg-[#0F1117] border-[#252A3A] text-[#9CA3AF] hover:text-white'
                   }`}
                 >
@@ -332,7 +332,7 @@ export const RiskCalculatorModal: React.FC<Props> = ({
                 <div className="grid grid-cols-3 gap-2 pt-1 text-center">
                   <div className="rounded-xl bg-[#0F1117] border border-[#252A3A] py-2">
                     <p className="text-[10px] text-[#9CA3AF]">{t('risk_calc.results.risk')}</p>
-                    <p className="text-[#F87171] text-xs font-bold">{fmtMoney(calc.riskAmount)}</p>
+                    <p className="text-[#f9df7b] text-xs font-bold">{fmtMoney(calc.riskAmount)}</p>
                   </div>
                   <div className="rounded-xl bg-[#0F1117] border border-[#252A3A] py-2">
                     <p className="text-[10px] text-[#9CA3AF]">{t('risk_calc.results.reward')}</p>
@@ -386,12 +386,12 @@ export const RiskCalculatorModal: React.FC<Props> = ({
               <p className="text-[11px] text-[#9CA3AF] leading-relaxed">
                 {t('risk_calc.ai.desc')}</p>
             )}
-            {aiError && <p className="text-red-400 text-xs">{t('risk_calc.ai.error')}</p>}
+            {aiError && <p className="text-[#f9df7b] text-xs">{t('risk_calc.ai.error')}</p>}
             {aiResult && (
               <div className="space-y-1.5 text-xs">
                 <div className="flex items-center gap-2">
                   <span className={`font-bold px-2 py-0.5 rounded-lg ${
-                    aiResult.action === 'LONG' ? 'bg-[#22C55E]/20 text-[#4ADE80]' : aiResult.action === 'SHORT' ? 'bg-[#EF4444]/20 text-[#F87171]' : 'bg-[#252A3A] text-[#9CA3AF]'
+                    aiResult.action === 'LONG' ? 'bg-[#22C55E]/20 text-[#4ADE80]' : aiResult.action === 'SHORT' ? 'bg-[#f9df7b]/20 text-[#f9df7b]' : 'bg-[#252A3A] text-[#9CA3AF]'
                   }`}>
                     {aiResult.action}
                   </span>
@@ -422,7 +422,7 @@ export const RiskCalculatorModal: React.FC<Props> = ({
           </div>
 
           {/* Save */}
-          {saveError && <p className="text-red-400 text-xs text-center">{t('risk_calc.save.error')}</p>}
+          {saveError && <p className="text-[#f9df7b] text-xs text-center">{t('risk_calc.save.error')}</p>}
           {savedSuccess ? (
             <p className="text-[#4ADE80] text-xs text-center flex items-center justify-center gap-1.5">
               <CheckCircle2 className="w-4 h-4" /> {t('risk_calc.save.success')}</p>

@@ -179,8 +179,8 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
     switch (status) {
       case 'EXTREME':
         return (
-          <span className="px-2 py-0.5 rounded-md text-[10px] font-bold font-mono bg-red-500/20 text-red-400 border border-red-500/50 flex items-center gap-1 animate-pulse">
-            <ShieldAlert className="w-3 h-3 text-red-400" />
+          <span className="px-2 py-0.5 rounded-md text-[10px] font-bold font-mono bg-[#f9df7b]/20 text-[#f9df7b] border border-[#f9df7b]/50 flex items-center gap-1 animate-pulse">
+            <ShieldAlert className="w-3 h-3 text-[#f9df7b]" />
             EXTREME ({thresholds.extreme}%)
           </span>
         );
@@ -218,13 +218,13 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
         {/* Header */}
         <div className="px-4 sm:px-6 py-3.5 border-b border-[#252A3A]/70 flex items-center justify-between bg-gradient-to-r from-[#141824] via-[#0F1117] to-[#141824]">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-red-500/15 border border-red-500/40 flex items-center justify-center text-red-400 shadow-[0_0_15px_rgba(239,68,68,0.2)]">
+            <div className="w-9 h-9 rounded-xl bg-[#f9df7b]/15 border border-[#f9df7b]/40 flex items-center justify-center text-[#f9df7b] shadow-[0_0_15px_rgba(239,68,68,0.2)]">
               <TrendingDown className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="font-bold text-base sm:text-lg tracking-tight">Drawdown Monitor</h2>
-                <span className="text-[10px] font-bold font-mono px-1.5 py-0.5 rounded bg-red-500/20 text-red-300 border border-red-500/30">
+                <span className="text-[10px] font-bold font-mono px-1.5 py-0.5 rounded bg-[#f9df7b]/20 text-[#f9df7b] border border-[#f9df7b]/30">
                   PEAK-TO-TROUGH
                 </span>
                 {stressTestDropPct !== 0 && (
@@ -245,7 +245,7 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
               onClick={() => setShowSettings((v) => !v)}
               className={`p-2 rounded-xl border text-xs font-mono font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
                 showSettings
-                  ? 'bg-red-500/20 border-red-500/60 text-red-300'
+                  ? 'bg-[#f9df7b]/20 border-[#f9df7b]/60 text-[#f9df7b]'
                   : 'bg-[#1A1D29] border-[#252A3A] text-slate-400 hover:text-white'
               }`}
               title="ตั้งค่าเกณฑ์แจ้งเตือน"
@@ -270,11 +270,11 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
           
           {/* Threshold Settings Panel (Collapsible) */}
           {showSettings && (
-            <div className="p-4 rounded-xl border border-red-500/30 bg-red-950/20 backdrop-blur-xs space-y-3 animate-in fade-in duration-200">
+            <div className="p-4 rounded-xl border border-[#f9df7b]/30 bg-[#f9df7b]/20 backdrop-blur-xs space-y-3 animate-in fade-in duration-200">
               <div className="flex items-center justify-between pb-2 border-b border-[#252A3A]">
                 <div className="flex items-center gap-2">
-                  <Sliders className="w-4 h-4 text-red-400" />
-                  <span className="font-bold text-xs sm:text-sm text-red-200">
+                  <Sliders className="w-4 h-4 text-[#f9df7b]" />
+                  <span className="font-bold text-xs sm:text-sm text-[#f9df7b]">
                     กำหนดเกณฑ์การแจ้งเตือน Drawdown (Alert Thresholds)
                   </span>
                 </div>
@@ -290,7 +290,7 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
                   <button
                     type="button"
                     onClick={handleSaveThresholdSettings}
-                    className="px-3 py-1 rounded-lg bg-red-500 hover:bg-red-600 text-black font-bold text-xs font-mono transition-colors cursor-pointer"
+                    className="px-3 py-1 rounded-lg bg-[#f9df7b] hover:bg-[#f9df7b] text-black font-bold text-xs font-mono transition-colors cursor-pointer"
                   >
                     บันทึกเกณฑ์
                   </button>
@@ -339,12 +339,12 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
                 </div>
 
                 {/* Extreme Slider */}
-                <div className="p-3 rounded-lg bg-[#0F1117] border border-red-500/40 space-y-1.5">
+                <div className="p-3 rounded-lg bg-[#0F1117] border border-[#f9df7b]/40 space-y-1.5">
                   <div className="flex justify-between items-center text-xs">
-                    <span className="text-red-400 font-bold flex items-center gap-1">
+                    <span className="text-[#f9df7b] font-bold flex items-center gap-1">
                       <ShieldAlert className="w-3.5 h-3.5" /> Extreme Risk
                     </span>
-                    <span className="font-mono font-bold text-red-400">{localExtreme}%</span>
+                    <span className="font-mono font-bold text-[#f9df7b]">{localExtreme}%</span>
                   </div>
                   <input
                     type="range"
@@ -353,7 +353,7 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
                     step={1}
                     value={localExtreme}
                     onChange={(e) => setLocalExtreme(Number(e.target.value))}
-                    className="w-full accent-red-500 cursor-pointer"
+                    className="w-full accent-[#f9df7b] cursor-pointer"
                   />
                   <p className="text-[10px] text-slate-400">ระดับฉุกเฉิน / ล้างพอร์ต / Cut Loss</p>
                 </div>
@@ -365,7 +365,7 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
                     type="checkbox"
                     checked={soundEnabled}
                     onChange={(e) => setSoundEnabled(e.target.checked)}
-                    className="rounded accent-red-500 cursor-pointer"
+                    className="rounded accent-[#f9df7b] cursor-pointer"
                   />
                   <span>เปิดเสียงแจ้งเตือนอัตโนมัติเมื่อเกิด Drawdown หลุดเกณฑ์ (Chime Alert)</span>
                 </label>
@@ -385,7 +385,7 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
                 <span
                   className={`text-xl sm:text-2xl font-black font-mono tracking-tight ${
                     summary.avgDrawdownPct <= -20
-                      ? 'text-red-400'
+                      ? 'text-[#f9df7b]'
                       : summary.avgDrawdownPct <= -10
                       ? 'text-amber-400'
                       : 'text-emerald-400'
@@ -401,16 +401,16 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
             </div>
 
             {/* 2. Worst Peak-to-Trough */}
-            <div className="p-3.5 rounded-xl border border-red-500/30 bg-red-950/20 space-y-1 shadow-[0_0_15px_rgba(239,68,68,0.06)]">
-              <span className="text-[11px] font-mono uppercase text-red-300 flex items-center gap-1">
-                <TrendingDown className="w-3.5 h-3.5 text-red-400" />
+            <div className="p-3.5 rounded-xl border border-[#f9df7b]/30 bg-[#f9df7b]/20 space-y-1 shadow-[0_0_15px_rgba(239,68,68,0.06)]">
+              <span className="text-[11px] font-mono uppercase text-[#f9df7b] flex items-center gap-1">
+                <TrendingDown className="w-3.5 h-3.5 text-[#f9df7b]" />
                 ย่อตัวลึกสุด (Max DD)
               </span>
               <div className="flex items-baseline gap-1.5">
-                <span className="text-xl sm:text-2xl font-black font-mono text-red-400 tracking-tight">
+                <span className="text-xl sm:text-2xl font-black font-mono text-[#f9df7b] tracking-tight">
                   {summary.worstDrawdownPct}%
                 </span>
-                <span className="text-xs font-bold text-red-300 font-mono">
+                <span className="text-xs font-bold text-[#f9df7b] font-mono">
                   {summary.worstAssetSymbol}
                 </span>
               </div>
@@ -480,7 +480,7 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
                   onClick={() => setSelectedCategory(tab.id)}
                   className={`px-3 py-1.5 rounded-lg transition-colors shrink-0 cursor-pointer ${
                     selectedCategory === tab.id
-                      ? 'bg-red-500/20 border border-red-500/50 text-red-300 font-bold'
+                      ? 'bg-[#f9df7b]/20 border border-[#f9df7b]/50 text-[#f9df7b] font-bold'
                       : 'bg-[#141824] border border-[#252A3A] text-slate-400 hover:text-white'
                   }`}
                 >
@@ -537,7 +537,7 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="ค้นหาสินทรัพย์..."
-                  className="w-full bg-[#141824] border border-[#252A3A] rounded-xl pl-8 pr-3 py-1.5 text-xs text-white placeholder-slate-500 outline-none focus:border-red-500"
+                  className="w-full bg-[#141824] border border-[#252A3A] rounded-xl pl-8 pr-3 py-1.5 text-xs text-white placeholder-slate-500 outline-none focus:border-[#f9df7b]"
                 />
               </div>
             </div>
@@ -559,7 +559,7 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
                     key={asset.id}
                     className={`p-3.5 sm:p-4 rounded-xl border transition-all ${
                       asset.status === 'EXTREME'
-                        ? 'bg-red-950/20 border-red-500/60 shadow-[0_0_15px_rgba(239,68,68,0.12)]'
+                        ? 'bg-[#f9df7b]/20 border-[#f9df7b]/60 shadow-[0_0_15px_rgba(239,68,68,0.12)]'
                         : asset.status === 'CRITICAL'
                         ? 'bg-rose-950/15 border-rose-500/40 shadow-[0_0_10px_rgba(244,63,94,0.08)]'
                         : asset.status === 'WARNING'
@@ -573,7 +573,7 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
                         <div
                           className={`w-9 h-9 rounded-xl flex items-center justify-center font-mono font-bold text-xs shrink-0 ${
                             isBreached
-                              ? 'bg-red-500/20 text-red-400 border border-red-500/40'
+                              ? 'bg-[#f9df7b]/20 text-[#f9df7b] border border-[#f9df7b]/40'
                               : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
                           }`}
                         >
@@ -609,14 +609,14 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
                                 type="number"
                                 value={customPeakInput}
                                 onChange={(e) => setCustomPeakInput(e.target.value)}
-                                className="w-20 bg-[#0F1117] border border-red-500 rounded px-1 py-0.5 text-xs font-mono text-white"
+                                className="w-20 bg-[#0F1117] border border-[#f9df7b] rounded px-1 py-0.5 text-xs font-mono text-white"
                                 placeholder={String(asset.peakPrice)}
                                 autoFocus
                               />
                               <button
                                 type="button"
                                 onClick={() => handleSavePeak(asset.symbol)}
-                                className="p-1 bg-red-500 text-black rounded text-[10px]"
+                                className="p-1 bg-[#f9df7b] text-black rounded text-[10px]"
                               >
                                 ✓
                               </button>
@@ -645,7 +645,7 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
                           <p
                             className={`font-mono font-black text-sm sm:text-base ${
                               asset.currentDrawdownPct <= thresholds.critical
-                                ? 'text-red-400'
+                                ? 'text-[#f9df7b]'
                                 : asset.currentDrawdownPct <= thresholds.warning
                                 ? 'text-amber-400'
                                 : 'text-emerald-400'
@@ -670,7 +670,7 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
                           <div
                             className={`h-full transition-all duration-500 rounded-full ${
                               asset.status === 'EXTREME'
-                                ? 'bg-red-500'
+                                ? 'bg-[#f9df7b]'
                                 : asset.status === 'CRITICAL'
                                 ? 'bg-rose-500'
                                 : asset.status === 'WARNING'
@@ -702,7 +702,7 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
                             {/* Line */}
                             <polyline
                               fill="none"
-                              stroke={isBreached ? '#EF4444' : '#10B981'}
+                              stroke={isBreached ? '#f9df7b' : '#10B981'}
                               strokeWidth="1.5"
                               points={asset.underwaterCurve
                                 .map((val, idx) => {
@@ -740,7 +740,7 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
             <span>·</span>
             <span className="text-rose-400 font-bold">Critical {thresholds.critical}%</span>
             <span>·</span>
-            <span className="text-red-400 font-bold">Extreme {thresholds.extreme}%</span>
+            <span className="text-[#f9df7b] font-bold">Extreme {thresholds.extreme}%</span>
           </div>
 
           <div className="flex items-center gap-2">
@@ -768,7 +768,7 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-1.5 rounded-xl bg-red-500 hover:bg-red-600 text-black font-bold text-xs font-mono transition-colors cursor-pointer shadow-xs"
+              className="px-4 py-1.5 rounded-xl bg-[#f9df7b] hover:bg-[#f9df7b] text-black font-bold text-xs font-mono transition-colors cursor-pointer shadow-xs"
             >
               ปิด
             </button>

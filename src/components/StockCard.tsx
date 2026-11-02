@@ -60,7 +60,7 @@ export const StockCard: React.FC<StockCardProps> = ({
           </div>
           <div
             className={`text-sm font-extrabold ${
-              isPositive ? 'text-[#22C55E]' : 'text-[#EF4444]'
+              isPositive ? 'text-[#22C55E]' : 'text-[#f9df7b]'
             }`}
           >
             {isPositive ? '+' : ''}{stock.change.toFixed(2)}%

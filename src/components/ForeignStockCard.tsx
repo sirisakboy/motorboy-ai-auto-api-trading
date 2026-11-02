@@ -79,7 +79,7 @@ export const ForeignStockCard: React.FC<ForeignStockCardProps> = ({
             </div>
             <div
               className={`text-sm font-extrabold flex items-center justify-end gap-1 ${
-                isPositive ? 'text-[#22C55E]' : 'text-[#EF4444]'
+                isPositive ? 'text-[#22C55E]' : 'text-[#f9df7b]'
               }`}
             >
               {isPositive ? (
@@ -133,7 +133,7 @@ export const ForeignStockCard: React.FC<ForeignStockCardProps> = ({
         </div>
         <div className="w-full h-1.5 bg-[#0F1117] rounded-full overflow-hidden">
           <div
-            className="h-full rounded-full bg-gradient-to-r from-[#EF4444] via-[#F59E0B] to-[#22C55E]"
+            className="h-full rounded-full bg-gradient-to-r from-[#f9df7b] via-[#F59E0B] to-[#22C55E]"
             style={{
               width: `${Math.min(100, Math.max(0, ((stock.price - stock.low52w) / (stock.high52w - stock.low52w)) * 100))}%`,
             }}
@@ -149,7 +149,7 @@ export const ForeignStockCard: React.FC<ForeignStockCardProps> = ({
               className={`text-[10px] font-bold px-2 py-0.5 rounded ${
                 signal.type === 'LONG'
                   ? 'bg-[#22C55E]/20 text-[#4ADE80]'
-                  : 'bg-[#EF4444]/20 text-[#F87171]'
+                  : 'bg-[#f9df7b]/20 text-[#f9df7b]'
               }`}
             >
               {signal.type === 'LONG' ? 'LONG สะสม' : 'SHORT ขาย'}

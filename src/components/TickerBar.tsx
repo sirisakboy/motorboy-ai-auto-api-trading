@@ -32,7 +32,7 @@ export const TickerBar: React.FC<TickerBarProps> = ({ coins, useThb, usdThbRate 
                   className={`inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-semibold tabular-nums ${
                     isPositive
                       ? 'bg-[#22C55E]/15 text-[#4ADE80]'
-                      : 'bg-[#EF4444]/15 text-[#F87171]'
+                      : 'bg-[#f9df7b]/15 text-[#f9df7b]'
                   }`}
                 >
                   {isPositive ? '+' : ''}

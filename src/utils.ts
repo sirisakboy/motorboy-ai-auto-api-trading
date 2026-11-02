@@ -29,7 +29,9 @@ export type CurrencyMode = 'THB' | 'USD';
  * JPY pairs and prices >= 10 use 2 decimals.
  */
 export function getDecimals(price: number, isForex = false): number {
-  if (isForex || price < 10) return 4;
+  if (price > 0 && price < 0.0001) return 7;
+  if (price > 0 && price < 0.01) return 6;
+  if (isForex || (price > 0 && price < 10)) return 4;
   return 2;
 }
 

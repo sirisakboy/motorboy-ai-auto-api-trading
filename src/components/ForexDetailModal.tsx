@@ -214,7 +214,7 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
                   className={`px-2 py-0.5 rounded-lg text-xs font-bold border ${
                     isLong
                       ? 'bg-[#22C55E]/15 border-[#22C55E]/40 text-[#4ADE80]'
-                      : 'bg-[#EF4444]/15 border-[#EF4444]/40 text-[#F87171]'
+                      : 'bg-[#f9df7b]/15 border-[#f9df7b]/40 text-[#f9df7b]'
                   }`}
                 >
                   {activeSignal.type}
@@ -276,10 +276,10 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
             </div>
 
             {/* Resistance Box */}
-            <div className="bg-[#F43F5E]/10 border border-[#F43F5E]/30 rounded-xl p-3">
+            <div className="bg-[#f9df7b]/10 border border-[#f9df7b]/30 rounded-xl p-3">
               <div className="flex items-center justify-between">
-                <span className="text-[#FB7185] text-xs font-bold flex items-center space-x-1">
-                  <span className="w-2 h-2 rounded-full bg-[#F43F5E]" />
+                <span className="text-[#f9df7b] text-xs font-bold flex items-center space-x-1">
+                  <span className="w-2 h-2 rounded-full bg-[#f9df7b]" />
                   <span>แนวต้าน (Resistance)</span>
                 </span>
                 <span className="text-[10px] text-[#9CA3AF]">+{resDistancePercent}%</span>
@@ -325,7 +325,7 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
                       ? 'bg-amber-500/15 border-amber-500/40 text-amber-300'
                       : sentiment.score >= 25
                       ? 'bg-orange-500/15 border-orange-500/40 text-orange-400'
-                      : 'bg-[#EF4444]/15 border-[#EF4444]/40 text-[#F87171]'
+                      : 'bg-[#f9df7b]/15 border-[#f9df7b]/40 text-[#f9df7b]'
                   }`}
                 >
                   {sentiment.sentimentTextTh}
@@ -374,7 +374,7 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
                         sentiment.whaleActivity === 'ACCUMULATION'
                           ? 'text-[#4ADE80]'
                           : sentiment.whaleActivity === 'DISTRIBUTION'
-                          ? 'text-[#F87171]'
+                          ? 'text-[#f9df7b]'
                           : 'text-white'
                       }`}
                     >
@@ -401,7 +401,7 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
 
               {/* Progress bar */}
               <div className="relative w-full h-2.5 bg-[#1A1D29] rounded-full overflow-hidden shadow-inner">
-                <div className="absolute inset-0 bg-linear-to-r from-[#EF4444] via-amber-400 via-emerald-400 to-[#22C55E]" />
+                <div className="absolute inset-0 bg-linear-to-r from-[#f9df7b] via-amber-400 via-emerald-400 to-[#22C55E]" />
                 <div
                   className="absolute top-0 bottom-0 w-2 bg-white shadow-lg rounded-full -ml-1 transition-all duration-500 border border-black/20"
                   style={{
@@ -530,7 +530,7 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
                           aiResult.action === 'LONG'
                             ? 'bg-[#22C55E]/20 text-[#4ADE80]'
                             : aiResult.action === 'SHORT'
-                            ? 'bg-[#EF4444]/20 text-[#F87171]'
+                            ? 'bg-[#f9df7b]/20 text-[#f9df7b]'
                             : 'bg-slate-800 text-slate-300'
                         }`}
                       >
@@ -570,7 +570,7 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
                       <span className="text-[#6B7280] text-[10px] block">
                         แนวต้าน AI (Resistance)
                       </span>
-                      <span className="text-[#F87171] font-bold font-mono">
+                      <span className="text-[#f9df7b] font-bold font-mono">
                         {formatPrice(aiResult.resistanceLevel)}
                       </span>
                     </div>
@@ -595,7 +595,7 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
 
                       {aiResult.risks && aiResult.risks.length > 0 && (
                         <div className="bg-[#1A1D29] p-2.5 rounded-xl border border-[#252A3A]">
-                          <span className="text-[#FB7185] font-bold text-[10px] block mb-1">
+                          <span className="text-[#f9df7b] font-bold text-[10px] block mb-1">
                             ⚠️ ปัจจัยเสี่ยงที่ต้องระวัง:
                           </span>
                           <ul className="list-disc list-inside text-[#D1D5DB] text-[11px] space-y-0.5">
@@ -643,7 +643,7 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
                   <span className="text-[#6B7280] text-[10px] block">EMA & Momentum</span>
                   <p
                     className={`text-xs font-bold mt-0.5 ${
-                      forex.change >= 0 ? 'text-[#4ADE80]' : 'text-[#F87171]'
+                      forex.change >= 0 ? 'text-[#4ADE80]' : 'text-[#f9df7b]'
                     }`}
                   >
                     {forex.change >= 0 ? 'โมเมนตัมแข็งค่า (Bullish)' : 'โมเมนตัมอ่อนค่า (Bearish)'}
@@ -672,7 +672,7 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
                     </span>
                   </div>
                   <div className="bg-[#1A1D29] p-2 rounded-lg">
-                    <span className="text-[#FB7185] text-[10px] font-bold block">
+                    <span className="text-[#f9df7b] text-[10px] font-bold block">
                       แนวต้านหลัก (Major Resistance):
                     </span>
                     <span className="text-white font-mono font-bold">
@@ -707,8 +707,8 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
               </h4>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                <div className="bg-[#EF4444]/15 border border-[#EF4444]/40 rounded-xl p-3">
-                  <span className="text-[#F87171] text-[11px] block font-medium">
+                <div className="bg-[#f9df7b]/15 border border-[#f9df7b]/40 rounded-xl p-3">
+                  <span className="text-[#f9df7b] text-[11px] block font-medium">
                     Stop Loss (SL)
                   </span>
                   <span className="text-white font-mono font-bold text-sm block mt-0.5">

@@ -416,7 +416,7 @@ export function buildTradingReportEmailHtml(
   const rowsHtml = topSignals
     .map((s) => {
       const isLong = s.type === 'LONG';
-      const color = isLong ? '#10B981' : '#EF4444';
+      const color = isLong ? '#10B981' : '#f9df7b';
       const typeBg = isLong ? '#ECFDF5' : '#FEF2F2';
       const changeStr = s.change >= 0 ? `+${s.change.toFixed(2)}%` : `${s.change.toFixed(2)}%`;
       return `

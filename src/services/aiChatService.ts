@@ -4,12 +4,18 @@ import { computeAtsMatrixAnalysis, getBtcFromCryptoList } from './atsMatrixServi
 
 const POOLSIDE_MODEL = 'poolside/laguna-xs-2.1';
 
-// Initialize Poolside client
-const client = new OpenAI({
-  apiKey: process.env.POOLSIDE_API_KEY || 'dummy_key',
-  baseURL: "https://inference.poolside.ai/v1",
-  dangerouslyAllowBrowser: true,
-});
+export const getPoolsideApiKey = (): string | undefined => {
+  const metaEnv = (import.meta as any)?.env;
+  if (metaEnv) {
+    if (metaEnv.POOLSIDE_API_KEY) return metaEnv.POOLSIDE_API_KEY;
+    if (metaEnv.VITE_POOLSIDE_API_KEY) return metaEnv.VITE_POOLSIDE_API_KEY;
+  }
+  if (typeof process !== 'undefined' && process.env) {
+    if (process.env.POOLSIDE_API_KEY) return process.env.POOLSIDE_API_KEY;
+    if (process.env.VITE_POOLSIDE_API_KEY) return process.env.VITE_POOLSIDE_API_KEY;
+  }
+  return undefined;
+};
 
 export interface AiChatContext {
   cryptoList?: CryptoCoin[];
@@ -28,16 +34,24 @@ export type AiEngineMode = 'POOLIDE_LLM' | 'QUANT_LIVE';
 /**
  * Returns current active AI Engine status for UI transparency
  */
-export function getAiEngineStatus(): {
+export function getAiEngineStatus(userKey?: string): {
   mode: AiEngineMode;
   labelTh: string;
   badgeTh: string;
   isOnlineLlm: boolean;
 } {
+  if (userKey && userKey.trim()) {
+    return {
+      mode: 'POOLIDE_LLM',
+      labelTh: 'Gemini 3.1 Flash Lite (Google AI)',
+      badgeTh: '✨ GEMINI LITE',
+      isOnlineLlm: true,
+    };
+  }
   return {
     mode: 'POOLIDE_LLM',
-    labelTh: 'Poolside AI (Financial Analyst)',
-    badgeTh: '✨ POOLSIDE',
+    labelTh: 'Dynamic Quant AI (Real-time Analyst)',
+    badgeTh: '⚡ QUANT AI',
     isOnlineLlm: true,
   };
 }
@@ -62,7 +76,7 @@ function isExplicitAtsReportCommand(text: string): boolean {
 /**
  * 100% Real-Time AI Chat Engine for "AI Deep Analyze"
  *
- * Tier 1: Real Generative AI (Poolside)
+ * Tier 1: Generative AI (Gemini / Poolside)
  * Tier 2: Real-time Quantitative NLP Reasoning Engine
  */
 export async function generateAiChatReply(
@@ -79,18 +93,60 @@ export async function generateAiChatReply(
     return analysis.rawTraderTextTh;
   }
 
-  // 2. TIER 1: Real Generative AI via Poolside
-  try {
+  // 2. Try Gemini AI if API Key is available
+  const activeGeminiKey =
+    context.geminiApiKey?.trim() ||
+    (typeof process !== 'undefined'
+      ? process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY
+      : undefined);
+
+  if (activeGeminiKey && activeGeminiKey !== 'dummy_key') {
+    try {
+      const geminiReply = await callGeminiWithMarketContext(query, context, activeGeminiKey);
+      if (geminiReply) {
+        return geminiReply;
+      }
+    } catch (err) {
+      console.warn('Gemini chat request fallback:', err);
+    }
+  }
+
+  // 3. Try Poolside AI if configured
+  const poolsideKey = getPoolsideApiKey();
+  if (poolsideKey && poolsideKey !== 'dummy_key') {
+    try {
       const liveReply = await callPoolsideWithMarketContext(query, context);
       if (liveReply) {
         return liveReply;
       }
     } catch (err) {
-      console.warn('Poolside chat request failed, falling back to Dynamic Quant Engine:', err);
+      console.warn('Poolside chat request fallback:', err);
     }
+  }
 
-  // 3. TIER 2: Dynamic Real-time Quantitative & NLP Reasoning Engine
+  // 4. High-Precision Dynamic Quant & Real-Time Technical Reasoning Engine
   return generateDynamicQuantAnalysis(query, upper, context);
+}
+
+async function callGeminiWithMarketContext(
+  query: string,
+  context: AiChatContext,
+  apiKey: string
+): Promise<string | null> {
+  const marketBrief = buildMarketContextBrief(context);
+  try {
+    const res = await fetch('/api/gemini/chat-reply', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, marketBrief, geminiApiKey: apiKey }),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.reply || null;
+  } catch (err) {
+    console.warn('Server chat reply query fallback:', err);
+    return null;
+  }
 }
 
 /**
@@ -100,8 +156,18 @@ async function callPoolsideWithMarketContext(
   query: string,
   context: AiChatContext
 ): Promise<string | null> {
-  const marketBrief = buildMarketContextBrief(context);
+  const activeKey = getPoolsideApiKey();
+  if (!activeKey || activeKey === 'dummy_key') {
+    return null;
+  }
 
+  const activeClient = new OpenAI({
+    apiKey: activeKey,
+    baseURL: "https://inference.poolside.ai/v1",
+    dangerouslyAllowBrowser: true,
+  });
+
+  const marketBrief = buildMarketContextBrief(context);
   const prompt = `
 คุณคือผู้เชี่ยวชาญด้านการวางแผนตลาดการเงินและการวิเคราะห์ข่าวเศรษฐกิจระดับมืออาชีพ
 ภารกิจ: ให้คำปรึกษา แนะนำ และวิเคราะห์ข่าวสารการเงินและทิศทางตลาดด้วยความเป็นมืออาชีพ เน้นความชัดเจน เข้าใจง่าย แต่อยู่บนพื้นฐานของตรรกะและข้อมูลจริง
@@ -119,15 +185,15 @@ ${marketBrief}
 `.trim();
 
   try {
-    const response = await client.chat.completions.create({
+    const response = await activeClient.chat.completions.create({
       model: POOLSIDE_MODEL,
       messages: [{ role: "user", content: prompt }],
       stream: false,
     });
     
-    return response.choices[0].message.content;
+    return response.choices[0]?.message?.content || null;
   } catch (err) {
-    console.error('Poolside API error:', err);
+    console.warn('Poolside connection warning:', err);
     return null;
   }
 }

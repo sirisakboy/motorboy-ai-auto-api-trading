@@ -99,21 +99,21 @@ export const HistoryList: React.FC<HistoryListProps> = ({
               <button
                 type="button"
                 onClick={() => setConfirmClear(true)}
-                className="text-xs text-[#EF4444] hover:text-red-300 border border-red-500/30 hover:bg-red-500/10 px-3 py-1.5 rounded-xl font-medium transition-colors flex items-center space-x-1.5"
+                className="text-xs text-[#f9df7b] hover:text-[#f9df7b] border border-[#f9df7b]/30 hover:bg-[#f9df7b]/10 px-3 py-1.5 rounded-xl font-medium transition-colors flex items-center space-x-1.5"
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 <span>ล้างประวัติทั้งหมด</span>
               </button>
             ) : (
               <div className="flex items-center space-x-2">
-                <span className="text-xs text-red-400 font-semibold">ยืนยันการลบ?</span>
+                <span className="text-xs text-[#f9df7b] font-semibold">ยืนยันการลบ?</span>
                 <button
                   type="button"
                   onClick={() => {
                     onClearAll();
                     setConfirmClear(false);
                   }}
-                  className="text-xs bg-red-600 hover:bg-red-700 text-white font-bold px-2.5 py-1 rounded-lg transition-colors"
+                  className="text-xs bg-[#f9df7b] hover:bg-[#f9df7b] text-black font-bold px-2.5 py-1 rounded-lg transition-colors"
                 >
                   ลบ
                 </button>
@@ -238,7 +238,7 @@ export const HistoryList: React.FC<HistoryListProps> = ({
                           : isLong
                           ? 'bg-[#22C55E]/15 text-[#4ADE80] border border-[#22C55E]/30'
                           : isShort
-                          ? 'bg-[#EF4444]/15 text-[#F87171] border border-[#EF4444]/30'
+                          ? 'bg-[#f9df7b]/15 text-[#f9df7b] border border-[#f9df7b]/30'
                           : 'bg-[#7C6CFF]/15 text-[#A5B4FC] border border-[#7C6CFF]/30'
                       }`}
                     >
@@ -267,7 +267,7 @@ export const HistoryList: React.FC<HistoryListProps> = ({
                             isLong
                               ? 'bg-[#22C55E]/20 text-[#4ADE80]'
                               : isShort
-                              ? 'bg-[#EF4444]/20 text-[#F87171]'
+                              ? 'bg-[#f9df7b]/20 text-[#f9df7b]'
                               : 'bg-slate-700 text-slate-300'
                           }`}
                         >
@@ -333,7 +333,7 @@ export const HistoryList: React.FC<HistoryListProps> = ({
                     <button
                       type="button"
                       onClick={() => onDeleteEntry(item.id)}
-                      className="text-[#6B7280] hover:text-red-400 p-1 transition-colors rounded-lg"
+                      className="text-[#6B7280] hover:text-[#f9df7b] p-1 transition-colors rounded-lg"
                       title="ลบรายการนี้"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -352,7 +352,7 @@ export const HistoryList: React.FC<HistoryListProps> = ({
                 {(item.sl || item.tp) && (
                   <div className="flex items-center space-x-3 text-[11px] pt-1">
                     {item.sl && (
-                      <span className="text-red-400">
+                      <span className="text-[#f9df7b]">
                         Stop Loss: <strong>{formatPrice(item.sl)}</strong>
                       </span>
                     )}

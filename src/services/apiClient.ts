@@ -21,6 +21,7 @@ export const CRYPTO_INITIAL: CryptoCoin[] = [
   { id: 'solana', symbol: 'SOL', name: 'Solana', binanceSymbol: 'SOLUSDT', price: 212.4, change: 4.15, high: 218.0, low: 202.0, volume: 8900000.0, flash: 'NONE' },
   { id: 'binancecoin', symbol: 'BNB', name: 'BNB', binanceSymbol: 'BNBUSDT', price: 645.2, change: 0.95, high: 652.0, low: 638.0, volume: 4300000.0, flash: 'NONE' },
   { id: 'ripple', symbol: 'XRP', name: 'XRP', binanceSymbol: 'XRPUSDT', price: 2.48, change: -1.20, high: 2.58, low: 2.42, volume: 12400000.0, flash: 'NONE' },
+  { id: 'shiba-inu', symbol: 'SHIB', name: 'Shiba Inu', binanceSymbol: 'SHIBUSDT', price: 0.0000245, change: 3.12, high: 0.0000260, low: 0.0000230, volume: 450000000.0, flash: 'NONE' },
 ];
 
 export const FOREX_PAIRS: string[] = [
@@ -1117,7 +1118,7 @@ export function generateFallbackHistory(
   symbol: string,
   basePrice: number,
   volatility = 0.02,
-  days = 90
+  days = 1000
 ): ChartData {
   const safeBase = basePrice > 0 ? basePrice : 100;
   let seed = 0;
@@ -1156,8 +1157,8 @@ export function generateFallbackHistory(
 }
 
 /**
- * Fetch 90-day history:
- * - Crypto: Binance 1D Klines (with fallback)
+ * Fetch 1000-day history (Historical depth up to 1000 days for long-term project analysis):
+ * - Crypto: Binance 1D Klines (limit=1000)
  * - Forex: Yahoo Finance via reverse proxy / Frankfurter ECB
  * - Thai Stock: Yahoo Finance SET (.BK)
  * - Foreign Stock: Yahoo Finance US
@@ -1168,10 +1169,10 @@ export async function fetchPriceHistory(symbolId: string, isForex = false): Prom
   const symUpper = symbolId.toUpperCase();
   const targetCrypto = !isForex ? CRYPTO_INITIAL.find(c => c.id === symbolId || c.symbol.toUpperCase() === symUpper) : undefined;
 
-  // 1) Crypto: Binance 1D Klines
+  // 1) Crypto: Binance 1D Klines (up to 1000 daily candles)
   if (!isForex && targetCrypto) {
     try {
-      const url = `https://api.binance.com/api/v3/klines?symbol=${targetCrypto.binanceSymbol}&interval=1d&limit=90`;
+      const url = `https://api.binance.com/api/v3/klines?symbol=${targetCrypto.binanceSymbol}&interval=1d&limit=1000`;
       const res = await fetch(url, { signal: AbortSignal.timeout(6000) });
       if (res.ok) {
         const array = await res.json();
@@ -1186,14 +1187,14 @@ export async function fetchPriceHistory(symbolId: string, isForex = false): Prom
       // Fall through
     }
     const baseP = targetCrypto.price > 0 ? targetCrypto.price : 65000;
-    return generateFallbackHistory(targetCrypto.symbol, baseP, 0.035, 90);
+    return generateFallbackHistory(targetCrypto.symbol, baseP, 0.035, 1000);
   }
 
   // 2) Forex: Yahoo Finance daily closes with Frankfurter ECB fallback
   const isForexDetected = isForex || FOREX_PAIRS.includes(symbolId) || symbolId.includes('/');
   if (isForexDetected) {
     const yahooSym = FOREX_YAHOO_MAP[symbolId] ?? `${symbolId.replace('/', '')}=X`;
-    const yahooPrices = await fetchYahooCloses(yahooSym, '3mo');
+    const yahooPrices = await fetchYahooCloses(yahooSym, '5y');
     if (yahooPrices && yahooPrices.length > 5) {
       return buildChartData(yahooPrices, `Yahoo Finance (${symbolId})`);
     }
@@ -1202,57 +1203,56 @@ export async function fetchPriceHistory(symbolId: string, isForex = false): Prom
       return buildChartData(frankPrices, `Frankfurter ECB (${symbolId})`);
     }
     const defaultForexPrice = symbolId.includes('JPY') ? 155.0 : symbolId.includes('THB') ? 34.5 : 1.10;
-    return generateFallbackHistory(symbolId, defaultForexPrice, 0.007, 90);
+    return generateFallbackHistory(symbolId, defaultForexPrice, 0.007, 1000);
   }
 
   // 3) Thai Stock: Yahoo Finance SET (.BK)
   const thaiMatch = THAI_STOCKS.find((s) => s.symbol.toUpperCase() === symUpper);
   if (thaiMatch) {
-    const yahooPrices = await fetchYahooCloses(`${thaiMatch.symbol}.BK`, '3mo');
+    const yahooPrices = await fetchYahooCloses(`${thaiMatch.symbol}.BK`, '5y');
     if (yahooPrices && yahooPrices.length > 5) {
       return buildChartData(yahooPrices, `Yahoo Finance (${thaiMatch.symbol}.BK)`);
     }
-    return generateFallbackHistory(thaiMatch.symbol, thaiMatch.price, 0.022, 90);
+    return generateFallbackHistory(thaiMatch.symbol, thaiMatch.price, 0.022, 1000);
   }
 
   // 4) Foreign Stock: Yahoo Finance US
   const foreignMatch = FOREIGN_STOCKS.find((s) => s.symbol.toUpperCase() === symUpper);
   if (foreignMatch) {
-    const yahooPrices = await fetchYahooCloses(foreignMatch.symbol, '3mo');
+    const yahooPrices = await fetchYahooCloses(foreignMatch.symbol, '5y');
     if (yahooPrices && yahooPrices.length > 5) {
       return buildChartData(yahooPrices, `Yahoo Finance (${foreignMatch.symbol})`);
     }
-    return generateFallbackHistory(foreignMatch.symbol, foreignMatch.price, 0.025, 90);
+    return generateFallbackHistory(foreignMatch.symbol, foreignMatch.price, 0.025, 1000);
   }
 
   // 5) Stock Index: Yahoo Finance Index symbols
   const indexMatch = STOCK_SYMBOLS.find((s) => s.symbol.toUpperCase() === symUpper);
   if (indexMatch || symUpper === 'SET') {
     if (symUpper === 'SET') {
-      // SET Index: Yahoo gives 1 point for ^SET.BK. TDEX.BK (SET50 ETF) provides full 62 trading-day closes!
-      const tdexCloses = await fetchYahooCloses('TDEX.BK', '3mo');
+      const tdexCloses = await fetchYahooCloses('TDEX.BK', '5y');
       if (tdexCloses && tdexCloses.length > 5) {
         const lastTdex = tdexCloses[tdexCloses.length - 1];
         const setTargetPrice = indexMatch?.price || 1573.01;
         const scaled = tdexCloses.map((c) => +(c * (setTargetPrice / lastTdex)).toFixed(2));
         return buildChartData(scaled, 'SET Index (TDEX Benchmark)');
       }
-      const directSet = await fetchYahooCloses('^SET.BK', '3mo');
+      const directSet = await fetchYahooCloses('^SET.BK', '5y');
       if (directSet && directSet.length > 5) {
         return buildChartData(directSet, 'Yahoo Finance (^SET.BK)');
       }
-      return generateFallbackHistory('SET', indexMatch?.price || 1573.01, 0.012, 90);
+      return generateFallbackHistory('SET', indexMatch?.price || 1573.01, 0.012, 1000);
     }
 
     const yahooSym = INDEX_YAHOO_MAP[symUpper] ?? symUpper;
-    const yahooPrices = await fetchYahooCloses(yahooSym, '3mo');
+    const yahooPrices = await fetchYahooCloses(yahooSym, '5y');
     if (yahooPrices && yahooPrices.length > 5) {
       return buildChartData(yahooPrices, `Yahoo Finance (${symbolId})`);
     }
-    return generateFallbackHistory(symbolId, indexMatch?.price || 5000, 0.015, 90);
+    return generateFallbackHistory(symbolId, indexMatch?.price || 5000, 0.015, 1000);
   }
 
-  return generateFallbackHistory(symbolId, 100, 0.02, 90);
+  return generateFallbackHistory(symbolId, 100, 0.02, 1000);
 }
 
 const FOREX_YAHOO_MAP: Record<string, string> = {
@@ -1285,10 +1285,10 @@ function parseYahooCloses(data: unknown): number[] | null {
     ?.chart?.result?.[0]?.indicators?.quote?.[0]?.close;
   if (!Array.isArray(closes)) return null;
   const clean = closes.filter((v): v is number => typeof v === 'number' && isFinite(v) && v > 0);
-  return clean.length > 5 ? clean.slice(-90) : null;
+  return clean.length > 5 ? clean.slice(-1000) : null;
 }
 
-async function fetchYahooCloses(symbol: string, range = '3mo'): Promise<number[] | null> {
+async function fetchYahooCloses(symbol: string, range = '5y'): Promise<number[] | null> {
   const path = `/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=${range}`;
 
   // 1) Try internal Vite dev proxy /api/yahoo (no CORS, direct server-side fetch)
@@ -1325,7 +1325,7 @@ async function fetchFrankfurterSeries(pair: string): Promise<number[] | null> {
     if (!base || !quote) return null;
     const end = new Date();
     const start = new Date();
-    start.setDate(end.getDate() - 100);
+    start.setDate(end.getDate() - 1460); // 1000+ trading days
     const fmt = (d: Date) => d.toISOString().slice(0, 10);
     const url = `https://api.frankfurter.app/${fmt(start)}..${fmt(end)}?from=${base}&to=${quote}`;
     const res = await fetch(url, { signal: AbortSignal.timeout(6000) });
@@ -1335,7 +1335,7 @@ async function fetchFrankfurterSeries(pair: string): Promise<number[] | null> {
     if (!rates) return null;
     const sorted = Object.keys(rates).sort();
     const series = sorted.map((d) => rates[d]?.[quote]).filter((v): v is number => typeof v === 'number' && isFinite(v) && v > 0);
-    return series.length > 5 ? series.slice(-90) : null;
+    return series.length > 5 ? series.slice(-1000) : null;
   } catch {
     return null;
   }
@@ -1352,7 +1352,8 @@ export function generateRealSignals(coins: CryptoCoin[]): TradingSignal[] {
       coin.symbol === 'ETH' ? 3450.0 :
       coin.symbol === 'SOL' ? 210.0 :
       coin.symbol === 'BNB' ? 640.0 :
-      coin.symbol === 'XRP' ? 2.45 : 100.0
+      coin.symbol === 'XRP' ? 2.45 :
+      coin.symbol === 'SHIB' ? 0.0000245 : 100.0
     );
 
     const momentumVol = Math.abs(coin.change) / 100.0;
@@ -1379,6 +1380,7 @@ export function generateRealSignals(coins: CryptoCoin[]): TradingSignal[] {
       SOL: ['SOL·BNB', 'High TPS', 'DeFi'],
       BNB: ['BNB·Chain', 'Exchange', 'Burn'],
       XRP: ['XRP·Ledger', 'Payment', 'Cross-border'],
+      SHIB: ['SHIB·Ecosystem', 'Memecoin', 'Shibarium'],
     };
 
     return {

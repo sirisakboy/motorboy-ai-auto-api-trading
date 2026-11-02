@@ -381,7 +381,7 @@ export const AtsMatrixDashboard: React.FC<AtsMatrixDashboardProps> = ({
                     rx="120"
                     ry="55"
                     fill="none"
-                    stroke={analysis.torusOrderBook.dominantSide === 'BID' ? '#00FF66' : '#F43F5E'}
+                    stroke={analysis.torusOrderBook.dominantSide === 'BID' ? '#00FF66' : '#f9df7b'}
                     strokeWidth="1.5"
                     strokeDasharray="6 4"
                     opacity="0.3"
@@ -431,7 +431,7 @@ export const AtsMatrixDashboard: React.FC<AtsMatrixDashboardProps> = ({
                     <linearGradient id="torusGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                       <stop offset="0%" stopColor="#00FF66" />
                       <stop offset="50%" stopColor="#00F0FF" />
-                      <stop offset="100%" stopColor="#F43F5E" />
+                      <stop offset="100%" stopColor="#f9df7b" />
                     </linearGradient>
                   </defs>
                 </svg>

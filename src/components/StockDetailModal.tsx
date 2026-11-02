@@ -94,8 +94,8 @@ export const StockDetailModal: React.FC<StockDetailModalProps> = ({
             </div>
             <h2 className="text-white text-base sm:text-lg font-bold leading-snug">{symbol} &bull; {name}</h2>
             <div className="flex items-center gap-3 mt-1">
-              <span className={`text-xl font-black ${change >= 0 ? 'text-[#22C55E]' : 'text-[#EF4444]'}`}>{currency}{(price * multiplier).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-              <span className={`text-sm font-bold ${change >= 0 ? 'text-[#22C55E]' : 'text-[#EF4444]'}`}>{change >= 0 ? '+' : ''}{change.toFixed(2)}%</span>
+              <span className={`text-xl font-black ${change >= 0 ? 'text-[#22C55E]' : 'text-[#f9df7b]'}`}>{currency}{(price * multiplier).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              <span className={`text-sm font-bold ${change >= 0 ? 'text-[#22C55E]' : 'text-[#f9df7b]'}`}>{change >= 0 ? '+' : ''}{change.toFixed(2)}%</span>
             </div>
           </div>
           <button onClick={onDismiss} className="text-[#94A3B8] hover:text-white p-1.5 rounded-lg hover:bg-[#2A2E39] transition-colors shrink-0"><X className="w-5 h-5" /></button>
@@ -119,8 +119,8 @@ export const StockDetailModal: React.FC<StockDetailModalProps> = ({
 
           {sentiment && (
             <div className="p-4 rounded-xl bg-[#1E222D] border border-[#2A2E39]">
-              <div className="flex items-center justify-between mb-2"><span className="text-xs text-[#94A3B8]">คะแนน Sentiment</span><span className={`text-lg font-black ${sentiment.score >= 60 ? 'text-[#22C55E]' : sentiment.score <= 40 ? 'text-[#EF4444]' : 'text-[#F59E0B]'}`}>{sentiment.score}/100</span></div>
-              <div className="w-full h-2 bg-[#0F1117] rounded-full overflow-hidden mb-2"><div className={`h-full rounded-full ${sentiment.score >= 60 ? 'bg-[#22C55E]' : sentiment.score <= 40 ? 'bg-[#EF4444]' : 'bg-[#F59E0B]'}`} style={{ width: `${sentiment.score}%` }} /></div>
+              <div className="flex items-center justify-between mb-2"><span className="text-xs text-[#94A3B8]">คะแนน Sentiment</span><span className={`text-lg font-black ${sentiment.score >= 60 ? 'text-[#22C55E]' : sentiment.score <= 40 ? 'text-[#f9df7b]' : 'text-[#F59E0B]'}`}>{sentiment.score}/100</span></div>
+              <div className="w-full h-2 bg-[#0F1117] rounded-full overflow-hidden mb-2"><div className={`h-full rounded-full ${sentiment.score >= 60 ? 'bg-[#22C55E]' : sentiment.score <= 40 ? 'bg-[#f9df7b]' : 'bg-[#F59E0B]'}`} style={{ width: `${sentiment.score}%` }} /></div>
               <p className="text-[11px] text-[#CBD5E1]">{sentiment.summaryReason}</p>
             </div>
           )}
@@ -129,10 +129,10 @@ export const StockDetailModal: React.FC<StockDetailModalProps> = ({
 
           {!isAnalyzing && aiResult && activeTab === 'gemini' && (
             <div className="space-y-3">
-              <div className={`p-3 rounded-xl border ${aiResult.action === 'LONG' ? 'bg-[#22C55E]/10 border-[#22C55E]/30' : 'bg-[#EF4444]/10 border-[#EF4444]/30'}`}>
+              <div className={`p-3 rounded-xl border ${aiResult.action === 'LONG' ? 'bg-[#22C55E]/10 border-[#22C55E]/30' : 'bg-[#f9df7b]/10 border-[#f9df7b]/30'}`}>
                 <div className="flex items-center gap-2 mb-1">
-                  {aiResult.action === 'LONG' ? <ArrowUpRight className="w-5 h-5 text-[#22C55E]" /> : <ArrowDownRight className="w-5 h-5 text-[#EF4444]" />}
-                  <span className={`font-bold ${aiResult.action === 'LONG' ? 'text-[#22C55E]' : 'text-[#EF4444]'}`}>{aiResult.action} &bull; {aiResult.confidence}%</span>
+                  {aiResult.action === 'LONG' ? <ArrowUpRight className="w-5 h-5 text-[#22C55E]" /> : <ArrowDownRight className="w-5 h-5 text-[#f9df7b]" />}
+                  <span className={`font-bold ${aiResult.action === 'LONG' ? 'text-[#22C55E]' : 'text-[#f9df7b]'}`}>{aiResult.action} &bull; {aiResult.confidence}%</span>
                 </div>
                 <p className="text-sm text-[#CBD5E1]">{aiResult.summary}</p>
               </div>
@@ -141,7 +141,7 @@ export const StockDetailModal: React.FC<StockDetailModalProps> = ({
                 <div className="p-3 rounded-xl bg-[#1E222D] border border-[#2A2E39]"><span className="text-xs text-[#22C55E] font-semibold block mb-1">ปัจจัยหนุน</span>{aiResult.keyDrivers.map((d, i) => <p key={i} className="text-[11px] text-[#CBD5E1] flex items-start gap-1.5"><span className="text-[#22C55E]">&#10003;</span> {d}</p>)}</div>
               )}
               {aiResult.risks && aiResult.risks.length > 0 && (
-                <div className="p-3 rounded-xl bg-[#1E222D] border border-[#2A2E39]"><span className="text-xs text-[#EF4444] font-semibold block mb-1">ความเสี่ยง</span>{aiResult.risks.map((r, i) => <p key={i} className="text-[11px] text-[#CBD5E1] flex items-start gap-1.5"><span className="text-[#EF4444]">&bull;</span> {r}</p>)}</div>
+                <div className="p-3 rounded-xl bg-[#1E222D] border border-[#2A2E39]"><span className="text-xs text-[#f9df7b] font-semibold block mb-1">ความเสี่ยง</span>{aiResult.risks.map((r, i) => <p key={i} className="text-[11px] text-[#CBD5E1] flex items-start gap-1.5"><span className="text-[#f9df7b]">&bull;</span> {r}</p>)}</div>
               )}
             </div>
           )}
@@ -177,12 +177,12 @@ export const StockDetailModal: React.FC<StockDetailModalProps> = ({
 
           {activeTab === 'risk' && (
             <div className="p-4 rounded-xl bg-[#1E222D] border border-[#2A2E39]">
-              <h4 className="text-xs font-semibold text-[#EF4444] mb-2">ปัจจัยความเสี่ยง</h4>
+              <h4 className="text-xs font-semibold text-[#f9df7b] mb-2">ปัจจัยความเสี่ยง</h4>
               <ul className="space-y-1.5 text-xs text-[#CBD5E1]">
-                <li className="flex items-start gap-2"><span className="text-[#EF4444]">&bull;</span> ความผันผวนของตลาด</li>
-                <li className="flex items-start gap-2"><span className="text-[#EF4444]">&bull;</span> การเปลี่ยนแปลงนโยบายธนาคารกลาง</li>
-                <li className="flex items-start gap-2"><span className="text-[#EF4444]">&bull;</span> ความเสี่ยงอัตราแลกเปลี่ยน (หุ้นนอก)</li>
-                <li className="flex items-start gap-2"><span className="text-[#EF4444]">&bull;</span> ผลประกอบการต่ำกว่าคาด</li>
+                <li className="flex items-start gap-2"><span className="text-[#f9df7b]">&bull;</span> ความผันผวนของตลาด</li>
+                <li className="flex items-start gap-2"><span className="text-[#f9df7b]">&bull;</span> การเปลี่ยนแปลงนโยบายธนาคารกลาง</li>
+                <li className="flex items-start gap-2"><span className="text-[#f9df7b]">&bull;</span> ความเสี่ยงอัตราแลกเปลี่ยน (หุ้นนอก)</li>
+                <li className="flex items-start gap-2"><span className="text-[#f9df7b]">&bull;</span> ผลประกอบการต่ำกว่าคาด</li>
               </ul>
             </div>
           )}

@@ -72,7 +72,7 @@ export const ThaiStockCard: React.FC<ThaiStockCardProps> = ({
             </div>
             <div
               className={`text-sm font-extrabold flex items-center justify-end gap-1 ${
-                isPositive ? 'text-[#22C55E]' : 'text-[#EF4444]'
+                isPositive ? 'text-[#22C55E]' : 'text-[#f9df7b]'
               }`}
             >
               {isPositive ? (
@@ -130,7 +130,7 @@ export const ThaiStockCard: React.FC<ThaiStockCardProps> = ({
               className={`text-[10px] font-bold px-2 py-0.5 rounded ${
                 signal.type === 'LONG'
                   ? 'bg-[#22C55E]/20 text-[#4ADE80]'
-                  : 'bg-[#EF4444]/20 text-[#F87171]'
+                  : 'bg-[#f9df7b]/20 text-[#f9df7b]'
               }`}
             >
               {signal.type === 'LONG' ? 'LONG สะสม' : 'SHORT ขาย'}

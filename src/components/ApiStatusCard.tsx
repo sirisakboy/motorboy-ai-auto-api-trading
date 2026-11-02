@@ -119,7 +119,7 @@ export const ApiStatusCard: React.FC<ApiStatusCardProps> = ({ status, onRefresh 
                 ? 'bg-[#22C55E]/15 border-[#22C55E]/40 text-[#4ADE80]'
                 : liveCount + fallbackCount === totalCount
                 ? 'bg-[#F59E0B]/15 border-[#F59E0B]/40 text-[#FBBF24]'
-                : 'bg-[#EF4444]/15 border-[#EF4444]/40 text-[#F87171]'
+                : 'bg-[#f9df7b]/15 border-[#f9df7b]/40 text-[#f9df7b]'
             }`}
           >
             <span
@@ -128,7 +128,7 @@ export const ApiStatusCard: React.FC<ApiStatusCardProps> = ({ status, onRefresh 
                   ? 'bg-[#4ADE80] animate-pulse'
                   : liveCount + fallbackCount === totalCount
                   ? 'bg-[#FBBF24]'
-                  : 'bg-[#F87171]'
+                  : 'bg-[#f9df7b]'
               }`}
             />
             {liveCount}/{totalCount} ONLINE
@@ -313,8 +313,8 @@ const StatusBadge: React.FC<{ state: string }> = ({ state }) => {
   }
 
   return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-[#EF4444]/15 border border-[#EF4444]/40 text-[#F87171] text-[10px] font-bold shrink-0">
-      <AlertTriangle className="w-3 h-3 text-[#EF4444]" />
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-[#f9df7b]/15 border border-[#f9df7b]/40 text-[#f9df7b] text-[10px] font-bold shrink-0">
+      <AlertTriangle className="w-3 h-3 text-[#f9df7b]" />
       <span>{state}</span>
     </span>
   );

@@ -110,7 +110,7 @@ export const PriceChartCanvas: React.FC<PriceChartCanvasProps> = ({
     // 3. Draw Resistance Level
     if (scaledResistance) {
       const yRes = h - ((scaledResistance - minP) / range) * (h - pad * 2) - pad;
-      ctx.strokeStyle = '#F43F5E';
+      ctx.strokeStyle = '#f9df7b';
       ctx.lineWidth = 1.5;
       ctx.setLineDash([6, 4]);
       ctx.beginPath();
@@ -222,7 +222,7 @@ export const PriceChartCanvas: React.FC<PriceChartCanvasProps> = ({
       {chartData && (chartData.support || chartData.resistance) && (
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 bg-[#0F1117] border border-[#252A3A] rounded-xl px-3 py-2 text-xs">
           <div className="flex items-center space-x-2">
-            <span className="text-[#9CA3AF] text-[11px]">การวิเคราะห์กรอบราคา 90 วัน ({currencySymbol}):</span>
+            <span className="text-[#9CA3AF] text-[11px]">การวิเคราะห์กรอบราคา 1000 วัน ({currencySymbol}):</span>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             {chartData.support && (
@@ -236,9 +236,9 @@ export const PriceChartCanvas: React.FC<PriceChartCanvasProps> = ({
             )}
             {chartData.resistance && (
               <div className="flex items-center space-x-1.5">
-                <span className="w-2 h-2 rounded-full bg-[#F43F5E]" />
+                <span className="w-2 h-2 rounded-full bg-[#f9df7b]" />
                 <span className="text-[#9CA3AF] text-[11px]">แนวต้าน (Resistance):</span>
-                <span className="text-[#FB7185] font-mono font-bold">
+                <span className="text-[#f9df7b] font-mono font-bold">
                   {formatVal(chartData.resistance)}
                 </span>
               </div>
@@ -251,7 +251,7 @@ export const PriceChartCanvas: React.FC<PriceChartCanvasProps> = ({
         {isLoading ? (
           <div className="flex flex-col items-center justify-center space-y-2">
             <div className="w-8 h-8 border-2 border-[#7C6CFF] border-t-transparent rounded-full animate-spin" />
-            <span className="text-xs text-[#9CA3AF]">กำลังโหลดข้อมูลกราฟ 90 วัน...</span>
+            <span className="text-xs text-[#9CA3AF]">กำลังโหลดข้อมูลกราฟ 1000 วัน...</span>
           </div>
         ) : chartData && chartData.prices.length > 0 ? (
           <canvas
@@ -264,7 +264,7 @@ export const PriceChartCanvas: React.FC<PriceChartCanvasProps> = ({
           <span className="text-xs text-[#6B7280]">
             {chartData?.isLive === false
               ? 'ดึงประวัติย้อนหลังไม่สำเร็จ (ออฟไลน์) — จะลองใหม่เมื่อเปลี่ยนสินทรัพย์'
-              : 'เลือกสินทรัพย์เพื่อดูกราฟ 90 วัน'}
+              : 'เลือกสินทรัพย์เพื่อดูกราฟ 1000 วัน'}
           </span>
         )}
       </div>
@@ -288,8 +288,8 @@ export const PriceChartCanvas: React.FC<PriceChartCanvasProps> = ({
             <span className="font-medium text-[#34D399]">แนวรับ</span>
           </div>
           <div className="flex items-center space-x-1.5">
-            <span className="w-2.5 h-0.5 border-b-2 border-dashed border-[#F43F5E] inline-block" />
-            <span className="font-medium text-[#FB7185]">แนวต้าน</span>
+            <span className="w-2.5 h-0.5 border-b-2 border-dashed border-[#f9df7b] inline-block" />
+            <span className="font-medium text-[#f9df7b]">แนวต้าน</span>
           </div>
         </div>
 

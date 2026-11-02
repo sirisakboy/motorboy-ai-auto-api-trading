@@ -213,6 +213,10 @@ export const NewsCard: React.FC<NewsCardProps> = ({
       a.source.includes('ขยาย')
   ).length;
 
+  const highImpactCount = articles.filter((a) => a.impact === 'HIGH').length;
+  const mediumImpactCount = articles.filter((a) => a.impact === 'MEDIUM').length;
+  const lowImpactCount = articles.filter((a) => a.impact === 'LOW' || !a.impact).length;
+
   return (
     <div
       id="market-news-container"
@@ -252,6 +256,28 @@ export const NewsCard: React.FC<NewsCardProps> = ({
             <span>MSN Money (th-th)</span>
             <ArrowUpRight className="w-3 h-3" />
           </a>
+        </div>
+      </div>
+
+      {/* Market Impact Overview Bar (Glanceable & Calm for Busy Office Workers) */}
+      <div className="flex items-center justify-between px-3.5 py-2 rounded-xl bg-[#0F1117] border border-[#252A3A] text-xs text-slate-300 gap-2 flex-wrap shadow-inner">
+        <div className="flex items-center gap-1.5 font-semibold text-white">
+          <Flame className="w-3.5 h-3.5 text-[#f9df7b]" />
+          <span>ระดับผลกระทบต่อตลาด (Market Impact):</span>
+        </div>
+        <div className="flex items-center gap-3 text-[11px] font-medium">
+          <span className="flex items-center gap-1 text-[#f9df7b]" title="ข่าวผลกระทบสูงต่อตลาด">
+            <span className="w-2 h-2 rounded-full bg-[#f9df7b] inline-block animate-pulse" />
+            High Impact: <strong className="font-bold text-white">{highImpactCount}</strong>
+          </span>
+          <span className="flex items-center gap-1 text-[#38BDF8]" title="ข่าวผลกระทบปานกลาง">
+            <span className="w-2 h-2 rounded-full bg-[#38BDF8] inline-block" />
+            Medium Impact: <strong className="font-bold text-white">{mediumImpactCount}</strong>
+          </span>
+          <span className="flex items-center gap-1 text-[#94A3B8]" title="ข่าวทั่วไป">
+            <span className="w-2 h-2 rounded-full bg-[#94A3B8] inline-block" />
+            Low Impact: <strong className="font-bold text-white">{lowImpactCount}</strong>
+          </span>
         </div>
       </div>
 
@@ -352,7 +378,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
                       latestAutoResult.overallStance === 'BULLISH'
                         ? 'bg-[#22C55E]/20 text-[#4ADE80]'
                         : latestAutoResult.overallStance === 'BEARISH'
-                        ? 'bg-[#EF4444]/20 text-[#F87171]'
+                        ? 'bg-[#f9df7b]/20 text-[#f9df7b]'
                         : 'bg-slate-700 text-slate-300'
                     }`}
                   >
@@ -514,7 +540,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
                   บวก
                 </span>
               ) : item.sentiment === 'BEARISH' ? (
-                <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-[#EF4444] bg-[#EF4444]/10 px-1.5 py-0.5 rounded">
+                <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-[#f9df7b] bg-[#f9df7b]/10 px-1.5 py-0.5 rounded">
                   <TrendingDown className="w-3 h-3" />
                   ลบ
                 </span>
@@ -576,12 +602,20 @@ export const NewsCard: React.FC<NewsCardProps> = ({
                         สด
                       </span>
                     )}
-                    {item.impact === 'HIGH' && (
-                      <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-[#F87171] bg-[#EF4444]/15 px-1.5 py-0.5 rounded">
-                        <Flame className="w-3 h-3" />
-                        Impact สูง
+                    {item.impact === 'HIGH' ? (
+                      <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-[#f9df7b] bg-[#f9df7b]/15 px-1.5 py-0.5 rounded border border-[#f9df7b]/30">
+                        <Flame className="w-3 h-3 text-[#f9df7b]" />
+                        High Impact
                       </span>
-                    )}
+                    ) : item.impact === 'MEDIUM' ? (
+                      <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-[#38BDF8] bg-[#0284C7]/15 px-1.5 py-0.5 rounded border border-[#0284C7]/30">
+                        Medium Impact
+                      </span>
+                    ) : item.impact === 'LOW' ? (
+                      <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-[#94A3B8] bg-[#94A3B8]/10 px-1.5 py-0.5 rounded border border-[#94A3B8]/20">
+                        Low Impact
+                      </span>
+                    ) : null}
                     {sentimentBadge}
                   </div>
                 </div>

@@ -50,7 +50,7 @@ export const CryptoCard: React.FC<CryptoCardProps> = ({
     coin?.flash === 'UP'
       ? 'bg-[#22C55E]/20'
       : coin?.flash === 'DOWN'
-      ? 'bg-[#EF4444]/20'
+      ? 'bg-[#f9df7b]/20'
       : 'bg-[#1A1D29]';
 
   return (
@@ -104,7 +104,7 @@ export const CryptoCard: React.FC<CryptoCardProps> = ({
             className={`px-2 py-0.5 rounded-xl text-xs font-bold border ${
               isLong
                 ? 'bg-[#22C55E]/15 border-[#22C55E]/40 text-[#4ADE80]'
-                : 'bg-[#EF4444]/15 border-[#EF4444]/40 text-[#F87171]'
+                : 'bg-[#f9df7b]/15 border-[#f9df7b]/40 text-[#f9df7b]'
             }`}
           >
             {signal.type}
@@ -126,7 +126,7 @@ export const CryptoCard: React.FC<CryptoCardProps> = ({
         </span>
         <span
           className={`text-base font-extrabold ${
-            isPositive ? 'text-[#22C55E]' : 'text-[#EF4444]'
+            isPositive ? 'text-[#22C55E]' : 'text-[#f9df7b]'
           }`}
         >
           {isPositive ? '+' : ''}{currentChange.toFixed(2)}%
@@ -146,7 +146,7 @@ export const CryptoCard: React.FC<CryptoCardProps> = ({
       {/* SL & TP Quick view + trigger */}
       <div className="mt-3 flex flex-wrap items-center justify-between text-xs gap-2">
         <div className="flex items-center space-x-3">
-          <span className="font-semibold text-[#EF4444]">
+          <span className="font-semibold text-[#f9df7b]">
             SL: {currencyPrefix}{displaySl}
           </span>
           <span className="font-semibold text-[#22C55E]">

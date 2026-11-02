@@ -517,18 +517,18 @@ export const BacktestingDashboard: React.FC<BacktestingDashboardProps> = ({
             </div>
 
             {/* Metric 4: MAX DRAWDOWN (MDD) */}
-            <div className="p-4 rounded-xl bg-[#10141E] border border-slate-800 relative overflow-hidden group hover:border-red-500/50 transition-all">
-              <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-red-500 to-transparent opacity-80" />
+            <div className="p-4 rounded-xl bg-[#10141E] border border-slate-800 relative overflow-hidden group hover:border-[#f9df7b]/50 transition-all">
+              <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#f9df7b] to-transparent opacity-80" />
               <div className="flex items-center justify-between text-slate-400 text-xs font-mono mb-1">
                 <span className="flex items-center gap-1">
-                  <TrendingDown className="w-3.5 h-3.5 text-red-400" />
+                  <TrendingDown className="w-3.5 h-3.5 text-[#f9df7b]" />
                   MAX DRAWDOWN
                 </span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded-sm bg-red-500/10 border border-red-500/30 text-red-400 font-bold">
+                <span className="text-[10px] px-1.5 py-0.5 rounded-sm bg-[#f9df7b]/10 border border-[#f9df7b]/30 text-[#f9df7b] font-bold">
                   PEAK-TO-TROUGH
                 </span>
               </div>
-              <div className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-red-400 mt-1">
+              <div className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-[#f9df7b] mt-1">
                 {result.maxDrawdownPct}%
               </div>
               <div className="flex items-center justify-between text-xs font-mono mt-2 pt-2 border-t border-slate-800/80 text-slate-400">

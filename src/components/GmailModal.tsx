@@ -323,7 +323,7 @@ export const GmailModal: React.FC<GmailModalProps> = ({
 
             {authError && (
               <div className="max-w-md w-full mb-6 flex flex-col gap-2">
-                <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs text-left flex items-start space-x-2">
+                <div className="p-3 rounded-xl bg-[#f9df7b]/10 border border-[#f9df7b]/30 text-[#f9df7b] text-xs text-left flex items-start space-x-2">
                   <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
                   <span>{authError}</span>
                 </div>
@@ -508,12 +508,12 @@ export const GmailModal: React.FC<GmailModalProps> = ({
                         <p>กำลังโหลดอีเมลจาก Gmail...</p>
                       </div>
                     ) : messagesError ? (
-                      <div className="p-6 text-center text-xs text-red-400 space-y-2">
+                      <div className="p-6 text-center text-xs text-[#f9df7b] space-y-2">
                         <p>{messagesError}</p>
                         <button
                           type="button"
                           onClick={() => loadProfileAndMessages()}
-                          className="px-3 py-1 bg-red-500/20 text-red-300 rounded-lg text-xs"
+                          className="px-3 py-1 bg-[#f9df7b]/20 text-[#f9df7b] rounded-lg text-xs"
                         >
                           ลองใหม่อีกครั้ง
                         </button>
@@ -590,7 +590,7 @@ export const GmailModal: React.FC<GmailModalProps> = ({
                           <button
                             type="button"
                             onClick={() => handleInitiateTrash(selectedMessage.id)}
-                            className="px-2.5 py-1.5 rounded-lg border border-red-500/40 text-red-400 hover:bg-red-500/10 text-xs font-semibold flex items-center space-x-1.5 transition-colors"
+                            className="px-2.5 py-1.5 rounded-lg border border-[#f9df7b]/40 text-[#f9df7b] hover:bg-[#f9df7b]/10 text-xs font-semibold flex items-center space-x-1.5 transition-colors"
                             title="ย้ายลงถังขยะ"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -662,7 +662,7 @@ export const GmailModal: React.FC<GmailModalProps> = ({
                   )}
 
                   {sendError && (
-                    <div className="p-3.5 rounded-xl bg-red-500/15 border border-red-500/30 text-red-300 text-xs flex items-center space-x-2">
+                    <div className="p-3.5 rounded-xl bg-[#f9df7b]/15 border border-[#f9df7b]/30 text-[#f9df7b] text-xs flex items-center space-x-2">
                       <AlertCircle className="w-4 h-4 shrink-0" />
                       <span>{sendError}</span>
                     </div>
@@ -838,9 +838,9 @@ export const GmailModal: React.FC<GmailModalProps> = ({
         {/* Confirmation Modal for Trashing Email (MANDATORY per Workspace Integration rules) */}
         {confirmTrashOpen && (
           <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/80">
-            <div className="w-full max-w-md rounded-2xl bg-[#1A1D29] border border-red-500/30 p-5 shadow-2xl space-y-4">
+            <div className="w-full max-w-md rounded-2xl bg-[#1A1D29] border border-[#f9df7b]/30 p-5 shadow-2xl space-y-4">
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 rounded-xl bg-red-500/20 border border-red-500/40 flex items-center justify-center text-red-400">
+                <div className="w-10 h-10 rounded-xl bg-[#f9df7b]/20 border border-[#f9df7b]/40 flex items-center justify-center text-[#f9df7b]">
                   <Trash2 className="w-5 h-5" />
                 </div>
                 <div>
@@ -868,7 +868,7 @@ export const GmailModal: React.FC<GmailModalProps> = ({
                   type="button"
                   onClick={handleExecuteTrash}
                   disabled={isTrashing}
-                  className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold flex items-center space-x-1.5"
+                  className="px-4 py-2 rounded-xl bg-[#f9df7b] hover:bg-[#f9df7b] text-black text-xs font-bold flex items-center space-x-1.5"
                 >
                   {isTrashing ? (
                     <>

@@ -24,7 +24,7 @@ const Rocket: React.FC<{ size?: number }> = ({ size }) => (
     <path d="M24 6c5 3.5 7 9 6.5 15l-3.5 6.5L24 30l-3-2.5L17.5 21C17 15 19 9.5 24 6Z" fill="#E2E8F0" />
     <circle cx="24" cy="16" r="3.2" fill="#7C6CFF" />
     <path d="M17.5 21l-4 7 6-1.5M30.5 21l4 7-6-1.5" stroke="#F59E0B" strokeWidth="2.5" strokeLinecap="round" />
-    <path d="M22 32c0 3 1 5 2 7 1-2 2-4 2-7" stroke="#EF4444" strokeWidth="2.5" strokeLinecap="round" />
+    <path d="M22 32c0 3 1 5 2 7 1-2 2-4 2-7" stroke="#f9df7b" strokeWidth="2.5" strokeLinecap="round" />
     <path d="M10 38c4-1 7-3 9-6M38 38c-4-1-7-3-9-6" stroke="#FBBF24" strokeWidth="2" strokeLinecap="round" strokeDasharray="1 3" />
   </S>
 );
@@ -46,11 +46,11 @@ const Bull: React.FC<{ size?: number }> = ({ size }) => (
 const Bear: React.FC<{ size?: number }> = ({ size }) => (
   <S size={size}>
     <circle cx="24" cy="24" r="22" fill="#2a1215" />
-    <circle cx="13" cy="16" r="4.5" fill="#EF4444" />
-    <circle cx="35" cy="16" r="4.5" fill="#EF4444" />
+    <circle cx="13" cy="16" r="4.5" fill="#f9df7b" />
+    <circle cx="35" cy="16" r="4.5" fill="#f9df7b" />
     <circle cx="13" cy="16" r="2" fill="#fca5a5" />
     <circle cx="35" cy="16" r="2" fill="#fca5a5" />
-    <ellipse cx="24" cy="27" rx="11" ry="12" fill="#F87171" />
+    <ellipse cx="24" cy="27" rx="11" ry="12" fill="#f9df7b" />
     <ellipse cx="24" cy="32" rx="6" ry="5" fill="#fecaca" />
     <ellipse cx="24" cy="30.5" rx="2.2" ry="1.6" fill="#2a1215" />
     <circle cx="19" cy="23" r="2" fill="#2a1215" />
@@ -90,8 +90,8 @@ const ChartUp: React.FC<{ size?: number }> = ({ size }) => (
 const ChartDown: React.FC<{ size?: number }> = ({ size }) => (
   <S size={size}>
     <circle cx="24" cy="24" r="22" fill="#2a1215" />
-    <path d="M10 16l7 8 5-4 9 11" stroke="#F87171" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
-    <path d="M25 31h6v-6" stroke="#F87171" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M10 16l7 8 5-4 9 11" stroke="#f9df7b" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M25 31h6v-6" stroke="#f9df7b" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
     <path d="M10 38h28" stroke="#1f2937" strokeWidth="2" strokeLinecap="round" />
   </S>
 );
@@ -138,7 +138,7 @@ const Party: React.FC<{ size?: number }> = ({ size }) => (
     <circle cx="32" cy="14" r="1.5" fill="#FDE68A" />
     <circle cx="36" cy="22" r="1.5" fill="#4ADE80" />
     <circle cx="14" cy="36" r="1.5" fill="#38BDF8" />
-    <circle cx="34" cy="34" r="1.5" fill="#F87171" />
+    <circle cx="34" cy="34" r="1.5" fill="#f9df7b" />
     <path d="M28 30l4-1M20 36l1-4M36 28l-3-2" stroke="#E9D5FF" strokeWidth="1.5" strokeLinecap="round" />
   </S>
 );

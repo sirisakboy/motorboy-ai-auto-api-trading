@@ -26,6 +26,7 @@ const KNOWN_PEAKS: Record<string, { peak: number; trough: number }> = {
   SOL: { peak: 260, trough: 110 },
   BNB: { peak: 720, trough: 450 },
   XRP: { peak: 2.85, trough: 0.48 },
+  SHIB: { peak: 0.0000350, trough: 0.0000120 },
   ADA: { peak: 1.25, trough: 0.32 },
   DOGE: { peak: 0.48, trough: 0.09 },
   AOT: { peak: 74.5, trough: 52.0 },

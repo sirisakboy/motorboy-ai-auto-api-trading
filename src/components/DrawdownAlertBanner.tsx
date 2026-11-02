@@ -25,9 +25,9 @@ export const DrawdownAlertBanner: React.FC<DrawdownAlertBannerProps> = ({
   const isCritical = summary.criticalCount > 0;
 
   const bgCls = isExtreme
-    ? 'bg-gradient-to-r from-red-950/95 via-rose-900/90 to-red-950/95 border-red-500/80 text-white shadow-[0_0_20px_rgba(239,68,68,0.35)]'
+    ? 'bg-gradient-to-r from-[#f9df7b]/95 via-rose-900/90 to-[#f9df7b]/95 border-[#f9df7b]/80 text-white shadow-[0_0_20px_rgba(239,68,68,0.35)]'
     : isCritical
-    ? 'bg-gradient-to-r from-red-900/90 via-red-950/90 to-red-900/90 border-red-500/60 text-white shadow-[0_0_15px_rgba(239,68,68,0.25)]'
+    ? 'bg-gradient-to-r from-[#f9df7b]/90 via-[#f9df7b]/90 to-[#f9df7b]/90 border-[#f9df7b]/60 text-white shadow-[0_0_15px_rgba(239,68,68,0.25)]'
     : 'bg-gradient-to-r from-amber-950/90 via-amber-900/80 to-amber-950/90 border-amber-500/60 text-amber-100';
 
   return (
@@ -35,7 +35,7 @@ export const DrawdownAlertBanner: React.FC<DrawdownAlertBannerProps> = ({
       <div className="max-w-7xl mx-auto px-3 sm:px-4 py-2 sm:py-2.5 flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
         {/* Left: Icon & Alert Message */}
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className={`p-1.5 rounded-lg shrink-0 ${isExtreme ? 'bg-red-500 text-black animate-pulse' : 'bg-red-500/20 text-red-400'}`}>
+          <div className={`p-1.5 rounded-lg shrink-0 ${isExtreme ? 'bg-[#f9df7b] text-black animate-pulse' : 'bg-[#f9df7b]/20 text-[#f9df7b]'}`}>
             {isExtreme ? <ShieldAlert className="w-4 h-4" /> : <AlertTriangle className="w-4 h-4" />}
           </div>
           <div className="text-xs leading-snug truncate">
@@ -69,7 +69,7 @@ export const DrawdownAlertBanner: React.FC<DrawdownAlertBannerProps> = ({
             onClick={onOpenMonitor}
             className={`px-2.5 py-1 rounded-lg text-xs font-bold font-mono inline-flex items-center gap-1 transition-all shadow-xs cursor-pointer ${
               isExtreme
-                ? 'bg-red-500 hover:bg-red-400 text-black font-extrabold animate-bounce'
+                ? 'bg-[#f9df7b] hover:bg-[#f9df7b] text-black font-extrabold animate-bounce'
                 : 'bg-white/15 hover:bg-white/25 text-white border border-white/20'
             }`}
           >
