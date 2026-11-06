@@ -303,9 +303,8 @@ export const App: React.FC = () => {
     }
   };
 
-  // Embedded calming music: load YouTube IFrame API, ramp volume 0→70%, loop forever.
+  // Cleanup background audio when component unmounts
   useEffect(() => {
-    initBgMusic();
     return () => {
       stopBgMusic();
     };
@@ -471,10 +470,40 @@ export const App: React.FC = () => {
     }));
   }, [updateCryptoPrices, updateForex, updateStocks, updateNews]);
 
-  // 1. Binance WebSocket Connection with auto-reconnect & immediate fallback
+  // 1. Binance WebSocket Connection with auto-reconnect & throttled batch update (1s max)
   useEffect(() => {
     let reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
     let reconnectAttempt = 0;
+    const pendingUpdates = new Map<string, CryptoCoin>();
+    let flushTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const flushUpdates = () => {
+      if (pendingUpdates.size === 0) return;
+      const updates = new Map(pendingUpdates);
+      pendingUpdates.clear();
+
+      setCryptoList((prev) => {
+        return prev.map((c) => {
+          const u = updates.get(c.binanceSymbol.toLowerCase());
+          if (!u) return c;
+          const flash =
+            u.price > c.price
+              ? 'UP'
+              : u.price < c.price
+              ? 'DOWN'
+              : 'NONE';
+          return {
+            ...c,
+            price: u.price,
+            change: u.change,
+            high: u.high,
+            low: u.low,
+            volume: u.volume,
+            flash,
+          };
+        });
+      });
+    };
 
     const connectWs = () => {
       if (wsRef.current) {
@@ -487,28 +516,13 @@ export const App: React.FC = () => {
 
       wsRef.current = startBinanceWebSocket(
         (updatedCoin) => {
-          setCryptoList((prev) => {
-            return prev.map((c) => {
-              if (c.binanceSymbol.toLowerCase() === updatedCoin.binanceSymbol.toLowerCase()) {
-                const flash =
-                  updatedCoin.price > c.price
-                    ? 'UP'
-                    : updatedCoin.price < c.price
-                    ? 'DOWN'
-                    : 'NONE';
-                return {
-                  ...c,
-                  price: updatedCoin.price,
-                  change: updatedCoin.change,
-                  high: updatedCoin.high,
-                  low: updatedCoin.low,
-                  volume: updatedCoin.volume,
-                  flash,
-                };
-              }
-              return c;
-            });
-          });
+          pendingUpdates.set(updatedCoin.binanceSymbol.toLowerCase(), updatedCoin);
+          if (!flushTimer) {
+            flushTimer = setTimeout(() => {
+              flushTimer = null;
+              flushUpdates();
+            }, 1000);
+          }
         },
         (status) => {
           setApiStatus((prev) => ({ ...prev, binanceWs: status }));
@@ -529,6 +543,7 @@ export const App: React.FC = () => {
     connectWs();
 
     return () => {
+      if (flushTimer) clearTimeout(flushTimer);
       if (reconnectTimeout) clearTimeout(reconnectTimeout);
       if (wsRef.current) {
         try {
@@ -600,11 +615,11 @@ export const App: React.FC = () => {
     };
   }, [newsList.length, geminiApiKey]);
 
-  // 7. Clock tick every 1s for Bangkok ICT Market Hours
+  // 7. Clock tick every 30s for Bangkok ICT Market Hours (ultra-low CPU)
   useEffect(() => {
     const interval = setInterval(() => {
       setMarketHours(computeMarketHours());
-    }, 1000);
+    }, 30000);
     return () => clearInterval(interval);
   }, []);
 
@@ -1527,7 +1542,7 @@ export const App: React.FC = () => {
                   <div className="flex items-center gap-2">
                     <Sparkles className="w-5 h-5 text-[#38BDF8]" />
                     <h2 className="text-white font-bold text-sm">
-                      ศูนย์รวมข่าวสารตลาด & วิเคราะห์ AI (Poolside)
+                      ศูนย์รวมข่าวสารตลาด & วิเคราะห์ AI (Gemini)
                     </h2>
                   </div>
                   <button
@@ -1735,8 +1750,7 @@ function startWebAudioNatureSynth() {
     if (!AudioCtx) return;
     webAudioCtx = new AudioCtx();
     const masterGain = webAudioCtx.createGain();
-    // 50% max locked volume mapped to soft calming gain
-    masterGain.gain.setValueAtTime(0.08, webAudioCtx.currentTime);
+    masterGain.gain.setValueAtTime(0.04, webAudioCtx.currentTime);
 
     // Warm 432Hz sine oscillator chord (A4 = 432Hz, E5 = 648Hz, C#5 = 540Hz)
     const freqs = [432, 540, 648];
@@ -1746,44 +1760,14 @@ function startWebAudioNatureSynth() {
       const oscGain = webAudioCtx!.createGain();
       osc.type = 'sine';
       osc.frequency.setValueAtTime(freq, webAudioCtx!.currentTime);
-      oscGain.gain.setValueAtTime(0.02, webAudioCtx!.currentTime);
+      oscGain.gain.setValueAtTime(0.015, webAudioCtx!.currentTime);
       osc.connect(oscGain);
       oscGain.connect(masterGain);
       osc.start();
       oscNodes.push(osc);
     });
 
-    // Gentle nature pink-noise filter for stream water / rain ambient feel
-    const bufferSize = webAudioCtx.sampleRate * 2;
-    const noiseBuffer = webAudioCtx.createBuffer(1, bufferSize, webAudioCtx.sampleRate);
-    const output = noiseBuffer.getChannelData(0);
-    let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
-    for (let i = 0; i < bufferSize; i++) {
-      const white = Math.random() * 2 - 1;
-      b0 = 0.99886 * b0 + white * 0.0555179;
-      b1 = 0.99332 * b1 + white * 0.0750759;
-      b2 = 0.96900 * b2 + white * 0.1538520;
-      b3 = 0.86650 * b3 + white * 0.3104856;
-      b4 = 0.55000 * b4 + white * 0.5329522;
-      b5 = -0.7616 * b5 - white * 0.0168980;
-      output[i] = b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362;
-      output[i] *= 0.03;
-      b6 = white * 0.115926;
-    }
-
-    const whiteNoise = webAudioCtx.createBufferSource();
-    whiteNoise.buffer = noiseBuffer;
-    whiteNoise.loop = true;
-
-    const filter = webAudioCtx.createBiquadFilter();
-    filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(600, webAudioCtx.currentTime);
-
-    whiteNoise.connect(filter);
-    filter.connect(masterGain);
     masterGain.connect(webAudioCtx.destination);
-    whiteNoise.start();
-
     natureSynthNodes = { gainNode: masterGain, oscNodes };
   } catch (err) {
     console.warn('Web Audio Nature Synth init warning:', err);
@@ -1802,13 +1786,11 @@ function stopWebAudioNatureSynth() {
 }
 
 /**
- * Start / restart the calming nature healing background audio with soft ramp up.
- * Volume locked at maximum 50% (reduced 20% from previous 70%).
- * Loops continuously without stopping or stuttering.
+ * Start / restart calming nature healing background audio with soft ramp up.
+ * Single lightweight player with playlist to minimize browser CPU usage.
  */
 function initBgMusic(): void {
   const launch = () => {
-    // Start nature sound synth as ambient audio layer
     startWebAudioNatureSynth();
 
     if (bgPlayers.length > 0) return;
@@ -1833,64 +1815,59 @@ function initBgMusic(): void {
 
       // Nature Healing Ambient Stream Video IDs
       const musicIds = ['lE6RYpe9IT0', 'XA_EYOPNJqI', 'hK-OPtECSkw', 'xrvEs5q1vKQ'];
+      const targetId = 'bg-music-single-player';
+      let playerTarget = document.getElementById(targetId);
+      if (!playerTarget) {
+        playerTarget = document.createElement('div');
+        playerTarget.id = targetId;
+        host.appendChild(playerTarget);
+      }
 
-      musicIds.forEach((videoId, index) => {
-        const targetId = `bg-music-target-${index}`;
-        let playerTarget = document.getElementById(targetId);
-        if (!playerTarget) {
-          playerTarget = document.createElement('div');
-          playerTarget.id = targetId;
-          host!.appendChild(playerTarget);
-        }
+      const player = new YT.Player(targetId, {
+        videoId: musicIds[0],
+        playerVars: {
+          autoplay: 1,
+          loop: 1,
+          playlist: musicIds.join(','),
+          controls: 0,
+        },
+        events: {
+          onReady: (event: any) => {
+            try {
+              event.target.setVolume(MAX_LOCKED_VOLUME);
+              event.target.playVideo();
+            } catch {}
 
-        const player = new YT.Player(targetId, {
-          videoId: videoId,
-          playerVars: {
-            autoplay: 1,
-            loop: 1,
-            playlist: videoId,
-            controls: 0,
-          },
-          events: {
-            onReady: (event: any) => {
-              try {
-                event.target.mute();
-                event.target.setVolume(MAX_LOCKED_VOLUME);
-                event.target.playVideo();
-              } catch {}
-              
-              const onGesture = () => {
-                if (webAudioCtx && webAudioCtx.state === 'suspended') {
-                  webAudioCtx.resume();
-                }
-                cleanupGesture();
-              };
-
-              const cleanupGesture = () => {
-                window.removeEventListener('click', onGesture);
-                window.removeEventListener('keydown', onGesture);
-                window.removeEventListener('touchstart', onGesture);
-                bgGestureCleanup = null;
-              };
-
-              bgGestureCleanup = cleanupGesture;
-              window.addEventListener('click', onGesture, { once: true });
-              window.addEventListener('keydown', onGesture, { once: true });
-              window.addEventListener('touchstart', onGesture, { once: true });
-            },
-            onStateChange: (event: any) => {
-              // Loop video instantly if ended or paused
-              if (event.data === 0 || event.data === 2) {
-                try {
-                  event.target.playVideo();
-                  event.target.setVolume(MAX_LOCKED_VOLUME);
-                } catch {}
+            const onGesture = () => {
+              if (webAudioCtx && webAudioCtx.state === 'suspended') {
+                webAudioCtx.resume();
               }
-            },
+              cleanupGesture();
+            };
+
+            const cleanupGesture = () => {
+              window.removeEventListener('click', onGesture);
+              window.removeEventListener('keydown', onGesture);
+              window.removeEventListener('touchstart', onGesture);
+              bgGestureCleanup = null;
+            };
+
+            bgGestureCleanup = cleanupGesture;
+            window.addEventListener('click', onGesture, { once: true });
+            window.addEventListener('keydown', onGesture, { once: true });
+            window.addEventListener('touchstart', onGesture, { once: true });
           },
-        });
-        bgPlayers.push(player);
+          onStateChange: (event: any) => {
+            if (event.data === 0 || event.data === 2) {
+              try {
+                event.target.playVideo();
+                event.target.setVolume(MAX_LOCKED_VOLUME);
+              } catch {}
+            }
+          },
+        },
       });
+      bgPlayers.push(player);
     } catch {
       // Silently ignore if API cannot initialize
     }
@@ -1925,7 +1902,7 @@ function stopBgMusic(): void {
     clearInterval(bgRampTimer);
     bgRampTimer = null;
   }
-  bgPlayers.forEach(player => {
+  bgPlayers.forEach((player) => {
     try { player.stopVideo(); } catch {}
     try { player.destroy(); } catch {}
   });

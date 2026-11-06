@@ -43,9 +43,10 @@
   animation: calmMarquee 42s linear infinite;
 }
 
-/* Global 20-30% smoother card & UI hover transitions */
-*, *::before, *::after {
-  transition-duration: 400ms;
+/* Lightweight button & interactive UI transitions */
+button, a {
+  transition-property: color, background-color, border-color, opacity;
+  transition-duration: 200ms;
 }
 
 /* Custom Eye-Friendly Scrollbar */

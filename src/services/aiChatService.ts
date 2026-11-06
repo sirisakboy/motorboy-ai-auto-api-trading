@@ -1,21 +1,5 @@
-import OpenAI from "openai";
 import { CryptoCoin, ForexPair, ThaiStock, ForeignStock, StockIndex, NewsArticle } from '../types';
 import { computeAtsMatrixAnalysis, getBtcFromCryptoList } from './atsMatrixService';
-
-const POOLSIDE_MODEL = 'poolside/laguna-xs-2.1';
-
-export const getPoolsideApiKey = (): string | undefined => {
-  const metaEnv = (import.meta as any)?.env;
-  if (metaEnv) {
-    if (metaEnv.POOLSIDE_API_KEY) return metaEnv.POOLSIDE_API_KEY;
-    if (metaEnv.VITE_POOLSIDE_API_KEY) return metaEnv.VITE_POOLSIDE_API_KEY;
-  }
-  if (typeof process !== 'undefined' && process.env) {
-    if (process.env.POOLSIDE_API_KEY) return process.env.POOLSIDE_API_KEY;
-    if (process.env.VITE_POOLSIDE_API_KEY) return process.env.VITE_POOLSIDE_API_KEY;
-  }
-  return undefined;
-};
 
 export interface AiChatContext {
   cryptoList?: CryptoCoin[];
@@ -25,11 +9,9 @@ export interface AiChatContext {
   stockIndices?: StockIndex[];
   articles?: NewsArticle[];
   geminiApiKey?: string;
-  ollamaApiKey?: string;
-  ollamaEndpoint?: string;
 }
 
-export type AiEngineMode = 'POOLIDE_LLM' | 'QUANT_LIVE';
+export type AiEngineMode = 'GEMINI_LLM' | 'QUANT_LIVE';
 
 /**
  * Returns current active AI Engine status for UI transparency
@@ -42,17 +24,17 @@ export function getAiEngineStatus(userKey?: string): {
 } {
   if (userKey && userKey.trim()) {
     return {
-      mode: 'POOLIDE_LLM',
-      labelTh: 'Gemini 3.1 Flash Lite (Google AI)',
-      badgeTh: '✨ GEMINI LITE',
+      mode: 'GEMINI_LLM',
+      labelTh: 'Google Gemini 3.1 Flash Lite (Google AI)',
+      badgeTh: '✨ GEMINI AI',
       isOnlineLlm: true,
     };
   }
   return {
-    mode: 'POOLIDE_LLM',
+    mode: 'QUANT_LIVE',
     labelTh: 'Dynamic Quant AI (Real-time Analyst)',
     badgeTh: '⚡ QUANT AI',
-    isOnlineLlm: true,
+    isOnlineLlm: false,
   };
 }
 
@@ -76,7 +58,7 @@ function isExplicitAtsReportCommand(text: string): boolean {
 /**
  * 100% Real-Time AI Chat Engine for "AI Deep Analyze"
  *
- * Tier 1: Generative AI (Gemini / Poolside)
+ * Tier 1: Google Gemini AI (with Live Google Search Grounding)
  * Tier 2: Real-time Quantitative NLP Reasoning Engine
  */
 export async function generateAiChatReply(
@@ -111,20 +93,7 @@ export async function generateAiChatReply(
     }
   }
 
-  // 3. Try Poolside AI if configured
-  const poolsideKey = getPoolsideApiKey();
-  if (poolsideKey && poolsideKey !== 'dummy_key') {
-    try {
-      const liveReply = await callPoolsideWithMarketContext(query, context);
-      if (liveReply) {
-        return liveReply;
-      }
-    } catch (err) {
-      console.warn('Poolside chat request fallback:', err);
-    }
-  }
-
-  // 4. High-Precision Dynamic Quant & Real-Time Technical Reasoning Engine
+  // 3. High-Precision Dynamic Quant & Real-Time Technical Reasoning Engine
   return generateDynamicQuantAnalysis(query, upper, context);
 }
 
@@ -145,55 +114,6 @@ async function callGeminiWithMarketContext(
     return data.reply || null;
   } catch (err) {
     console.warn('Server chat reply query fallback:', err);
-    return null;
-  }
-}
-
-/**
- * Call Poolside with live market snapshot and instructions
- */
-async function callPoolsideWithMarketContext(
-  query: string,
-  context: AiChatContext
-): Promise<string | null> {
-  const activeKey = getPoolsideApiKey();
-  if (!activeKey || activeKey === 'dummy_key') {
-    return null;
-  }
-
-  const activeClient = new OpenAI({
-    apiKey: activeKey,
-    baseURL: "https://inference.poolside.ai/v1",
-    dangerouslyAllowBrowser: true,
-  });
-
-  const marketBrief = buildMarketContextBrief(context);
-  const prompt = `
-คุณคือผู้เชี่ยวชาญด้านการวางแผนตลาดการเงินและการวิเคราะห์ข่าวเศรษฐกิจระดับมืออาชีพ
-ภารกิจ: ให้คำปรึกษา แนะนำ และวิเคราะห์ข่าวสารการเงินและทิศทางตลาดด้วยความเป็นมืออาชีพ เน้นความชัดเจน เข้าใจง่าย แต่อยู่บนพื้นฐานของตรรกะและข้อมูลจริง
-
-ข้อมูลตลาดสดประกอบการวิเคราะห์:
-${marketBrief}
-
-คำถามจากผู้ใช้: "${query}"
-
-แนวทางการวิเคราะห์:
-1. วิเคราะห์ด้วยข้อมูล: ใช้ข้อมูลตลาดจริงประกอบการอธิบาย
-2. ชัดเจนและตรงประเด็น: ตอบคำถามให้ตรงจุด เน้นการวางแผนและการจัดการความเสี่ยง
-3. ความยืดหยุ่น: เป็นการสนทนาแลกเปลี่ยนมุมมอง ไม่ใช้คำตอบสำเร็จรูป
-4. สรุปความเสี่ยง: ทุกครั้งที่มีคำแนะนำด้านการลงทุน ต้องปิดท้ายด้วยคำเตือนเรื่องความเสี่ยงเสมอ
-`.trim();
-
-  try {
-    const response = await activeClient.chat.completions.create({
-      model: POOLSIDE_MODEL,
-      messages: [{ role: "user", content: prompt }],
-      stream: false,
-    });
-    
-    return response.choices[0]?.message?.content || null;
-  } catch (err) {
-    console.warn('Poolside connection warning:', err);
     return null;
   }
 }

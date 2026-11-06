@@ -227,7 +227,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
         <div className="flex items-center gap-2">
           <div className="w-2.5 h-2.5 rounded-full bg-[#0284C7] animate-pulse" />
           <h3 className="text-white font-bold text-sm">
-            ข่าวสาร & วิเคราะห์ AI (Poolside)
+            ข่าวสาร & วิเคราะห์ AI (Gemini)
           </h3>
         </div>
 

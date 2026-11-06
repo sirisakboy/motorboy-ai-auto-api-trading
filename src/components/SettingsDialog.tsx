@@ -94,7 +94,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
     if (!keyInput.trim()) {
       setTestResult({
         success: false,
-        text: 'กรุณากรอก poolside AI API-KEY ก่อนทำการทดสอบ',
+        text: 'กรุณากรอก Google Gemini API Key ก่อนทำการทดสอบ',
       });
       return;
     }
@@ -192,7 +192,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
           </div>
         </div>
 
-        {/* poolside AI API-KEY Section - Collapsible / Hidden by default */}
+        {/* Google Gemini API Key Section - Collapsible */}
         <div className="rounded-2xl bg-[#0F1117]/60 border border-[#252A3A] overflow-hidden transition-all">
           <button
             type="button"
@@ -206,10 +206,10 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
               <div>
                 <div className="flex items-center space-x-2">
                   <span className="text-xs font-bold text-white">
-                    ส่วนจัดการคีย์ poolside AI API-KEY
+                    ส่วนจัดการ Google Gemini API Key
                   </span>
                   <span className="text-[10px] text-[#9CA3AF] bg-[#252A3A] px-1.5 py-0.5 rounded">
-                    poolside AI Platform
+                    Google AI Studio
                   </span>
                 </div>
                 <p className="text-[11px] text-[#9CA3AF]">
@@ -237,15 +237,15 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
               <div className="flex items-center justify-between">
                 <label className="text-xs font-bold text-white flex items-center space-x-1.5">
                   <Key className="w-4 h-4 text-[#7C6CFF]" />
-                  <span>poolside AI API-KEY (ซิงค์กับบัญชี Google)</span>
+                  <span>Google Gemini API Key (ซิงค์กับบัญชี Google)</span>
                 </label>
                 <span className="text-[10px] text-[#9CA3AF] bg-[#252A3A] px-2 py-0.5 rounded-md font-medium">
-                  poolside AI Platform
+                  Google AI Studio
                 </span>
               </div>
 
               <p className="text-[11px] text-[#9CA3AF] leading-relaxed">
-                ใส่ poolside AI API-KEY เพื่อให้ระบบวิเคราะห์สัญญาณตลาดแบบเรียลไทม์ (คีย์จะถูกเข้ารหัสและซิงค์เก็บไว้ในบัญชีของคุณเท่านั้น)
+                ใส่ Google Gemini API Key เพื่อเปิดใช้งานระบบวิเคราะห์ตลาดแบบเรียลไทม์ พร้อม Google Search Grounding สด (คีย์จะถูกเข้ารหัสและซิงค์เก็บไว้ในบัญชีของคุณเท่านั้น)
               </p>
 
               <div className="relative">
@@ -253,7 +253,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                   type={showKey ? 'text' : 'password'}
                   value={keyInput}
                   onChange={(e) => setKeyInput(e.target.value)}
-                  placeholder="poolside_api_key_..."
+                  placeholder="AIzaSy..."
                   className="w-full bg-[#0F1117] border border-[#252A3A] focus:border-[#7C6CFF] rounded-xl pl-3.5 pr-10 py-2.5 text-xs text-white outline-none font-mono placeholder-[#4B5563]"
                 />
                 <button
@@ -265,16 +265,16 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                 </button>
               </div>
 
-              {/* Quick link to poolside AI Platform & AI Studio */}
+              {/* Quick link to Google AI Studio */}
               <div className="flex items-center justify-between px-1">
                 <span className="text-[10px] text-[#6B7280]">ต้องการ API Key เพิ่มเติม?</span>
                 <a
-                  href="https://poolside.ai"
+                  href="https://aistudio.google.com/app/apikey"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-[10px] text-[#7C6CFF] hover:text-[#A5B4FC] flex items-center space-x-1 transition-colors"
                 >
-                  <span>รับ API Key ได้ที่ poolside AI Platform</span>
+                  <span>รับ API Key ฟรีได้ที่ Google AI Studio</span>
                   <ExternalLink className="w-3 h-3" />
                 </a>
               </div>
@@ -305,7 +305,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                   onClick={handleTestKey}
                   disabled={isTestingKey}
                   className="px-3.5 bg-[#0F1117] hover:bg-[#252A3A] border border-[#252A3A] text-[#A5B4FC] font-semibold text-xs py-2 rounded-xl transition-colors flex items-center space-x-1.5 cursor-pointer disabled:opacity-50"
-                  title="ทดสอบการเชื่อมต่อ poolside AI และระบบค้นหาตลาด"
+                  title="ทดสอบการเชื่อมต่อ Gemini AI และระบบค้นหาตลาดสด"
                 >
                   {isTestingKey ? (
                     <>
@@ -315,7 +315,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                   ) : (
                     <>
                       <Search className="w-3.5 h-3.5" />
-                      <span>ทดสอบคีย์ AI</span>
+                      <span>ทดสอบ Gemini AI</span>
                     </>
                   )}
                 </button>

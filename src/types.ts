@@ -184,7 +184,7 @@ export interface LongTermProjectAnalysis {
   strategicRisk: string;
   investmentHorizon: string;
   strategyAdvice: string;
-  source: 'POOLSIDE_AI' | 'FUNDAMENTAL_QUANT';
+  source: 'GEMINI_AI' | 'FUNDAMENTAL_QUANT';
   timestamp: string;
 }
 
@@ -236,7 +236,7 @@ export interface HolisticMarketAdvice {
   bearishSignalsCount: number;
   bullishNewsCount: number;
   bearishNewsCount: number;
-  source: 'POOLSIDE_AI' | 'TECHNICAL_QUANT';
+  source: 'GEMINI_AI' | 'TECHNICAL_QUANT';
   timestamp: string;
 }
 
