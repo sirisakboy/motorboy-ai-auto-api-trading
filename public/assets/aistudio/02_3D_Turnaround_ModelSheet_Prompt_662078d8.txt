@@ -1,0 +1,10 @@
+[MOTORBOY AI-TH — 3D MODEL SHEET & TURNAROUND PROMPT]
+TARGET: 3D Artists (Blender / Maya / ZBrush modeling reference)
+
+Prompt:
+3D character concept sheet, orthographic model turnaround, 4 views: front view, 3/4 front view, side profile view, and back view. Female anime cyberpunk racing mechanic and AI trading co-pilot mascot, MotorBoy Studio AI-TH. Character in relaxed A-pose with palms facing forward, ready for 3D rigging and topology retopology. Consistent anatomy, height ratio 1:7.2 heads tall. Wearing gradient neon crimson red (#FF2D55) to purple (#A855F7) racing jacket with glowing cyber piping, dark tactical mechanic trousers with pockets, utility tool harness featuring emergency Kill Switch toggle button, combat work boots, brown ponytail hair with red headband and HUD monocular visor. Clean, neutral studio lighting, solid deep dark matte gray background #0A0A0A, no shadows on floor, crisp silhouette, ultra-high geometry definition, game-ready character pipeline asset sheet, 8k, PBR texture reference --ar 16:9 --stylize 120
+
+Notes for 3D Modeler:
+- Base Mesh target: 45,000 - 65,000 Tris (Game Ready / Unreal Engine 5 LOD0)
+- UV Mapping: 3 Texture Sets (Head & Hair, Body & Clothes, Accessories & Tech Gear)
+- Emissive Mask: Channel-packed for neon LED piping on jacket and AR Visor

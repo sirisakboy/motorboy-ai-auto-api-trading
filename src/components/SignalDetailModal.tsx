@@ -13,6 +13,7 @@ import {
   TrendingUp,
   ShieldAlert,
 } from 'lucide-react';
+import { useMascotStore } from '../services/mascotService';
 import {
   TradingSignal,
   CryptoCoin,
@@ -58,6 +59,14 @@ export const SignalDetailModal: React.FC<SignalDetailModalProps> = ({
   const [isFetchingSentiment, setIsFetchingSentiment] = useState(false);
 
   const dialogRef = useModalA11y({ onClose: onDismiss, enabled: !!signal });
+
+  // Mascot Trigger: Scanning on modal open
+  React.useEffect(() => {
+    if (signal) {
+      useMascotStore.getState().setMascotState('SCANNING', `กำลังวิเคราะห์เทคนิคอล ${signal.symbol} ให้ครับ...`);
+    }
+    return () => useMascotStore.getState().resetToIdle();
+  }, [signal?.id]);
 
   if (!signal) return null;
 
@@ -139,6 +148,9 @@ export const SignalDetailModal: React.FC<SignalDetailModalProps> = ({
           sl: result.supportLevel,
           tp: result.resistanceLevel,
         });
+        if (result.confidence > 85) {
+           useMascotStore.getState().setMascotState('TP_CELEBRATE', `ว้าว! ความมั่นใจสูงมาก (${result.confidence}%) น่าสนใจมากครับไม้แนะนำนี้`);
+        }
         setSavedSuccess(true);
       }
     } catch (err) {
@@ -160,6 +172,7 @@ export const SignalDetailModal: React.FC<SignalDetailModalProps> = ({
         sl: signal.sl,
         tp: signal.tp,
       });
+      useMascotStore.getState().setMascotState('READY_TO_EXECUTE', `บันทึกสัญญาณ ${signal.symbol} แล้วครับ เตรียมตัวบิดให้เต็มเหนี่ยว!`);
       setSavedSuccess(true);
     }
   };
@@ -412,7 +425,7 @@ export const SignalDetailModal: React.FC<SignalDetailModalProps> = ({
                 )}
                 <div className="flex items-center space-x-1.5 font-mono text-[10px] text-[#f9df7b]">
                   <ShieldAlert className="w-3 h-3" />
-                  <span>Safety Margin (3-7 Days): {sentiment.safetyMargin.toFixed(1)}%</span>
+                  <span>Safety Margin (3-7 Days): {(sentiment.safetyMargin ?? 12).toFixed(1)}%</span>
                 </div>
               </div>
             </div>

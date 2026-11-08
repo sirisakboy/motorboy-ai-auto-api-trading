@@ -69,17 +69,24 @@ export const AtsMatrixDashboard: React.FC<AtsMatrixDashboardProps> = ({
 
   // Periodic simulated micro-tick & live check
   useEffect(() => {
+    let isMounted = true;
     const interval = setInterval(async () => {
+      if (!isMounted) return;
       setTorusRotation((prev) => (prev + 3) % 360);
       try {
         const live = await fetchLiveBtcTicker();
-        setBtcData({ price: live.price, change: live.change24h, latencyMs: live.latencyMs });
-        setAnalysis(computeAtsMatrixAnalysis(live.price, live.change24h, live.latencyMs));
+        if (isMounted) {
+          setBtcData({ price: live.price, change: live.change24h, latencyMs: live.latencyMs });
+          setAnalysis(computeAtsMatrixAnalysis(live.price, live.change24h, live.latencyMs));
+        }
       } catch {
         // keep current
       }
     }, 4000);
-    return () => clearInterval(interval);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, []);
 
   const handleManualRefresh = async () => {
@@ -113,26 +120,28 @@ export const AtsMatrixDashboard: React.FC<AtsMatrixDashboardProps> = ({
     <div
       className={`rounded-2xl border transition-all duration-300 font-sans ${
         isDark
-          ? 'bg-[#0A0D14] border-[#00FF66]/30 text-slate-100 shadow-[0_0_40px_rgba(0,255,102,0.08)]'
-          : 'bg-slate-900 border-[#00FF66]/40 text-slate-100 shadow-2xl'
+          ? 'bg-[#0A0A0A] border-[#FF2D55]/30 text-slate-100 shadow-[0_0_40px_rgba(255,45,85,0.1)]'
+          : 'bg-slate-900 border-[#FF2D55]/40 text-slate-100 shadow-2xl'
       } ${isModal ? 'max-h-[92vh] flex flex-col overflow-hidden' : 'p-4 sm:p-6 my-4'}`}
     >
-      {/* Top Banner / Cockpit Bar */}
-      <div className="p-4 sm:p-5 border-b border-[#00FF66]/20 bg-gradient-to-r from-[#00FF66]/10 via-[#0A0D14] to-[#00F0FF]/10 flex flex-wrap items-center justify-between gap-3">
+      {/* Top Banner / MotorBoy Cockpit Bar */}
+      <div className="p-4 sm:p-5 border-b border-[#FF2D55]/20 bg-gradient-to-r from-[#FF2D55]/10 via-[#0A0A0A] to-[#A855F7]/10 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#00FF66]/15 border border-[#00FF66]/50 flex items-center justify-center text-[#00FF66] shadow-[0_0_15px_rgba(0,255,102,0.4)] animate-pulse">
-            <Radio className="w-5 h-5" />
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FF2D55] via-[#A855F7] to-[#3B82F6] p-[1.5px] shadow-[0_0_15px_rgba(255,45,85,0.4)]">
+            <div className="w-full h-full bg-[#0A0A0A] rounded-[9.5px] flex items-center justify-center text-sm">
+              <Radio className="w-5 h-5 text-white animate-pulse" />
+            </div>
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-mono text-sm sm:text-base font-black tracking-widest text-[#00FF66] uppercase">
-                ATS MATRIX MODE
+              <span className="font-mono text-sm sm:text-base font-black tracking-widest bg-gradient-to-r from-[#FF2D55] to-[#A855F7] text-transparent bg-clip-text uppercase">
+                MOTORBOY ATS COCKPIT
               </span>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#00FF66]/20 border border-[#00FF66]/40 text-[#00FF66] font-bold">
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#FF2D55]/20 border border-[#FF2D55]/40 text-[#FF2D55] font-bold">
                 ● LIVE FEED
               </span>
-              <span className="hidden sm:inline-block text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#00F0FF]/15 border border-[#00F0FF]/30 text-[#00F0FF] font-semibold">
-                POLYMARKET & CRYPTO
+              <span className="hidden sm:inline-block text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#FF2D55]/15 border border-[#FF2D55]/30 text-[#FF2D55] font-semibold">
+                HYBRID PRO ENGINE
               </span>
             </div>
             <p className="text-xs text-slate-400 font-mono mt-0.5 flex items-center gap-2">
@@ -140,7 +149,7 @@ export const AtsMatrixDashboard: React.FC<AtsMatrixDashboardProps> = ({
               <span>•</span>
               <span>TORUS ORDER BOOK</span>
               <span>•</span>
-              <span className="text-emerald-400">Inefficiency Arb</span>
+              <span className="text-[#FF2D55]">MotorBoy Studio AI-TH</span>
             </p>
           </div>
         </div>
@@ -172,7 +181,7 @@ export const AtsMatrixDashboard: React.FC<AtsMatrixDashboardProps> = ({
             <button
               type="button"
               onClick={handleSendReportToChat}
-              className="px-3 py-1.5 rounded-xl bg-[#00F0FF]/20 hover:bg-[#00F0FF]/30 border border-[#00F0FF]/50 text-xs font-mono font-bold text-[#00F0FF] flex items-center gap-1.5 transition-all cursor-pointer"
+              className="px-3 py-1.5 rounded-xl bg-[#FF2D55]/20 hover:bg-[#FF2D55]/30 border border-[#FF2D55]/50 text-xs font-mono font-bold text-[#FF2D55] flex items-center gap-1.5 transition-all cursor-pointer"
               title="ส่งรายงาน ATS เข้าห้อง AI Deep Analyze"
             >
               {sentToChat ? <Check className="w-3.5 h-3.5" /> : <Send className="w-3.5 h-3.5" />}
@@ -212,13 +221,13 @@ export const AtsMatrixDashboard: React.FC<AtsMatrixDashboardProps> = ({
           onClick={() => setActiveTab('BACKTEST')}
           className={`pb-2.5 px-3 font-mono text-xs font-bold border-b-2 flex items-center gap-1.5 transition-all cursor-pointer ${
             activeTab === 'BACKTEST'
-              ? 'border-[#00F0FF] text-[#00F0FF]'
+              ? 'border-[#FF2D55] text-[#FF2D55]'
               : 'border-transparent text-slate-400 hover:text-white'
           }`}
         >
           <Cpu className="w-3.5 h-3.5" />
           <span>Backtesting Dashboard (Strategy Lab &amp; Live Ticker)</span>
-          <span className="text-[9px] px-1.5 py-0.2 rounded-sm bg-[#00F0FF]/20 text-[#00F0FF] border border-[#00F0FF]/40 font-black">
+          <span className="text-[9px] px-1.5 py-0.2 rounded-sm bg-[#FF2D55]/20 text-[#FF2D55] border border-[#FF2D55]/40 font-black">
             LIVE TICKER
           </span>
         </button>
@@ -286,7 +295,7 @@ export const AtsMatrixDashboard: React.FC<AtsMatrixDashboardProps> = ({
                   <Gauge className="w-3.5 h-3.5 text-[#00F0FF]" />
                   MODEL EDGE
                 </span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded-sm bg-[#00F0FF]/15 border border-[#00F0FF]/30 text-[#00F0FF] font-bold">
+                <span className="text-[10px] px-1.5 py-0.5 rounded-sm bg-[#FF2D55]/15 border border-[#FF2D55]/30 text-[#FF2D55] font-bold">
                   +EV ARBITRAGE
                 </span>
               </div>
@@ -536,7 +545,7 @@ export const AtsMatrixDashboard: React.FC<AtsMatrixDashboardProps> = ({
                       </div>
                     </div>
                   </div>
-                  <div className="text-xl font-mono font-black text-[#00F0FF]">
+                  <div className="text-xl font-mono font-black text-[#FF2D55]">
                     +{analysis.inefficiency.spreadInefficiencyPct}%
                   </div>
                 </div>

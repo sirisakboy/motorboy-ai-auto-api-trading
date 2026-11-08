@@ -1,21 +1,5 @@
-import OpenAI from "openai";
 import { CryptoCoin, ForexPair, ThaiStock, ForeignStock, StockIndex, NewsArticle } from '../types';
 import { computeAtsMatrixAnalysis, getBtcFromCryptoList } from './atsMatrixService';
-
-const POOLSIDE_MODEL = 'poolside/laguna-xs-2.1';
-
-export const getPoolsideApiKey = (): string | undefined => {
-  const metaEnv = (import.meta as any)?.env;
-  if (metaEnv) {
-    if (metaEnv.POOLSIDE_API_KEY) return metaEnv.POOLSIDE_API_KEY;
-    if (metaEnv.VITE_POOLSIDE_API_KEY) return metaEnv.VITE_POOLSIDE_API_KEY;
-  }
-  if (typeof process !== 'undefined' && process.env) {
-    if (process.env.POOLSIDE_API_KEY) return process.env.POOLSIDE_API_KEY;
-    if (process.env.VITE_POOLSIDE_API_KEY) return process.env.VITE_POOLSIDE_API_KEY;
-  }
-  return undefined;
-};
 
 export interface AiChatContext {
   cryptoList?: CryptoCoin[];
@@ -25,11 +9,9 @@ export interface AiChatContext {
   stockIndices?: StockIndex[];
   articles?: NewsArticle[];
   geminiApiKey?: string;
-  ollamaApiKey?: string;
-  ollamaEndpoint?: string;
 }
 
-export type AiEngineMode = 'POOLIDE_LLM' | 'QUANT_LIVE';
+export type AiEngineMode = 'GEMINI_LLM' | 'QUANT_LIVE';
 
 /**
  * Returns current active AI Engine status for UI transparency
@@ -42,17 +24,17 @@ export function getAiEngineStatus(userKey?: string): {
 } {
   if (userKey && userKey.trim()) {
     return {
-      mode: 'POOLIDE_LLM',
-      labelTh: 'Gemini 3.1 Flash Lite (Google AI)',
-      badgeTh: '✨ GEMINI LITE',
+      mode: 'GEMINI_LLM',
+      labelTh: 'MotorBoy AI-TH Co-Pilot (Gemini AI + Google Grounding)',
+      badgeTh: '🏍️ MOTORBOY AI',
       isOnlineLlm: true,
     };
   }
   return {
-    mode: 'POOLIDE_LLM',
-    labelTh: 'Dynamic Quant AI (Real-time Analyst)',
-    badgeTh: '⚡ QUANT AI',
-    isOnlineLlm: true,
+    mode: 'QUANT_LIVE',
+    labelTh: 'MotorBoy Real-time Quant Engine (Hybrid Pro)',
+    badgeTh: '⚡ MOTORBOY QUANT',
+    isOnlineLlm: false,
   };
 }
 
@@ -76,7 +58,7 @@ function isExplicitAtsReportCommand(text: string): boolean {
 /**
  * 100% Real-Time AI Chat Engine for "AI Deep Analyze"
  *
- * Tier 1: Generative AI (Gemini / Poolside)
+ * Tier 1: Google Gemini AI (with Live Google Search Grounding)
  * Tier 2: Real-time Quantitative NLP Reasoning Engine
  */
 export async function generateAiChatReply(
@@ -111,20 +93,7 @@ export async function generateAiChatReply(
     }
   }
 
-  // 3. Try Poolside AI if configured
-  const poolsideKey = getPoolsideApiKey();
-  if (poolsideKey && poolsideKey !== 'dummy_key') {
-    try {
-      const liveReply = await callPoolsideWithMarketContext(query, context);
-      if (liveReply) {
-        return liveReply;
-      }
-    } catch (err) {
-      console.warn('Poolside chat request fallback:', err);
-    }
-  }
-
-  // 4. High-Precision Dynamic Quant & Real-Time Technical Reasoning Engine
+  // 3. High-Precision Dynamic Quant & Real-Time Technical Reasoning Engine
   return generateDynamicQuantAnalysis(query, upper, context);
 }
 
@@ -145,55 +114,6 @@ async function callGeminiWithMarketContext(
     return data.reply || null;
   } catch (err) {
     console.warn('Server chat reply query fallback:', err);
-    return null;
-  }
-}
-
-/**
- * Call Poolside with live market snapshot and instructions
- */
-async function callPoolsideWithMarketContext(
-  query: string,
-  context: AiChatContext
-): Promise<string | null> {
-  const activeKey = getPoolsideApiKey();
-  if (!activeKey || activeKey === 'dummy_key') {
-    return null;
-  }
-
-  const activeClient = new OpenAI({
-    apiKey: activeKey,
-    baseURL: "https://inference.poolside.ai/v1",
-    dangerouslyAllowBrowser: true,
-  });
-
-  const marketBrief = buildMarketContextBrief(context);
-  const prompt = `
-คุณคือผู้เชี่ยวชาญด้านการวางแผนตลาดการเงินและการวิเคราะห์ข่าวเศรษฐกิจระดับมืออาชีพ
-ภารกิจ: ให้คำปรึกษา แนะนำ และวิเคราะห์ข่าวสารการเงินและทิศทางตลาดด้วยความเป็นมืออาชีพ เน้นความชัดเจน เข้าใจง่าย แต่อยู่บนพื้นฐานของตรรกะและข้อมูลจริง
-
-ข้อมูลตลาดสดประกอบการวิเคราะห์:
-${marketBrief}
-
-คำถามจากผู้ใช้: "${query}"
-
-แนวทางการวิเคราะห์:
-1. วิเคราะห์ด้วยข้อมูล: ใช้ข้อมูลตลาดจริงประกอบการอธิบาย
-2. ชัดเจนและตรงประเด็น: ตอบคำถามให้ตรงจุด เน้นการวางแผนและการจัดการความเสี่ยง
-3. ความยืดหยุ่น: เป็นการสนทนาแลกเปลี่ยนมุมมอง ไม่ใช้คำตอบสำเร็จรูป
-4. สรุปความเสี่ยง: ทุกครั้งที่มีคำแนะนำด้านการลงทุน ต้องปิดท้ายด้วยคำเตือนเรื่องความเสี่ยงเสมอ
-`.trim();
-
-  try {
-    const response = await activeClient.chat.completions.create({
-      model: POOLSIDE_MODEL,
-      messages: [{ role: "user", content: prompt }],
-      stream: false,
-    });
-    
-    return response.choices[0]?.message?.content || null;
-  } catch (err) {
-    console.warn('Poolside connection warning:', err);
     return null;
   }
 }
@@ -479,11 +399,11 @@ function analyzeCryptoAssetDynamically(
     directAnswer = `ภาพรวมแนวโน้ม ${coin.symbol}: ทิศทาง 24 ชม. เป็น ${isUp ? 'BULLISH (แรงซื้อคุมตลาด)' : 'BEARISH (แรงขายกดดัน)'} การเคลื่อนไหวอยู่ในกรอบ $${low.toLocaleString()} - $${high.toLocaleString()}`;
   }
 
-  return `⚡ [AI DEEP ANALYZE // ${coin.name} (${coin.symbol})]
+  return `🏍️ [MotorBoy AI-TH // ${coin.name} (${coin.symbol})]
 ▶ ตอบคำถาม: "${query}"
 ${directAnswer}
 
-📊 ตัวเลขทางเทคนิคสด (Real-Time Quantitative Levels):
+📊 ตัวเลขทางเทคนิคสด (MotorBoy Real-Time Quantitative Levels):
 • ราคา Spot ปัจจุบัน: $${p.toLocaleString()} (${isUp ? '+' : ''}${coin.change.toFixed(2)}%)
 • กรอบ 24 ชม. (High / Low): $${high.toLocaleString()} / $${low.toLocaleString()}
 • จุดหมุนหลัก (Pivot Point): $${Math.round(pp).toLocaleString()}
@@ -491,11 +411,11 @@ ${directAnswer}
 • แนวรับ (Key Supports): S1 $${s1.toLocaleString()} | S2 $${s2.toLocaleString()}
 • ปริมาณซื้อขาย (Volume): $${Math.round(coin.volume || 0).toLocaleString()} USD
 
-🎯 แผน Action Plan สำหรับเทรดเดอร์:
-- กลยุทธ์: ${isUp ? 'รอจังหวะย่อทดสอบแนวรับ S1 แล้วเข้าซื้อเกาะเทรนด์ (Buy on Dip)' : 'เฝ้ารอการสร้างฐานเหนือแนวรับ S2 ห้ามสวนซื้อจนกว่าจะมีสัญญาณแท่งเทียนกลับตัว'}
-- การคุมความเสี่ยง: เสี่ยงไม่เกิน 1-2% ต่อไม้ อัตรา Risk/Reward ขั้นต่ำ 1:2
+🎯 แผน Action Plan สไตล์ MotorBoy:
+- กลยุทธ์: ${isUp ? '🏍️ Full Throttle! รอจังหวะย่อทดสอบแนวรับ S1 แล้วเข้าซื้อเกาะเทรนด์ (Buy on Dip)' : '🛑 เบรกก่อนจิ! เฝ้ารอการสร้างฐานเหนือแนวรับ S2 ห้ามสวนซื้อจนกว่าจะมีสัญญาณแท่งเทียนกลับตัว'}
+- การคุมความเสี่ยง (Risk Guard): เสี่ยงไม่เกิน 2% ต่อไม้ อัตรา RR Ratio ไม่ต่ำกว่า 1:1.5
 
-⚠️ การเทรดมีความเสี่ยง โปรดบริหารความเสี่ยงอย่างรอบคอบ`;
+นี่คือการวิเคราะห์ ไม่ใช่คำแนะนำการลงทุน`;
 }
 
 function analyzeThaiStockDynamically(
@@ -543,7 +463,7 @@ ${angle}
 💡 กลยุทธ์การเทรด:
 ${isUp ? 'เกาะโมเมนตัมตามรอบ โดยเลื่อน Trailing Stop ตามแนวรับ' : 'ตั้งรับบริเวณแนวรับ ฿' + sup1 + ' คุมไม้ให้เล็กลงในสภาวะตลาดผันผวน'}
 
-⚠️ การเทรดมีความเสี่ยง โปรดบริหารความเสี่ยงอย่างรอบคอบ`;
+นี่คือการวิเคราะห์ ไม่ใช่คำแนะนำการลงทุน`;
 }
 
 function analyzeUsStockDynamically(
@@ -589,7 +509,7 @@ ${advice}
 🎯 คำแนะนำการเข้าสถานะ:
 - บริหารความเสี่ยงสไตล์ US Trader: ไม่ถือ Over-leverage ข้ามสัปดาห์ และจับตาผลประกอบการ Earnings รายไตรมาส
 
-⚠️ การเทรดมีความเสี่ยง โปรดบริหารความเสี่ยงอย่างรอบคอบ`;
+นี่คือการวิเคราะห์ ไม่ใช่คำแนะนำการลงทุน`;
 }
 
 function analyzeForexDynamically(
@@ -630,7 +550,7 @@ ${focus}
 - ควบคุม Lot Size อย่างเคร่งครัดตามขนาดบัญชี
 - วาง Stop Loss ทุกออเดอร์เพื่อป้องกัน Slippage จากข่าวแรง
 
-⚠️ การเทรดมีความเสี่ยง โปรดบริหารความเสี่ยงอย่างรอบคอบ`;
+นี่คือการวิเคราะห์ ไม่ใช่คำแนะนำการลงทุน`;
 }
 
 function analyzeGoldCommodityDynamically(query: string, ctx: AiChatContext): string {
@@ -651,7 +571,7 @@ function analyzeGoldCommodityDynamically(query: string, ctx: AiChatContext): str
 - สายเทรด Spot/Futures: รอจังหวะย่อสะสมบริเวณ $2,710 - $2,720 วาง Stop Loss ที่ $2,695
 - ทองคำแท่งในไทย: หากเงินบาทอ่อนค่าจะช่วยหนุนราคาทองคำแท่งในประเทศให้ทรงตัวสูงกว่าทองโลก
 
-⚠️ การเทรดมีความเสี่ยง โปรดบริหารความเสี่ยงอย่างรอบคอบ`;
+นี่คือการวิเคราะห์ ไม่ใช่คำแนะนำการลงทุน`;
 }
 
 function analyzeOilCommodityDynamically(query: string): string {
@@ -665,7 +585,7 @@ function analyzeOilCommodityDynamically(query: string): string {
 
 💡 แผนการเทรด: น้ำมันมีความผันผวนสูงตามข่าวสงคราม แนะนำเทรดตามกรอบแนวรับ-แนวต้านและไม่ถือสถานะข้ามสัปดาห์
 
-⚠️ การเทรดมีความเสี่ยง โปรดบริหารความเสี่ยงอย่างรอบคอบ`;
+นี่คือการวิเคราะห์ ไม่ใช่คำแนะนำการลงทุน`;
 }
 
 function analyzeIndexDynamically(idx: StockIndex, query: string): string {
@@ -680,7 +600,7 @@ function analyzeIndexDynamically(idx: StockIndex, query: string): string {
 
 💡 กลยุทธ์ภาพรวม: หากเทรดดัชนีผ่าน Index Futures หรือ ETF ให้จับตาเส้นค่าเฉลี่ย EMA 20 วันเป็นแนวรับหลัก
 
-⚠️ การเทรดมีความเสี่ยง โปรดบริหารความเสี่ยงอย่างรอบคอบ`;
+นี่คือการวิเคราะห์ ไม่ใช่คำแนะนำการลงทุน`;
 }
 
 function analyzeDrawdownDynamically(query: string): string {
@@ -699,7 +619,7 @@ function analyzeDrawdownDynamically(query: string): string {
 3. บังคับใช้กฎ 2% Risk Cap: ห้ามเสี่ยงเกิน 2% ของเงินทุนที่เหลืออยู่ในไม้เดียว
 4. เปิดใช้โมดูล "Drawdown Monitor" จากแถบเมนูด้านบนเพื่อตรวจเส้น Underwater Curve
 
-⚠️ การเทรดมีความเสี่ยง โปรดบริหารความเสี่ยงอย่างรอบคอบ`;
+นี่คือการวิเคราะห์ ไม่ใช่คำแนะนำการลงทุน`;
 }
 
 function analyzeMacroNewsDynamically(query: string, ctx: AiChatContext): string {
@@ -719,7 +639,7 @@ ${newsList}
 • ข่าวเศรษฐกิจและอัตราดอกเบี้ยส่งผลกระทบต่อสเปรด FX และสินทรัพย์เสี่ยงโดยตรง
 • คำแนะนำ: ในช่วงที่มีการประกาศตัวเลขเศรษฐกิจสำคัญ (เช่น CPI, Non-farm, Fed Rate) ให้ขยายกรอบ Stop Loss หรือลดขนาดไม้เทรดเพื่อหลีกเลี่ยงการถูกกวาดสภาพคล่อง (Liquidity Sweep)
 
-⚠️ การเทรดมีความเสี่ยง โปรดบริหารความเสี่ยงอย่างรอบคอบ`;
+นี่คือการวิเคราะห์ ไม่ใช่คำแนะนำการลงทุน`;
 }
 
 function analyzeTradingEducationDynamically(query: string): string {
@@ -737,7 +657,7 @@ function analyzeTradingEducationDynamically(query: string): string {
    - DCA: เหมาะกับการสะสมสินทรัพย์พื้นฐานดีรอบ 1-3 ปีขึ้นไป
    - Swing Trade: เหมาะกับการเทรดตามรอบคลื่น Fibonacci และเส้น EMA
 
-⚠️ การเทรดมีความเสี่ยง โปรดบริหารความเสี่ยงอย่างรอบคอบ`;
+นี่คือการวิเคราะห์ ไม่ใช่คำแนะนำการลงทุน`;
 }
 
 function generateGeneralMarketSynthesis(query: string, ctx: AiChatContext): string {
@@ -761,5 +681,5 @@ function generateGeneralMarketSynthesis(query: string, ctx: AiChatContext): stri
 - พิมพ์ "ATS" เพื่อขอรายงาน ATS Matrix & Polymarket Inefficiency
 - ใส่ Gemini API Key ในเมนูตั้งค่า เพื่อเปิดใช้งานโมเดล Gemini 3.8 Flash พร้อมค้นหาข้อมูล Google สด
 
-⚠️ การเทรดมีความเสี่ยง โปรดบริหารความเสี่ยงอย่างรอบคอบ`;
+นี่คือการวิเคราะห์ ไม่ใช่คำแนะนำการลงทุน`;
 }

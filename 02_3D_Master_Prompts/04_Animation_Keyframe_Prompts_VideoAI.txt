@@ -1,0 +1,11 @@
+[MOTORBOY AI-TH — AI VIDEO & ANIMATION KEYFRAME PROMPTS]
+TARGET TOOLS: Runway Gen-3 Alpha / Luma Dream Machine / Kling AI / OpenAI Sora / Hailuo AI
+
+1. IDLE BREATHING LOOP (Web / UI Widget):
+"Seamless 4-second loop, 3D stylized anime female racing mechanic Nong MotorBoy standing in idle stance, subtle breathing chest movement, ponytail gently swaying in soft breeze, cyber jacket LED neon stripes slowly pulsing gradient red to purple, AR eye visor flickering with live stock market numbers, smooth 60fps, 4k render."
+
+2. TP VICTORY DANCE (Trade Closed with Profit):
+"3D character Nong MotorBoy enthusiastically jumps, punches the air in victory, flashes a thumbs up and winks at camera, dazzling green and gold cyber particles explode in background, energetic joyful anime motion, dynamic camera zoom, 60fps."
+
+3. EMERGENCY KILL SWITCH SLAP (Emergency Stop Event):
+"Dramatic quick camera punch-in on 3D character Nong MotorBoy rapidly slamming the red emergency Kill Switch button on her tactical belt with palm, red neon shockwave expands outward, digital sirens flash, character shakes head and gives a firm 'HALT' palm gesture directly to screen."

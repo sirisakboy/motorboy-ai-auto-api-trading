@@ -1,12 +1,17 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import {
   X, Calculator, ArrowUpRight, ArrowDownRight, CheckCircle2, BookmarkPlus,
-  Sparkles, ShieldCheck, Loader2,
+  Sparkles, ShieldCheck, Loader2, Bot, Scale, Plus, Trash2, RotateCcw,
+  Sliders, AlertTriangle, Copy, Check
 } from 'lucide-react';
-import { TradingSignal, TradingHistoryEntry, AiAnalysisResult, CryptoCoin } from '../types';
+import {
+  TradingSignal, TradingHistoryEntry, AiAnalysisResult, CryptoCoin,
+  PortfolioRebalanceAsset, PortfolioRebalancePlan
+} from '../types';
 import { analyzeMarketWithGemini } from '../services/geminiService';
 import { t } from '../i18n';
 import { useModalA11y } from '../hooks/useModalA11y';
+import { useMascotStore } from '../services/mascotService';
 
 interface Props {
   isOpen: boolean;
@@ -14,6 +19,7 @@ interface Props {
   useThb?: boolean;
   usdThbRate?: number;
   signals?: TradingSignal[];
+  cryptoList?: CryptoCoin[];
   geminiApiKey?: string;
   onSaveToHistory?: (
     entry: Omit<TradingHistoryEntry, 'id' | 'userId' | 'timestamp'>
@@ -22,9 +28,50 @@ interface Props {
 
 const RR_OPTIONS = [1, 1.5, 2, 3];
 
+const PRESETS: { name: string; desc: string; assets: Array<{ symbol: string; name: string; targetPct: number; category: 'CRYPTO' | 'STOCK' | 'FOREX' | 'CASH' }> }[] = [
+  {
+    name: 'Crypto Core (50/30/10/10)',
+    desc: 'เน้น BTC & ETH คุมความเสี่ยงด้วย USDT สำรอง',
+    assets: [
+      { symbol: 'BTC', name: 'Bitcoin', targetPct: 50, category: 'CRYPTO' },
+      { symbol: 'ETH', name: 'Ethereum', targetPct: 30, category: 'CRYPTO' },
+      { symbol: 'SOL', name: 'Solana', targetPct: 10, category: 'CRYPTO' },
+      { symbol: 'USDT', name: 'Tether USD', targetPct: 10, category: 'CASH' },
+    ],
+  },
+  {
+    name: 'All-Weather (40/30/20/10)',
+    desc: 'กระจายความเสี่ยงข้ามสินทรัพย์ Digital + Cash',
+    assets: [
+      { symbol: 'BTC', name: 'Bitcoin', targetPct: 40, category: 'CRYPTO' },
+      { symbol: 'ETH', name: 'Ethereum', targetPct: 30, category: 'CRYPTO' },
+      { symbol: 'BNB', name: 'BNB Chain', targetPct: 20, category: 'CRYPTO' },
+      { symbol: 'USDT', name: 'Tether USD', targetPct: 10, category: 'CASH' },
+    ],
+  },
+  {
+    name: 'High Beta / L1 (35/25/25/15)',
+    desc: 'โฟกัส High Performance L1 Ecosystem',
+    assets: [
+      { symbol: 'BTC', name: 'Bitcoin', targetPct: 35, category: 'CRYPTO' },
+      { symbol: 'SOL', name: 'Solana', targetPct: 25, category: 'CRYPTO' },
+      { symbol: 'ETH', name: 'Ethereum', targetPct: 25, category: 'CRYPTO' },
+      { symbol: 'DOGE', name: 'Dogecoin', targetPct: 15, category: 'CRYPTO' },
+    ],
+  },
+];
+
 export const RiskCalculatorModal: React.FC<Props> = ({
-  isOpen, onClose, useThb = false, usdThbRate = 36.45, signals = [], geminiApiKey = '', onSaveToHistory,
+  isOpen, onClose, useThb = false, usdThbRate = 36.45, signals = [], cryptoList = [], geminiApiKey = '', onSaveToHistory,
 }) => {
+  // Accessibility: role/aria-modal/Escape/focus-trap/scroll-lock. Must run before
+  // the `if (!isOpen) return null` guard further down.
+  const dialogRef = useModalA11y({ onClose, enabled: isOpen });
+
+  // Modal Top Tab: Position Sizing vs Portfolio Rebalance
+  const [activeTab, setActiveTab] = useState<'POSITION' | 'REBALANCE'>('POSITION') ;
+
+  // --- TAB 1: Position Sizing State ---
   const [direction, setDirection] = useState<'LONG' | 'SHORT'>('LONG');
   const [accountSize, setAccountSize] = useState('10000');
   const [riskPercent, setRiskPercent] = useState('1');
@@ -39,11 +86,57 @@ export const RiskCalculatorModal: React.FC<Props> = ({
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
 
-  // AI review goes stale as soon as the plan changes
-  useEffect(() => {
-    setAiResult(null);
-  }, [direction, entryPrice, slPrice, rr]);
+  // --- TAB 2: Rebalance Portfolio State ---
+  // Helper to find initial price for common symbols
+  const getSymbolPrice = (sym: string): number => {
+    const fromCrypto = cryptoList.find((c) => c.symbol.toUpperCase() === sym.toUpperCase());
+    if (fromCrypto && fromCrypto.price > 0) return fromCrypto.price;
+    const fromSignal = signals.find((s) => s.symbol.toUpperCase().includes(sym.toUpperCase()));
+    if (fromSignal && fromSignal.price > 0) return fromSignal.price;
+    if (sym === 'BTC') return 95000;
+    if (sym === 'ETH') return 3400;
+    if (sym === 'SOL') return 210;
+    if (sym === 'BNB') return 650;
+    if (sym === 'DOGE') return 0.28;
+    if (sym === 'USDT' || sym === 'USD' || sym === 'CASH') return 1;
+    return 100;
+  };
 
+  const [rebalanceAssets, setRebalanceAssets] = useState<PortfolioRebalanceAsset[]>([
+    { id: 'ast_1', symbol: 'BTC', name: 'Bitcoin', currentUnits: 0.15, currentPrice: 95000, targetPct: 50, category: 'CRYPTO' },
+    { id: 'ast_2', symbol: 'ETH', name: 'Ethereum', currentUnits: 2.5, currentPrice: 3400, targetPct: 30, category: 'CRYPTO' },
+    { id: 'ast_3', symbol: 'SOL', name: 'Solana', currentUnits: 15, currentPrice: 210, targetPct: 10, category: 'CRYPTO' },
+    { id: 'ast_4', symbol: 'USDT', name: 'Tether USD', currentUnits: 2000, currentPrice: 1, targetPct: 10, category: 'CASH' },
+  ]);
+  const [cashAdjustmentInput, setCashAdjustmentInput] = useState<string>('0');
+  const [driftTolerance, setDriftTolerance] = useState<number>(1); // 1% drift threshold
+  const [rebalanceSavedSuccess, setRebalanceSavedSuccess] = useState(false);
+  const [rebalanceSaveError, setRebalanceSaveError] = useState<string | null>(null);
+  const [copiedOrders, setCopiedOrders] = useState(false);
+
+  // Synchronize live prices from cryptoList when available
+  useEffect(() => {
+    if (cryptoList.length === 0) return;
+    setRebalanceAssets((prev) =>
+      prev.map((item) => {
+        const live = cryptoList.find((c) => c.symbol.toUpperCase() === item.symbol.toUpperCase());
+        if (live && live.price > 0 && Math.abs(live.price - item.currentPrice) / item.currentPrice > 0.001) {
+          return { ...item, currentPrice: live.price };
+        }
+        return item;
+      })
+    );
+  }, [cryptoList]);
+
+  // Currency helpers
+  const moneyRate = useThb ? usdThbRate : 1;
+  const moneyCur = useThb ? '฿' : '$';
+  const fmtMoney = (v: number) =>
+    `${moneyCur}${(v * moneyRate).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+  const fmtPrice = (v: number) =>
+    `$${v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: v < 10 ? 4 : 2 })}`;
+
+  // TAB 1: Position Calculation
   const calc = useMemo(() => {
     const acct = parseFloat(accountSize);
     const risk = parseFloat(riskPercent);
@@ -71,11 +164,14 @@ export const RiskCalculatorModal: React.FC<Props> = ({
     return { acct, risk, entry, sl, lev, riskAmount, slDistPct, notional, units, tp, reward, margin, consistent };
   }, [accountSize, riskPercent, entryPrice, slPrice, leverage, direction, rr]);
 
-  /** Protection checklist — each rule with a one-line technique tip. */
-  const moneyRate = useThb ? usdThbRate : 1;
-  const moneyCur = useThb ? '฿' : '$';
-  const fmtMoney = (v: number) =>
-    `${moneyCur}${(v * moneyRate).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+  // Mascot trigger for Risk Guard
+  useEffect(() => {
+    if (calc && calc.risk > 2) {
+      useMascotStore.getState().setMascotState('RISK_REJECT');
+    }
+  }, [calc?.risk]);
+
+  // Protection checklist
   const checklist = useMemo(() => {
     if (!calc) return [];
     return [
@@ -95,9 +191,9 @@ export const RiskCalculatorModal: React.FC<Props> = ({
         tip: calc.slDistPct >= 0.5 ? t('risk_calc.checklist.sl_dist_ok') : t('risk_calc.checklist.sl_dist_fail'),
       },
       {
-        ok: rr >= 2,
-        title: `R:R 1:${rr}`,
-        tip: rr >= 2 ? t('risk_calc.checklist.rr_ok') : t('risk_calc.checklist.rr_fail'),
+        ok: rr >= 1.5,
+        title: `RR Ratio 1:${rr}`,
+        tip: rr >= 1.5 ? t('risk_calc.checklist.rr_ok') : t('risk_calc.checklist.rr_fail'),
       },
       {
         ok: calc.lev === 1,
@@ -107,58 +203,180 @@ export const RiskCalculatorModal: React.FC<Props> = ({
     ];
   }, [calc, direction, rr, fmtMoney]);
 
-  const handleAiAnalyze = async () => {
-    if (!calc || isAnalyzing) return;
-    setIsAnalyzing(true);
-    setAiError(null);
+  // TAB 2: Portfolio Rebalance Calculation
+  const rebalancePlan: PortfolioRebalancePlan = useMemo(() => {
+    const cashAdj = parseFloat(cashAdjustmentInput) || 0;
+    const totalCurrentVal = rebalanceAssets.reduce((sum, item) => sum + (item.currentUnits * item.currentPrice), 0);
+    const effectiveTotal = Math.max(0, totalCurrentVal + cashAdj);
+    const totalTargetPct = rebalanceAssets.reduce((sum, item) => sum + (Number(item.targetPct) || 0), 0);
+
+    const items = rebalanceAssets.map((asset) => {
+      const curVal = Math.max(0, asset.currentUnits * asset.currentPrice);
+      const curPct = totalCurrentVal > 0 ? (curVal / totalCurrentVal) * 100 : 0;
+      const targetVal = (effectiveTotal * (Number(asset.targetPct) || 0)) / 100;
+      const targetUnits = asset.currentPrice > 0 ? targetVal / asset.currentPrice : 0;
+      const deltaVal = targetVal - curVal;
+      const deltaUnits = asset.currentPrice > 0 ? deltaVal / asset.currentPrice : 0;
+      const driftPct = curPct - (Number(asset.targetPct) || 0);
+
+      // Action determination based on drift tolerance
+      let action: 'BUY' | 'SELL' | 'HOLD' = 'HOLD';
+      if (Math.abs(driftPct) >= driftTolerance) {
+        if (deltaVal > 0) action = 'BUY';
+        else if (deltaVal < 0) action = 'SELL';
+      }
+
+      return {
+        asset,
+        currentValue: curVal,
+        currentPct: curPct,
+        targetValue: targetVal,
+        targetUnits,
+        driftPct,
+        deltaValue: deltaVal,
+        deltaUnits,
+        action,
+      };
+    });
+
+    const isBalanced = items.every((i) => i.action === 'HOLD');
+
+    const ordersToExecute = items
+      .filter((i) => i.action !== 'HOLD')
+      .map((i) => ({
+        symbol: i.asset.symbol,
+        action: i.action as 'BUY' | 'SELL',
+        amountValue: Math.abs(i.deltaValue),
+        amountUnits: Math.abs(i.deltaUnits),
+        targetPct: i.asset.targetPct,
+      }));
+
+    return {
+      totalCurrentValue: totalCurrentVal,
+      effectiveTotalValue: effectiveTotal,
+      cashAdjustment: cashAdj,
+      totalTargetPct,
+      isBalanced,
+      items,
+      ordersToExecute,
+    };
+  }, [rebalanceAssets, cashAdjustmentInput, driftTolerance]);
+
+  // Mascot trigger for Portfolio Rebalance: if severely unbalanced
+  useEffect(() => {
+    if (activeTab === 'REBALANCE' && rebalancePlan.items.some((i) => Math.abs(i.driftPct) > 10)) {
+      useMascotStore.getState().setMascotState('KILL_SWITCH_ACTIVE', 'พอร์ตเบี่ยงเบนเกิน 10% แล้วครับ รีบกด Rebalance เพื่อคืนสมดุลกันเถอะ');
+    }
+  }, [activeTab, rebalancePlan.items]);
+
+  // Rebalance Asset Handlers
+  const handleUpdateAsset = (id: string, field: keyof PortfolioRebalanceAsset, value: any) => {
+    setRebalanceAssets((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, [field]: value } : item))
+    );
+    setRebalanceSavedSuccess(false);
+  };
+
+  const handleAddAsset = () => {
+    const newId = `ast_${Date.now()}`;
+    setRebalanceAssets((prev) => [
+      ...prev,
+      {
+        id: newId,
+        symbol: 'CUSTOM',
+        name: 'Custom Asset',
+        currentUnits: 0,
+        currentPrice: 100,
+        targetPct: 0,
+        category: 'CRYPTO',
+      },
+    ]);
+  };
+
+  const handleRemoveAsset = (id: string) => {
+    if (rebalanceAssets.length <= 1) return;
+    setRebalanceAssets((prev) => prev.filter((a) => a.id !== id));
+  };
+
+  const handleApplyPreset = (presetIndex: number) => {
+    const preset = PRESETS[presetIndex];
+    if (!preset) return;
+    const newAssets: PortfolioRebalanceAsset[] = preset.assets.map((p, idx) => {
+      const existing = rebalanceAssets.find((a) => a.symbol.toUpperCase() === p.symbol.toUpperCase());
+      const price = existing ? existing.currentPrice : getSymbolPrice(p.symbol);
+      const units = existing ? existing.currentUnits : (idx === 0 ? 0.1 : idx === 1 ? 1 : 10);
+      return {
+        id: `ast_${idx}_${Date.now()}`,
+        symbol: p.symbol,
+        name: p.name,
+        currentUnits: units,
+        currentPrice: price,
+        targetPct: p.targetPct,
+        category: p.category,
+      };
+    });
+    setRebalanceAssets(newAssets);
+    setRebalanceSavedSuccess(false);
+  };
+
+  const handleNormalizeTargets = () => {
+    const total = rebalanceAssets.reduce((sum, item) => sum + (Number(item.targetPct) || 0), 0);
+    if (total <= 0) {
+      // Split equally
+      const equalShare = parseFloat((100 / rebalanceAssets.length).toFixed(1));
+      setRebalanceAssets((prev) => prev.map((a) => ({ ...a, targetPct: equalShare })));
+      return;
+    }
+    setRebalanceAssets((prev) =>
+      prev.map((item) => ({
+        ...item,
+        targetPct: parseFloat(((item.targetPct / total) * 100).toFixed(1)),
+      }))
+    );
+  };
+
+  const handleCopyOrders = () => {
+    if (rebalancePlan.ordersToExecute.length === 0) return;
+    const text = rebalancePlan.ordersToExecute
+      .map(
+        (o) =>
+          `[${o.action}] ${o.symbol} -> ${fmtMoney(o.amountValue)} (${o.amountUnits.toLocaleString(undefined, { maximumFractionDigits: 4 })} units) [Target ${o.targetPct}%]`
+      )
+      .join('\n');
+    navigator.clipboard.writeText(
+      `MotorBoy AI-TH — Portfolio Rebalance Orders:\n${text}\nTotal Portfolio: ${fmtMoney(rebalancePlan.effectiveTotalValue)}`
+    );
+    setCopiedOrders(true);
+    setTimeout(() => setCopiedOrders(false), 2500);
+  };
+
+  const handleSaveRebalancePlan = async () => {
+    if (!onSaveToHistory) return;
+    setRebalanceSaveError(null);
     try {
-      const activeSignal = signals.find((x) => x.id === signalId);
-      const coinLike: CryptoCoin = {
-        id: (activeSignal?.symbol ?? 'manual').toLowerCase(),
-        symbol: activeSignal?.symbol ?? 'MANUAL',
-        name: activeSignal?.base ?? 'Manual Plan',
-        binanceSymbol: activeSignal?.symbol ?? 'MANUAL',
-        price: calc.entry,
-        change: activeSignal?.change ?? 0,
-        high: calc.entry * 1.02,
-        low: calc.entry * 0.98,
-        volume: 0,
-      };
-      const planSignal: TradingSignal = {
-        id: `riskplan_${Date.now()}`,
-        symbol: coinLike.symbol,
-        base: coinLike.symbol,
-        quote: 'USDT',
-        type: direction,
-        probability: activeSignal?.probability ?? 70,
-        timeframe: 'สั้น 1-7วัน',
-        price: calc.entry,
-        change: coinLike.change,
-        statusText: `แผน ${direction} Entry ${calc.entry} SL ${calc.sl} TP ${calc.tp.toFixed(2)}`,
-        reason: `Risk ${calc.risk}% R:R 1:${rr} SL ห่าง ${calc.slDistPct.toFixed(2)}%`,
-        sources: ['Risk Calculator'],
-        tags: ['RiskPlan'],
-        sl: calc.sl,
-        tp: calc.tp,
-        similarity: activeSignal?.similarity ?? 75,
-        etfFlow: activeSignal?.etfFlow ?? '—',
-        category: activeSignal?.category ?? 'CRYPTO',
-      };
-      const result = await analyzeMarketWithGemini(geminiApiKey, coinLike, planSignal);
-      setAiResult(result);
+      const summaryText = rebalancePlan.ordersToExecute
+        .map(
+          (o) =>
+            `${o.action} ${o.symbol} ${fmtMoney(o.amountValue)} (${o.amountUnits.toFixed(4)} u)`
+        )
+        .join(' | ');
+
+      await onSaveToHistory({
+        type: 'PORTFOLIO_REBALANCE',
+        symbol: 'PORTFOLIO',
+        action: rebalancePlan.ordersToExecute[0]?.action || 'HOLD',
+        price: rebalancePlan.effectiveTotalValue,
+        aiSummary:
+          `[MotorBoy Rebalance Plan] มูลค่าพอร์ต ${fmtMoney(rebalancePlan.effectiveTotalValue)} | เป้าหมายสมดุล ${rebalancePlan.totalTargetPct}% | ` +
+          `คำสั่งปรับพอร์ต (${rebalancePlan.ordersToExecute.length} รายการ): ${summaryText || 'พอร์ตอยู่ในสมดุลแล้ว (Balanced)'}`,
+      });
+      setRebalanceSavedSuccess(true);
     } catch {
-      setAiError('AI ประเมินไม่สำเร็จ กรุณาลองใหม่');
-    } finally {
-      setIsAnalyzing(false);
+      setRebalanceSaveError(t('risk_calc.save.error'));
     }
   };
 
-  const dialogRef = useModalA11y({ onClose, enabled: isOpen });
-  if (!isOpen) return null;
-
-  const fmtPrice = (v: number) =>
-    `$${v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: v < 10 ? 4 : 2 })}`;
-
+  // Position Sizing Handlers
   const applySignal = (id: string) => {
     setSignalId(id);
     setSavedSuccess(false);
@@ -171,7 +389,7 @@ export const RiskCalculatorModal: React.FC<Props> = ({
 
   const activeSignal = signals.find((x) => x.id === signalId);
 
-  const handleSave = async () => {
+  const handleSavePosition = async () => {
     if (!calc || !onSaveToHistory) return;
     setSaveError(null);
     try {
@@ -192,8 +410,56 @@ export const RiskCalculatorModal: React.FC<Props> = ({
     }
   };
 
+  const handleAiAnalyze = async () => {
+    if (!calc || isAnalyzing) return;
+    setIsAnalyzing(true);
+    setAiError(null);
+    try {
+      const activeSig = signals.find((x) => x.id === signalId);
+      const coinLike: CryptoCoin = {
+        id: (activeSig?.symbol ?? 'manual').toLowerCase(),
+        symbol: activeSig?.symbol ?? 'MANUAL',
+        name: activeSig?.base ?? 'Manual Plan',
+        binanceSymbol: activeSig?.symbol ?? 'MANUAL',
+        price: calc.entry,
+        change: activeSig?.change ?? 0,
+        high: calc.entry * 1.02,
+        low: calc.entry * 0.98,
+        volume: 0,
+      };
+      const planSignal: TradingSignal = {
+        id: `riskplan_${Date.now()}`,
+        symbol: coinLike.symbol,
+        base: coinLike.symbol,
+        quote: 'USDT',
+        type: direction,
+        probability: activeSig?.probability ?? 70,
+        timeframe: 'สั้น 1-7วัน',
+        price: calc.entry,
+        change: coinLike.change,
+        statusText: `แผน ${direction} Entry ${calc.entry} SL ${calc.sl} TP ${calc.tp.toFixed(2)}`,
+        reason: `Risk ${calc.risk}% R:R 1:${rr} SL ห่าง ${calc.slDistPct.toFixed(2)}%`,
+        sources: ['Risk Calculator'],
+        tags: ['RiskPlan'],
+        sl: calc.sl,
+        tp: calc.tp,
+        similarity: activeSig?.similarity ?? 75,
+        etfFlow: activeSig?.etfFlow ?? '—',
+        category: activeSig?.category ?? 'CRYPTO',
+      };
+      const result = await analyzeMarketWithGemini(geminiApiKey, coinLike, planSignal);
+      setAiResult(result);
+    } catch {
+      setAiError('AI ประเมินไม่สำเร็จ กรุณาลองใหม่');
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
   const inputCls =
-    'w-full bg-[#0F1117] border border-[#252A3A] rounded-xl p-2.5 text-white text-sm focus:border-[#7C6CFF] outline-none';
+    'w-full bg-[#0F1117] border border-[#252A3A] rounded-xl p-2.5 text-white text-sm focus:border-[#FF2D55] outline-none';
   const labelCls = 'block text-[11px] text-[#9CA3AF] mb-1';
 
   return (
@@ -202,183 +468,233 @@ export const RiskCalculatorModal: React.FC<Props> = ({
       role="dialog"
       aria-modal="true"
       aria-label="เครื่องคำนวณความเสี่ยงและขนาดโพซิชัน"
-      className="fixed inset-0 bg-black/70 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto"
+      className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto"
     >
-      <div className="bg-[#1A1D29] border-t sm:border border-[#252A3A] rounded-t-3xl sm:rounded-3xl w-full sm:max-w-md p-5 sm:p-6 shadow-2xl max-h-[92vh] overflow-y-auto sm:my-8">
+      <div className="bg-[#1A1D29] border-t sm:border border-[#252A3A] rounded-t-3xl sm:rounded-3xl w-full sm:max-w-2xl p-5 sm:p-6 shadow-2xl max-h-[92vh] overflow-y-auto sm:my-8">
+        
+        {/* Header */}
         <div className="flex justify-between items-center mb-4">
           <div className="flex items-center space-x-2 text-white">
-            <Calculator className="w-5 h-5 text-[#7C6CFF]" />
-            <h2 className="font-bold text-lg">{t('risk_calc.title')}</h2>
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#FF2D55]/20 to-[#A855F7]/20 border border-[#FF2D55]/40 flex items-center justify-center">
+              {activeTab === 'POSITION' ? (
+                <Calculator className="w-5 h-5 text-[#FF2D55]" />
+              ) : (
+                <Scale className="w-5 h-5 text-[#38BDF8]" />
+              )}
+            </div>
+            <div>
+              <h2 className="font-black text-lg tracking-tight flex items-center gap-2">
+                MotorBoy Risk Guard
+                <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-[#FF2D55]/15 border border-[#FF2D55]/40 text-[#FF2D55]">
+                  {activeTab === 'POSITION' ? 'Position Sizing' : 'Portfolio Rebalance'}
+                </span>
+              </h2>
+              <p className="text-[11px] text-[#9CA3AF]">ระบบคำนวณและบริหารความเสี่ยงอัจฉริยะ ควบคุมเงินทุนอย่างมีวินัย</p>
+            </div>
           </div>
-          <button onClick={onClose} className="text-[#909AAB] hover:text-white p-1" aria-label="ปิด">
+          <button
+            onClick={onClose}
+            className="text-[#909AAB] hover:text-white p-1.5 rounded-xl hover:bg-white/5 cursor-pointer transition-colors"
+            aria-label="ปิด"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="space-y-3.5">
-          {/* Signal picker */}
-          {signals.length > 0 && (
-            <div>
-              <label className={labelCls}>{t('risk_calc.labels.signal_picker')}</label>
-              <select
-                value={signalId}
-                onChange={(e) => applySignal(e.target.value)}
-                className={`${inputCls} ${signalId ? 'border-[#7C6CFF]/60' : ''}`}
-              >
-                <option value="">{t('risk_calc.labels.manual_entry')}</option>
-                {signals.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.symbol} {s.type} @ {s.price.toLocaleString(undefined, { maximumFractionDigits: s.price < 10 ? 4 : 2 })}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
+        {/* Feature Tabs */}
+        <div className="grid grid-cols-2 gap-2 p-1 bg-[#0F1117] border border-[#252A3A] rounded-2xl mb-4">
+          <button
+            onClick={() => setActiveTab('POSITION')}
+            className={`py-2 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all ${
+              activeTab === 'POSITION'
+                ? 'bg-gradient-to-r from-[#FF2D55] to-[#E11D48] text-white shadow-[0_0_12px_rgba(255,45,85,0.4)]'
+                : 'text-[#9CA3AF] hover:text-white'
+            }`}
+          >
+            <Calculator className="w-4 h-4" />
+            <span>คำนวณไม้ & SL/TP</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('REBALANCE')}
+            className={`py-2 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all ${
+              activeTab === 'REBALANCE'
+                ? 'bg-gradient-to-r from-[#0284C7] to-[#38BDF8] text-white shadow-[0_0_12px_rgba(56,189,248,0.4)]'
+                : 'text-[#9CA3AF] hover:text-white'
+            }`}
+          >
+            <Scale className="w-4 h-4" />
+            <span>ปรับสมดุลพอร์ต (Rebalance)</span>
+          </button>
+        </div>
 
-          {/* Direction */}
-          <div>
-            <label className={labelCls}>{t('risk_calc.labels.direction')}</label>
-            <div className="grid grid-cols-2 gap-2">
-              {(['LONG', 'SHORT'] as const).map((d) => (
-                <button
-                  key={d}
-                  onClick={() => { setDirection(d); setSavedSuccess(false); }}
-                  className={`py-2 rounded-xl text-sm font-bold border flex items-center justify-center gap-1.5 transition-colors ${
-                    direction === d
-                      ? d === 'LONG'
-                        ? 'bg-[#22C55E]/20 border-[#22C55E]/60 text-[#4ADE80]'
-                        : 'bg-[#f9df7b]/20 border-[#f9df7b]/60 text-[#f9df7b]'
-                      : 'bg-[#0F1117] border-[#252A3A] text-[#9CA3AF] hover:text-white'
-                  }`}
+        {/* TAB 1: POSITION SIZING */}
+        {activeTab === 'POSITION' && (
+          <div className="space-y-3.5">
+            {/* Signal picker */}
+            {signals.length > 0 && (
+              <div>
+                <label className={labelCls}>{t('risk_calc.labels.signal_picker')}</label>
+                <select
+                  value={signalId}
+                  onChange={(e) => applySignal(e.target.value)}
+                  className={`${inputCls} ${signalId ? 'border-[#FF2D55]/60' : ''}`}
                 >
-                  {d === 'LONG' ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
-                  {d}
-                </button>
-              ))}
-            </div>
-          </div>
+                  <option value="">{t('risk_calc.labels.manual_entry')}</option>
+                  {signals.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.symbol} {s.type} @ {s.price.toLocaleString(undefined, { maximumFractionDigits: s.price < 10 ? 4 : 2 })}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
-          <div className="grid grid-cols-2 gap-3">
+            {/* Direction */}
             <div>
-              <label className={labelCls}>{t('risk_calc.labels.account_size', { currency: moneyCur })}</label>
-              <input type="number" min="0" value={accountSize} onChange={(e) => setAccountSize(e.target.value)} className={inputCls} />
-            </div>
-            <div>
-              <label className={labelCls}>{t('risk_calc.labels.risk_per_trade')}</label>
-              <input type="number" min="0" max="100" step="0.1" value={riskPercent} onChange={(e) => setRiskPercent(e.target.value)} className={inputCls} />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className={labelCls}>{t('risk_calc.labels.entry_price')}</label>
-              <input type="number" min="0" value={entryPrice} onChange={(e) => { setEntryPrice(e.target.value); setSavedSuccess(false); }} placeholder="เช่น 92450" className={inputCls} />
-            </div>
-            <div>
-              <label className={labelCls}>{t('risk_calc.labels.sl_price')}</label>
-              <input type="number" min="0" value={slPrice} onChange={(e) => { setSlPrice(e.target.value); setSavedSuccess(false); }} placeholder="เช่น 90500" className={inputCls} />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className={labelCls}>{t('risk_calc.labels.rr_ratio')}</label>
-              <div className="flex gap-1.5">
-                {RR_OPTIONS.map((v) => (
+              <label className={labelCls}>{t('risk_calc.labels.direction')}</label>
+              <div className="grid grid-cols-2 gap-2">
+                {(['LONG', 'SHORT'] as const).map((d) => (
                   <button
-                    key={v}
-                    onClick={() => { setRr(v); setSavedSuccess(false); }}
-                    className={`flex-1 py-2 rounded-xl text-xs font-bold border transition-colors ${
-                      rr === v ? 'bg-[#7C6CFF]/25 border-[#7C6CFF]/60 text-white' : 'bg-[#0F1117] border-[#252A3A] text-[#9CA3AF] hover:text-white'
+                    key={d}
+                    onClick={() => { setDirection(d); setSavedSuccess(false); }}
+                    className={`py-2 rounded-xl text-sm font-bold border flex items-center justify-center gap-1.5 transition-colors ${
+                      direction === d
+                        ? d === 'LONG'
+                          ? 'bg-[#10B981]/20 border-[#10B981]/60 text-[#34D399]'
+                          : 'bg-[#FF2D55]/20 border-[#FF2D55]/60 text-[#FF2D55]'
+                        : 'bg-[#0F1117] border-[#252A3A] text-[#9CA3AF] hover:text-white'
                     }`}
                   >
-                    1:{v}
+                    {d === 'LONG' ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
+                    {d}
                   </button>
                 ))}
               </div>
             </div>
-            <div>
-              <label className={labelCls}>{t('risk_calc.labels.leverage')}</label>
-              <input type="number" min="1" step="1" value={leverage} onChange={(e) => setLeverage(e.target.value)} className={inputCls} />
-            </div>
-          </div>
 
-          {/* Protection checklist — เข้าใจง่ายทีละข้อ */}
-          {checklist.length > 0 && (
-            <div className="rounded-2xl bg-[#0F1117] border border-[#252A3A] p-3 space-y-2">
-              <p className="text-xs font-bold text-white flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-[#4ADE80]" />
-                {t('risk_calc.checklist.header')}</p>
-              {checklist.map((c) => (
-                <div key={c.title} className="flex items-start gap-2 text-[11px]">
-                  <span className={`mt-0.5 w-4 h-4 rounded-full flex items-center justify-center shrink-0 text-[10px] font-black ${
-                    c.ok ? 'bg-[#22C55E]/20 text-[#4ADE80]' : 'bg-[#F59E0B]/20 text-[#FBBF24]'
-                  }`}>
-                    {c.ok ? '✓' : '!'}
-                  </span>
-                  <span>
-                    <strong className={c.ok ? 'text-[#CBD5E1]' : 'text-[#FBBF24]'}>{c.title}</strong>
-                    <span className="text-[#9CA3AF]"> — {c.tip}</span>
-                  </span>
-                </div>
-              ))}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className={labelCls}>{t('risk_calc.labels.account_size', { currency: moneyCur })}</label>
+                <input type="number" min="0" value={accountSize} onChange={(e) => setAccountSize(e.target.value)} className={inputCls} />
+              </div>
+              <div>
+                <label className={labelCls}>{t('risk_calc.labels.risk_per_trade')}</label>
+                <input type="number" min="0" max="100" step="0.1" value={riskPercent} onChange={(e) => setRiskPercent(e.target.value)} className={inputCls} />
+              </div>
             </div>
-          )}
 
-          {/* Results */}
-          <div className="rounded-2xl bg-[#7C6CFF]/10 border border-[#7C6CFF]/20 p-4 space-y-2">
-            {calc ? (
-              <>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-[#A5B4FC]">{t('risk_calc.results.notional')}</span>
-                  <strong className="text-white text-base">{fmtMoney(calc.notional)}</strong>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className={labelCls}>{t('risk_calc.labels.entry_price')}</label>
+                <input type="number" min="0" value={entryPrice} onChange={(e) => { setEntryPrice(e.target.value); setSavedSuccess(false); }} placeholder="เช่น 92450" className={inputCls} />
+              </div>
+              <div>
+                <label className={labelCls}>{t('risk_calc.labels.sl_price')}</label>
+                <input type="number" min="0" value={slPrice} onChange={(e) => { setSlPrice(e.target.value); setSavedSuccess(false); }} placeholder="เช่น 90500" className={inputCls} />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className={labelCls}>{t('risk_calc.labels.rr_ratio')}</label>
+                <div className="flex gap-1.5">
+                  {RR_OPTIONS.map((v) => (
+                    <button
+                      key={v}
+                      onClick={() => { setRr(v); setSavedSuccess(false); }}
+                      className={`flex-1 py-2 rounded-xl text-xs font-bold border transition-colors ${
+                        rr === v ? 'bg-[#FF2D55]/25 border-[#FF2D55]/60 text-white' : 'bg-[#0F1117] border-[#252A3A] text-[#9CA3AF] hover:text-white'
+                      }`}
+                    >
+                      1:{v}
+                    </button>
+                  ))}
                 </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-[#A5B4FC]">{t('risk_calc.results.units')}</span>
-                  <strong className="text-white font-mono">{calc.units.toLocaleString(undefined, { maximumFractionDigits: 4 })}</strong>
-                </div>
-                <div className="grid grid-cols-3 gap-2 pt-1 text-center">
-                  <div className="rounded-xl bg-[#0F1117] border border-[#252A3A] py-2">
-                    <p className="text-[10px] text-[#9CA3AF]">{t('risk_calc.results.risk')}</p>
-                    <p className="text-[#f9df7b] text-xs font-bold">{fmtMoney(calc.riskAmount)}</p>
-                  </div>
-                  <div className="rounded-xl bg-[#0F1117] border border-[#252A3A] py-2">
-                    <p className="text-[10px] text-[#9CA3AF]">{t('risk_calc.results.reward')}</p>
-                    <p className="text-[#4ADE80] text-xs font-bold">{fmtMoney(calc.reward)}</p>
-                  </div>
-                  <div className="rounded-xl bg-[#0F1117] border border-[#252A3A] py-2">
-                    <p className="text-[10px] text-[#9CA3AF]">{t('risk_calc.results.margin')}</p>
-                    <p className="text-white text-xs font-bold">{fmtMoney(calc.margin)}</p>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between text-xs pt-1 border-t border-[#7C6CFF]/20">
-                  <span className="text-[#A5B4FC]">SL {calc.slDistPct.toFixed(2)}% • TP {fmtPrice(calc.tp)}</span>
-                  <span className="text-[#909AAB]">SL {fmtPrice(calc.sl)}</span>
-                </div>
-                <p className="text-[11px] text-[#CBD5E1] leading-relaxed bg-[#0F1117]/60 rounded-xl px-3 py-2">
-                  {t('risk_calc.results.summary', {
-                    notional: fmtMoney(calc.notional),
-                    risk: fmtMoney(calc.riskAmount),
-                    riskPct: String(calc.risk),
-                    reward: fmtMoney(calc.reward),
-                    rr: String(rr),
-                  })}
+              </div>
+              <div>
+                <label className={labelCls}>{t('risk_calc.labels.leverage')}</label>
+                <input type="number" min="1" step="1" value={leverage} onChange={(e) => setLeverage(e.target.value)} className={inputCls} />
+              </div>
+            </div>
+
+            {/* Protection checklist */}
+            {checklist.length > 0 && (
+              <div className="rounded-2xl bg-[#0F1117] border border-[#252A3A] p-3 space-y-2 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-16 h-16 bg-[#FF2D55]/5 blur-2xl rounded-full" />
+                <p className="text-xs font-bold text-white flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 text-[#FF2D55]" />
+                  {t('risk_calc.checklist.header')}
                 </p>
-              </>
-            ) : (
-              <p className="text-[#FBBF24] text-[11px] text-center">
-                {t('risk_calc.results.invalid_input')}
-              </p>
+                {checklist.map((c) => (
+                  <div key={c.title} className="flex items-start gap-2 text-[11px]">
+                    <span className={`mt-0.5 w-4 h-4 rounded-full flex items-center justify-center shrink-0 text-[10px] font-black ${
+                      c.ok ? 'bg-[#22C55E]/20 text-[#4ADE80]' : 'bg-[#F59E0B]/20 text-[#FBBF24]'
+                    }`}>
+                      {c.ok ? '✓' : '!'}
+                    </span>
+                    <span>
+                      <strong className={c.ok ? 'text-[#CBD5E1]' : 'text-[#FBBF24]'}>{c.title}</strong>
+                      <span className="text-[#9CA3AF]"> — {c.tip}</span>
+                    </span>
+                  </div>
+                ))}
+              </div>
             )}
-          </div>
 
-          {/* AI realtime plan review */}
-          <div className="rounded-2xl bg-gradient-to-br from-[#7C6CFF]/15 to-[#0284C7]/10 border border-[#7C6CFF]/30 p-4 space-y-2.5">
-            <div className="flex items-center justify-between gap-2">
-              <p className="text-xs font-bold text-white flex items-center gap-1.5">
-                <Sparkles className="w-4 h-4 text-[#A5B4FC]" />
-                {t('risk_calc.ai.header')}</p>
-              <div className="flex items-center gap-2">
+            {/* Results */}
+            <div className="rounded-2xl bg-gradient-to-br from-[#FF2D55]/10 to-[#A855F7]/10 border border-[#FF2D55]/20 p-4 space-y-2">
+              {calc ? (
+                <>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-[#A5B4FC]">{t('risk_calc.results.notional')}</span>
+                    <strong className="text-white text-base">{fmtMoney(calc.notional)}</strong>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-[#A5B4FC]">{t('risk_calc.results.units')}</span>
+                    <strong className="text-white font-mono">{calc.units.toLocaleString(undefined, { maximumFractionDigits: 4 })}</strong>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 pt-1 text-center">
+                    <div className="rounded-xl bg-[#0F1117] border border-[#252A3A] py-2">
+                      <p className="text-[10px] text-[#9CA3AF]">{t('risk_calc.results.risk')}</p>
+                      <p className="text-[#f9df7b] text-xs font-bold">{fmtMoney(calc.riskAmount)}</p>
+                    </div>
+                    <div className="rounded-xl bg-[#0F1117] border border-[#252A3A] py-2">
+                      <p className="text-[10px] text-[#9CA3AF]">{t('risk_calc.results.reward')}</p>
+                      <p className="text-[#4ADE80] text-xs font-bold">{fmtMoney(calc.reward)}</p>
+                    </div>
+                    <div className="rounded-xl bg-[#0F1117] border border-[#252A3A] py-2">
+                      <p className="text-[10px] text-[#9CA3AF]">{t('risk_calc.results.margin')}</p>
+                      <p className="text-white text-xs font-bold">{fmtMoney(calc.margin)}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between text-xs pt-1 border-t border-[#FF2D55]/20">
+                    <span className="text-[#9CA3AF]">SL {calc.slDistPct.toFixed(2)}% • TP {fmtPrice(calc.tp)}</span>
+                    <span className="text-[#6B7280]">SL {fmtPrice(calc.sl)}</span>
+                  </div>
+                  <p className="text-[11px] text-[#CBD5E1] leading-relaxed bg-[#0F1117]/60 rounded-xl px-3 py-2">
+                    {t('risk_calc.results.summary', {
+                      notional: fmtMoney(calc.notional),
+                      risk: fmtMoney(calc.riskAmount),
+                      riskPct: String(calc.risk),
+                      reward: fmtMoney(calc.reward),
+                      rr: String(rr),
+                    })}
+                  </p>
+                </>
+              ) : (
+                <p className="text-[#FBBF24] text-[11px] text-center">
+                  {t('risk_calc.results.invalid_input')}
+                </p>
+              )}
+            </div>
+
+            {/* AI Review */}
+            <div className="rounded-2xl bg-gradient-to-br from-[#FF2D55]/15 to-[#3B82F6]/10 border border-[#FF2D55]/30 p-4 space-y-2.5">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-xs font-bold text-white flex items-center gap-1.5">
+                  <Sparkles className="w-4 h-4 text-[#FF2D55]" />
+                  {t('risk_calc.ai.header')}
+                </p>
                 {aiResult && (
                   <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md border ${
                     aiResult.source === 'GEMINI_AI'
@@ -389,62 +705,409 @@ export const RiskCalculatorModal: React.FC<Props> = ({
                   </span>
                 )}
               </div>
-            </div>
-            {!aiResult && !aiError && (
-              <p className="text-[11px] text-[#9CA3AF] leading-relaxed">
-                {t('risk_calc.ai.desc')}</p>
-            )}
-            {aiError && <p className="text-[#f9df7b] text-xs">{t('risk_calc.ai.error')}</p>}
-            {aiResult && (
-              <div className="space-y-1.5 text-xs">
-                <div className="flex items-center gap-2">
-                  <span className={`font-bold px-2 py-0.5 rounded-lg ${
-                    aiResult.action === 'LONG' ? 'bg-[#22C55E]/20 text-[#4ADE80]' : aiResult.action === 'SHORT' ? 'bg-[#f9df7b]/20 text-[#f9df7b]' : 'bg-[#252A3A] text-[#9CA3AF]'
-                  }`}>
-                    {aiResult.action}
-                  </span>
-                  <span className="text-[#9CA3AF]">มั่นใจ {aiResult.confidence}%</span>
-                </div>
-                <p className="text-[#E2E8F0] leading-relaxed">{aiResult.summary}</p>
-                {aiResult.strategyAdvice && (
-                  <p className="text-[#A5B4FC] leading-relaxed">เทคนิก: {aiResult.strategyAdvice}</p>
-                )}
-                <p className="text-[11px] text-[#909AAB]">
-                  แนวรับ {fmtPrice(aiResult.supportLevel)} • แนวต้าน {fmtPrice(aiResult.resistanceLevel)}
+              {!aiResult && !aiError && (
+                <p className="text-[11px] text-[#9CA3AF] leading-relaxed">
+                  {t('risk_calc.ai.desc')}
                 </p>
-              </div>
-            )}
-            <button
-              onClick={handleAiAnalyze}
-              disabled={!calc || isAnalyzing}
-              className="w-full py-2.5 rounded-xl bg-[#7C6CFF] hover:bg-[#6D5DFF] disabled:opacity-40 text-white text-sm font-bold inline-flex items-center justify-center gap-2"
-            >
-              {isAnalyzing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-              <span>{isAnalyzing ? t('risk_calc.ai.analyze_loading') : aiResult ? t('risk_calc.ai.reanalyze_btn') : t('risk_calc.ai.analyze_btn')}</span>
-            </button>
-            {!geminiApiKey && (
-              <p className="text-[10px] text-[#909AAB] text-center">
-                {t('risk_calc.ai.api_missing')}
+              )}
+              {aiError && <p className="text-[#f9df7b] text-xs">{t('risk_calc.ai.error')}</p>}
+              {aiResult && (
+                <div className="space-y-1.5 text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className={`font-bold px-2 py-0.5 rounded-lg ${
+                      aiResult.action === 'LONG' ? 'bg-[#22C55E]/20 text-[#4ADE80]' : aiResult.action === 'SHORT' ? 'bg-[#f9df7b]/20 text-[#f9df7b]' : 'bg-[#252A3A] text-[#9CA3AF]'
+                    }`}>
+                      {aiResult.action}
+                    </span>
+                    <span className="text-[#9CA3AF]">มั่นใจ {aiResult.confidence}%</span>
+                  </div>
+                  <p className="text-[#E2E8F0] leading-relaxed">{aiResult.summary}</p>
+                  {aiResult.strategyAdvice && (
+                    <p className="text-[#A5B4FC] leading-relaxed italic">น้องมอเตอร์บอยแนะนำ: {aiResult.strategyAdvice}</p>
+                  )}
+                  <div className="flex items-center justify-between">
+                    <p className="text-[11px] text-[#6B7280]">
+                      แนวรับ {fmtPrice(aiResult.supportLevel)} • แนวต้าน {fmtPrice(aiResult.resistanceLevel)}
+                    </p>
+                    <span className="text-[10px] text-[#FF2D55] font-bold">นี่คือการวิเคราะห์ ไม่ใช่คำแนะนำการลงทุน</span>
+                  </div>
+                </div>
+              )}
+              <button
+                onClick={handleAiAnalyze}
+                disabled={!calc || isAnalyzing}
+                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#FF2D55] to-[#A855F7] hover:opacity-90 disabled:opacity-40 text-white text-sm font-black shadow-[0_0_15px_rgba(255,45,85,0.3)] inline-flex items-center justify-center gap-2 transition-all cursor-pointer"
+              >
+                {isAnalyzing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bot className="w-4 h-4" />}
+                <span>{isAnalyzing ? t('risk_calc.ai.analyze_loading') : aiResult ? t('risk_calc.ai.reanalyze_btn') : t('risk_calc.ai.analyze_btn')}</span>
+              </button>
+            </div>
+
+            {/* Save Position Plan */}
+            {saveError && <p className="text-[#EF4444] text-xs text-center">{t('risk_calc.save.error')}</p>}
+            {savedSuccess ? (
+              <p className="text-[#10B981] text-xs text-center font-bold flex items-center justify-center gap-1.5 animate-in zoom-in duration-300">
+                <CheckCircle2 className="w-4 h-4" /> {t('risk_calc.save.success')}
               </p>
+            ) : (
+              <button
+                onClick={handleSavePosition}
+                disabled={!calc || !onSaveToHistory}
+                title={!onSaveToHistory ? 'ต้องเข้าสู่ระบบก่อนบันทึก' : t('risk_calc.save.btn')}
+                className="w-full py-2.5 rounded-xl bg-white/5 hover:bg-white/10 disabled:opacity-40 border border-white/10 text-white text-sm font-bold inline-flex items-center justify-center gap-2 transition-colors cursor-pointer"
+              >
+                <BookmarkPlus className="w-4 h-4" />
+                {t('risk_calc.save.btn')}
+              </button>
             )}
           </div>
+        )}
 
-          {/* Save */}
-          {saveError && <p className="text-[#f9df7b] text-xs text-center">{t('risk_calc.save.error')}</p>}
-          {savedSuccess ? (
-            <p className="text-[#4ADE80] text-xs text-center flex items-center justify-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4" /> {t('risk_calc.save.success')}</p>
-          ) : (
-            <button
-              onClick={handleSave}
-              disabled={!calc || !onSaveToHistory}
-              title={!onSaveToHistory ? 'ต้องเข้าสู่ระบบก่อนบันทึก' : t('risk_calc.save.btn')}
-              className="w-full py-2.5 rounded-xl bg-[#22C55E]/20 hover:bg-[#22C55E]/30 disabled:opacity-40 border border-[#22C55E]/40 text-[#4ADE80] text-sm font-bold inline-flex items-center justify-center gap-2"
-            >
-              <BookmarkPlus className="w-4 h-4" />
-              {t('risk_calc.save.btn')}</button>
-          )}
-        </div>
+        {/* TAB 2: PORTFOLIO REBALANCE */}
+        {activeTab === 'REBALANCE' && (
+          <div className="space-y-4">
+            {/* Quick Model Portfolio Presets */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[11px] font-bold text-[#CBD5E1] flex items-center gap-1.5">
+                  <Sliders className="w-3.5 h-3.5 text-[#38BDF8]" />
+                  พอร์ตจำลองสำเร็จรูป (Model Presets)
+                </span>
+                <span className="text-[10px] text-[#6B7280]">คลิกเพื่อโหลดสูตร</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                {PRESETS.map((p, idx) => (
+                  <button
+                    key={p.name}
+                    onClick={() => handleApplyPreset(idx)}
+                    className="p-2.5 rounded-xl bg-[#0F1117] border border-[#252A3A] hover:border-[#38BDF8]/60 text-left transition-all group cursor-pointer"
+                  >
+                    <div className="text-xs font-bold text-white group-hover:text-[#38BDF8] truncate">{p.name}</div>
+                    <div className="text-[10px] text-[#9CA3AF] line-clamp-1 mt-0.5">{p.desc}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Cash Flow Adjustment & Rebalance Threshold */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-2xl bg-[#0F1117] border border-[#252A3A]">
+              <div>
+                <label className={labelCls}>
+                  เงินสดฝาก/ถอนเพิ่ม (Cash Flow Adjustment - {moneyCur})
+                </label>
+                <input
+                  type="number"
+                  value={cashAdjustmentInput}
+                  onChange={(e) => setCashAdjustmentInput(e.target.value)}
+                  placeholder="เช่น +5000 หรือ -2000"
+                  className={inputCls}
+                />
+                <span className="text-[10px] text-[#6B7280] block mt-1">
+                  กรอกบวก (+) เมื่อฝากเงินใหม่ หรือลบ (-) เมื่อต้องการถอนทุน
+                </span>
+              </div>
+              <div>
+                <label className={labelCls}>
+                  เกณฑ์ความคลาดเคลื่อนที่เริ่มปรับ (Drift Threshold %): <strong className="text-white">{driftTolerance}%</strong>
+                </label>
+                <div className="flex items-center gap-2 mt-2">
+                  {[0.5, 1, 2, 5].map((val) => (
+                    <button
+                      key={val}
+                      onClick={() => setDriftTolerance(val)}
+                      className={`flex-1 py-1.5 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
+                        driftTolerance === val
+                          ? 'bg-[#38BDF8]/20 border-[#38BDF8] text-[#38BDF8]'
+                          : 'bg-[#1A1D29] border-[#252A3A] text-[#9CA3AF] hover:text-white'
+                      }`}
+                    >
+                      ±{val}%
+                    </button>
+                  ))}
+                </div>
+                <span className="text-[10px] text-[#6B7280] block mt-1">
+                  สินทรัพย์ที่เบี่ยงเบนเกินเกณฑ์จะถูกสั่งซื้อ/ขาย
+                </span>
+              </div>
+            </div>
+
+            {/* Asset Allocation Table & Inputs */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                  <Scale className="w-4 h-4 text-[#38BDF8]" />
+                  สินทรัพย์ในพอร์ตและสัดส่วนเป้าหมาย (Assets & Target Allocation)
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleNormalizeTargets}
+                    title="ปรับให้รวมกันเป็น 100%"
+                    className="text-[10px] font-bold px-2 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-[#38BDF8] border border-[#38BDF8]/30 flex items-center gap-1 cursor-pointer transition-colors"
+                  >
+                    <RotateCcw className="w-3 h-3" /> Auto 100%
+                  </button>
+                  <button
+                    onClick={handleAddAsset}
+                    className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-[#38BDF8] hover:bg-[#0284C7] text-white flex items-center gap-1 cursor-pointer transition-colors shadow-sm"
+                  >
+                    <Plus className="w-3 h-3" /> เพิ่มเหรียญ
+                  </button>
+                </div>
+              </div>
+
+              {/* Asset Cards / Rows */}
+              <div className="space-y-2.5 max-h-[300px] overflow-y-auto pr-1">
+                {rebalancePlan.items.map((item) => (
+                  <div
+                    key={item.asset.id}
+                    className="p-3 rounded-2xl bg-[#0F1117] border border-[#252A3A] hover:border-[#38BDF8]/40 transition-colors"
+                  >
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={item.asset.symbol}
+                          onChange={(e) => handleUpdateAsset(item.asset.id, 'symbol', e.target.value.toUpperCase())}
+                          className="w-20 bg-[#1A1D29] border border-[#252A3A] rounded-lg px-2 py-1 text-xs font-black text-white uppercase outline-none focus:border-[#38BDF8]"
+                          placeholder="BTC"
+                        />
+                        <span className="text-[11px] text-[#9CA3AF] truncate max-w-[100px] hidden sm:inline">
+                          {item.asset.name}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        {/* Status Badge */}
+                        <span
+                          className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${
+                            item.action === 'BUY'
+                              ? 'bg-[#10B981]/15 border-[#10B981]/50 text-[#34D399]'
+                              : item.action === 'SELL'
+                              ? 'bg-[#FF2D55]/15 border-[#FF2D55]/50 text-[#FF2D55]'
+                              : 'bg-white/5 border-white/10 text-[#9CA3AF]'
+                          }`}
+                        >
+                          {item.action === 'BUY'
+                            ? `BUY +${fmtMoney(Math.abs(item.deltaValue))}`
+                            : item.action === 'SELL'
+                            ? `SELL -${fmtMoney(Math.abs(item.deltaValue))}`
+                            : 'HOLD (สมดุล)'}
+                        </span>
+
+                        <button
+                          onClick={() => handleRemoveAsset(item.asset.id)}
+                          disabled={rebalanceAssets.length <= 1}
+                          className="text-[#6B7280] hover:text-[#EF4444] disabled:opacity-20 p-1 cursor-pointer transition-colors"
+                          title="ลบสินทรัพย์นี้"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2 text-xs">
+                      <div>
+                        <label className="text-[10px] text-[#9CA3AF] block">จำนวนที่ถือ (Units)</label>
+                        <input
+                          type="number"
+                          step="any"
+                          value={item.asset.currentUnits}
+                          onChange={(e) => handleUpdateAsset(item.asset.id, 'currentUnits', parseFloat(e.target.value) || 0)}
+                          className="w-full bg-[#1A1D29] border border-[#252A3A] rounded-lg px-2 py-1.5 text-white font-mono text-xs outline-none focus:border-[#38BDF8]"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-[#9CA3AF] block">ราคาตลาด ($)</label>
+                        <input
+                          type="number"
+                          step="any"
+                          value={item.asset.currentPrice}
+                          onChange={(e) => handleUpdateAsset(item.asset.id, 'currentPrice', parseFloat(e.target.value) || 0)}
+                          className="w-full bg-[#1A1D29] border border-[#252A3A] rounded-lg px-2 py-1.5 text-white font-mono text-xs outline-none focus:border-[#38BDF8]"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-[#9CA3AF] block">เป้าหมาย Target (%)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="0.5"
+                          value={item.asset.targetPct}
+                          onChange={(e) => handleUpdateAsset(item.asset.id, 'targetPct', parseFloat(e.target.value) || 0)}
+                          className="w-full bg-[#1A1D29] border border-[#252A3A] rounded-lg px-2 py-1.5 text-white font-bold text-xs outline-none focus:border-[#38BDF8]"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Weight & Drift Visual Indicator */}
+                    <div className="mt-2 pt-2 border-t border-[#252A3A]/60 flex items-center justify-between text-[11px]">
+                      <div className="text-[#9CA3AF]">
+                        มูลค่าปัจจุบัน: <strong className="text-white">{fmtMoney(item.currentValue)}</strong> ({item.currentPct.toFixed(1)}%)
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[#9CA3AF]">Drift:</span>
+                        <span
+                          className={`font-bold ${
+                            item.driftPct > 0 ? 'text-[#FF2D55]' : item.driftPct < 0 ? 'text-[#34D399]' : 'text-[#9CA3AF]'
+                          }`}
+                        >
+                          {item.driftPct > 0 ? `+${item.driftPct.toFixed(1)}% (Over)` : `${item.driftPct.toFixed(1)}% (Under)`}
+                        </span>
+                        <span className="text-[#6B7280]">
+                          ➜ เป้า {fmtMoney(item.targetValue)} ({item.targetUnits.toFixed(4)} u)
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Total Target Allocation Bar & Warning */}
+            <div className="p-3 rounded-2xl bg-[#0F1117] border border-[#252A3A]">
+              <div className="flex items-center justify-between text-xs mb-1.5">
+                <span className="text-[#9CA3AF]">ผลรวมสัดส่วนเป้าหมาย (Total Target Allocation):</span>
+                <span
+                  className={`font-black ${
+                    Math.abs(rebalancePlan.totalTargetPct - 100) < 0.01
+                      ? 'text-[#34D399]'
+                      : 'text-[#F59E0B]'
+                  }`}
+                >
+                  {rebalancePlan.totalTargetPct.toFixed(1)}% / 100%
+                </span>
+              </div>
+              <div className="w-full h-2 rounded-full bg-[#1A1D29] overflow-hidden flex">
+                <div
+                  className={`h-full transition-all duration-300 ${
+                    Math.abs(rebalancePlan.totalTargetPct - 100) < 0.01
+                      ? 'bg-gradient-to-r from-[#10B981] to-[#34D399]'
+                      : rebalancePlan.totalTargetPct > 100
+                      ? 'bg-gradient-to-r from-[#FF2D55] to-[#EF4444]'
+                      : 'bg-gradient-to-r from-[#F59E0B] to-[#FBBF24]'
+                  }`}
+                  style={{ width: `${Math.min(100, rebalancePlan.totalTargetPct)}%` }}
+                />
+              </div>
+              {Math.abs(rebalancePlan.totalTargetPct - 100) >= 0.01 && (
+                <div className="mt-2 flex items-center justify-between text-[11px] text-[#FBBF24]">
+                  <span className="flex items-center gap-1">
+                    <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                    สัดส่วนเป้าหมายยังไม่ครบ 100% (ผลลัพธ์อาจคำนวณเบี่ยงเบน)
+                  </span>
+                  <button
+                    onClick={handleNormalizeTargets}
+                    className="underline hover:text-white font-bold cursor-pointer"
+                  >
+                    กดปรับให้เป็น 100% พอดี
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Rebalance Execution Summary / Orders */}
+            <div className="rounded-2xl bg-gradient-to-br from-[#0284C7]/15 to-[#38BDF8]/10 border border-[#38BDF8]/30 p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-xs font-black text-white flex items-center gap-1.5 uppercase tracking-wide">
+                    <CheckCircle2 className="w-4 h-4 text-[#38BDF8]" />
+                    คำสั่งปรับพอร์ตเพื่อคืนสมดุล (Rebalance Action Plan)
+                  </h3>
+                  <p className="text-[11px] text-[#9CA3AF]">
+                    มูลค่าพอร์ตสุทธิ: <strong className="text-white text-sm">{fmtMoney(rebalancePlan.effectiveTotalValue)}</strong>
+                    {rebalancePlan.cashAdjustment !== 0 && (
+                      <span className="text-[#38BDF8] ml-1">
+                        ({rebalancePlan.cashAdjustment > 0 ? '+' : ''}{fmtMoney(rebalancePlan.cashAdjustment)} cash flow)
+                      </span>
+                    )}
+                  </p>
+                </div>
+
+                {rebalancePlan.ordersToExecute.length > 0 && (
+                  <button
+                    onClick={handleCopyOrders}
+                    className="text-xs font-bold px-2.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/20 flex items-center gap-1.5 cursor-pointer transition-all"
+                  >
+                    {copiedOrders ? <Check className="w-3.5 h-3.5 text-[#34D399]" /> : <Copy className="w-3.5 h-3.5" />}
+                    <span>{copiedOrders ? 'คัดลอกแล้ว!' : 'คัดลอกคำสั่ง'}</span>
+                  </button>
+                )}
+              </div>
+
+              {rebalancePlan.ordersToExecute.length === 0 ? (
+                <div className="p-3 rounded-xl bg-[#0F1117]/70 border border-[#10B981]/30 text-center">
+                  <p className="text-xs font-bold text-[#34D399]">✓ พอร์ตอยู่ในสมดุลแล้ว (Well-Balanced)</p>
+                  <p className="text-[10px] text-[#9CA3AF] mt-0.5">
+                    ทุกสินทรัพย์มีความคลาดเคลื่อนต่ำกว่าเกณฑ์ ±{driftTolerance}% ไม่จำเป็นต้องส่งคำสั่งซื้อขาย
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-1.5">
+                  {rebalancePlan.ordersToExecute.map((order) => (
+                    <div
+                      key={order.symbol}
+                      className="flex items-center justify-between p-2.5 rounded-xl bg-[#0F1117] border border-[#252A3A] text-xs"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`font-black px-2 py-0.5 rounded-md text-[11px] ${
+                            order.action === 'BUY'
+                              ? 'bg-[#10B981]/20 text-[#34D399] border border-[#10B981]/40'
+                              : 'bg-[#FF2D55]/20 text-[#FF2D55] border border-[#FF2D55]/40'
+                          }`}
+                        >
+                          {order.action}
+                        </span>
+                        <strong className="text-white text-sm">{order.symbol}</strong>
+                        <span className="text-[#9CA3AF] text-[11px]">
+                          เป้า {order.targetPct}%
+                        </span>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-bold text-white">
+                          {fmtMoney(order.amountValue)}
+                        </div>
+                        <div className="text-[10px] font-mono text-[#9CA3AF]">
+                          {order.amountUnits.toLocaleString(undefined, { maximumFractionDigits: 4 })} หน่วย
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <p className="text-[10px] text-[#9CA3AF] leading-relaxed bg-[#0F1117]/50 rounded-xl p-2.5">
+                💡 <strong>เคล็ดลับการ Rebalance:</strong> ดำเนินการขายสินทรัพย์ที่มีสัดส่วนเกินก่อน (SELL) เพื่อระดมสภาพคล่องเงินสด แล้วจึงนำเงินที่ได้ไปเข้าซื้อสินทรัพย์ที่ต่ำกว่าเป้า (BUY) เพื่อลด Slippage และไม่ต้องเติมเงินทุนใหม่
+              </p>
+            </div>
+
+            {/* Save Rebalance Plan to History */}
+            {rebalanceSaveError && (
+              <p className="text-[#EF4444] text-xs text-center">{rebalanceSaveError}</p>
+            )}
+            {rebalanceSavedSuccess ? (
+              <p className="text-[#10B981] text-xs text-center font-bold flex items-center justify-center gap-1.5 animate-in zoom-in duration-300">
+                <CheckCircle2 className="w-4 h-4" /> บันทึกแผนปรับสมดุลพอร์ตเข้าประวัติสำเร็จเรียบร้อย!
+              </p>
+            ) : (
+              <button
+                onClick={handleSaveRebalancePlan}
+                disabled={!onSaveToHistory}
+                title={!onSaveToHistory ? 'ต้องเข้าสู่ระบบก่อนบันทึก' : 'บันทึกแผน Rebalance เข้าประวัติ'}
+                className="w-full py-2.5 rounded-xl bg-white/5 hover:bg-white/10 disabled:opacity-40 border border-white/10 text-white text-sm font-bold inline-flex items-center justify-center gap-2 transition-colors cursor-pointer"
+              >
+                <BookmarkPlus className="w-4 h-4" />
+                บันทึกแผน Rebalance เข้าประวัติ (Save to History)
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Footer */}
+        <p className="text-[9px] text-center text-[#9CA3AF] opacity-50 uppercase tracking-widest pt-3 border-t border-[#252A3A] mt-4">
+          MotorBoy Studio AI-TH • Tactical Portfolio & Risk Guard Engine
+        </p>
       </div>
     </div>
   );

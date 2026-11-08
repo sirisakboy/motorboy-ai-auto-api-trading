@@ -1,6 +1,6 @@
 {
-  "name": "Trading Engine Pro",
-  "description": "Real-time Multi-Asset Trading Engine & Signal Analysis with live crypto, forex, stocks, Gmail trading alerts hub, and AI analytics.",
+  "name": "MotorBoy AI-TH",
+  "description": "AI auto API Trading - เร็ว แม่น ปลอดภัย แบบ MotorBoy | Hybrid Pro Trading Co-Pilot",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Send, Sticker as StickerIcon, Radio, Bot, Sparkles, Copy, Check, User as UserIcon } from 'lucide-react';
+import { X, Send, Sticker as StickerIcon, Radio, Bot, Copy, Check, User as UserIcon } from 'lucide-react';
 import { ChatMessage, CryptoCoin, ForexPair, ThaiStock, ForeignStock, StockIndex, NewsArticle } from '../types';
 import { GLOBAL_ROOM_ID, subscribeRoomMessages, sendRoomMessage } from '../services/chatRoomService';
 import { STICKERS, STICKER_MAP, parseStickerCode, stickerCode } from './ChatStickers';
@@ -125,12 +125,11 @@ export const ChatModal: React.FC<ChatModalProps> = ({
         });
       } catch (aiErr) {
         console.error('Error generating AI response:', aiErr);
-        // Fallback message
         await sendRoomMessage(GLOBAL_ROOM_ID, {
-          uid: 'ai-deep-analyze',
-          name: '🤖 AI Deep Analyze [100% AI]',
+          uid: 'motorboy-ai',
+          name: '🏍️ MotorBoy AI-TH (น้องมอเตอร์บอย)',
           photoURL: null,
-          text: `⚠️ [AI Deep Analyze]\nระบบกำลังอัปเดตข้อมูลตลาดสด กรุณาสอบถามซ้ำอีกครั้ง\nคำถามของคุณ: "${text}"\n\nการเทรดมีความเสี่ยง โปรดบริหารความเสี่ยงอย่างรอบคอบ`,
+          text: `🏍️ [MotorBoy AI-TH]\nระบบกำลังประมวลผลข้อมูลตลาดสด กรุณาสอบถามซ้ำอีกครั้งครับ\nคำถามของคุณ: "${text}"\n\nนี่คือการวิเคราะห์ ไม่ใช่คำแนะนำการลงทุน`,
         });
       }
     } catch (err: unknown) {
@@ -165,15 +164,15 @@ export const ChatModal: React.FC<ChatModalProps> = ({
       setTimeout(async () => {
         try {
           const stickerReplies: Record<string, string> = {
-            bull: '🐂 [AI Deep Analyze] รับทราบสัญญาณ Bull! โมเมนตัมตลาดกำลังทดสอบแนวต้านหลัก เฝ้าระวังจุด Take Profit ให้เหมาะสมครับ\n\n⚠️ การเทรดมีความเสี่ยง',
-            bear: '🐻 [AI Deep Analyze] ตรวจพบสัญญาณ Bear ตลาดอยู่ในโหมดระมัดระวัง แนะนำตั้ง Stop Loss รัดกุมเพื่อรักษาเงินต้น\n\n⚠️ การเทรดมีความเสี่ยง',
-            moon: '🚀 [AI Deep Analyze] To The Moon! อย่าลืมแบ่งสัดส่วน Take Profit ตามแผน ไม่แนะนำให้เทรดเกินตัว\n\n⚠️ การเทรดมีความเสี่ยง',
-            hodl: '💎 [AI Deep Analyze] Diamond Hands! บริหารสัดส่วนพอร์ต DCA และคุมความเสี่ยงไม่เกิน 2% ต่อไม้\n\n⚠️ การเทรดมีความเสี่ยง',
+            bull: '🏍️ [MotorBoy AI-TH] Full Throttle! โมเมนตัมกระทิงมาตามแผน ล็อคจุดเข้าและตั้ง TP ให้ชัดเจนครับ\n\nนี่คือการวิเคราะห์ ไม่ใช่คำแนะนำการลงทุน',
+            bear: '🛑 [MotorBoy AI-TH] เบรกก่อนจิ! ตลาดอยู่ในช่วงปรับฐาน อย่าเพิ่งสวน ให้ตั้ง SL คุมความเสี่ยงไม่เกิน 2%\n\nนี่คือการวิเคราะห์ ไม่ใช่คำแนะนำการลงทุน',
+            moon: '🚀 [MotorBoy AI-TH] Full Throttle To The Moon! อย่าลืมทยอยแบ่งปิดทำกำไร (TP1/TP2) ตามระบบวินัยครับ\n\nนี่คือการวิเคราะห์ ไม่ใช่คำแนะนำการลงทุน',
+            hodl: '💎 [MotorBoy AI-TH] ถือรอตามแผนวินัย! คุมความเสี่ยงตามหลัก Risk Guard ไม่เกิน 2% ต่อไม้\n\nนี่คือการวิเคราะห์ ไม่ใช่คำแนะนำการลงทุน',
           };
-          const reply = stickerReplies[id] || '⚡ [AI Deep Analyze] รับทราบสัญญาณสติ๊กเกอร์! AI พร้อมวิเคราะห์ตลาดเชิงลึก พิมพ์ชื่อสินทรัพย์เพื่อดูแนวรับ-แนวต้านสดได้เลยครับ\n\n⚠️ การเทรดมีความเสี่ยง';
+          const reply = stickerReplies[id] || '🏍️ [MotorBoy AI-TH] รับทราบสัญญาณ! พร้อมวิเคราะห์จุดเข้า Entry, SL, TP สด ถามชื่อเหรียญหรือคู่เงินได้เลยครับ\n\nนี่คือการวิเคราะห์ ไม่ใช่คำแนะนำการลงทุน';
           await sendRoomMessage(GLOBAL_ROOM_ID, {
-            uid: 'ai-deep-analyze',
-            name: '🤖 AI Deep Analyze [100% AI]',
+            uid: 'motorboy-ai',
+            name: '🏍️ MotorBoy AI-TH (น้องมอเตอร์บอย)',
             photoURL: null,
             text: reply,
           });
@@ -206,19 +205,22 @@ export const ChatModal: React.FC<ChatModalProps> = ({
         {/* Header: Short title & 100% AI badge */}
         <div className="flex justify-between items-center px-4 py-3 border-b border-[#252A3A]/60 bg-[#141824]">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-[#00FF66]/15 border border-[#00FF66]/40 flex items-center justify-center">
-              <Bot className="w-4 h-4 text-[#00FF66]" />
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#FF2D55] via-[#A855F7] to-[#3B82F6] p-[1.5px] shadow-[0_0_12px_rgba(255,45,85,0.4)]">
+              <div className="w-full h-full bg-[#0A0A0A] rounded-[9.5px] flex items-center justify-center text-sm">
+                🏍️
+              </div>
             </div>
             <div>
               <h2 className="font-bold flex items-center gap-1.5 text-sm sm:text-base">
-                <span>AI Deep Analyze</span>
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-[#00FF66]/15 border border-[#00FF66]/40 text-[#00FF66] font-mono">
-                  ● AI 100%
+                <span className="bg-gradient-to-r from-[#FF2D55] via-[#A855F7] to-[#3B82F6] text-transparent bg-clip-text font-black">
+                  MotorBoy AI-TH
+                </span>
+                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-[#FF2D55]/20 text-[#FF2D55] border border-[#FF2D55]/40 font-mono">
+                  HYBRID PRO
                 </span>
               </h2>
               <p className="text-[10px] text-[#9CA3AF] flex items-center gap-1">
-                <Sparkles className="w-3 h-3 text-[#38BDF8]" />
-                วิเคราะห์การเงิน หุ้นไทย-เทศ Forex ข่าวโลก และคริปโต
+                เร็ว แม่น ปลอดภัย แบบ MotorBoy • Auto API Co-Pilot
               </p>
             </div>
           </div>
@@ -252,7 +254,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                 {user.photoURL ? (
                   <img src={user.photoURL} alt="" className="w-4 h-4 rounded-full object-cover" referrerPolicy="no-referrer" />
                 ) : (
-                  <span className="w-4 h-4 rounded-full bg-[#7C6CFF]/20 text-[#A5B4FC] flex items-center justify-center text-[9px] font-bold">
+                  <span className="w-4 h-4 rounded-full bg-[#FF2D55]/20 text-[#FF2D55] flex items-center justify-center text-[9px] font-bold">
                     {(user.displayName || user.email || 'T').charAt(0)}
                   </span>
                 )}
@@ -349,7 +351,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                     {m.name.charAt(0)}
                   </span>
                 )}
-                <div className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 ${mine ? 'bg-[#7C6CFF]/25 border border-[#7C6CFF]/40' : 'bg-[#1A1D29] border border-[#252A3A]'}`}>
+                <div className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 ${mine ? 'bg-[#FF2D55]/20 border border-[#FF2D55]/40' : 'bg-[#1A1D29] border border-[#252A3A]'}`}>
                   <p className="text-[10px] text-[#9CA3AF] font-semibold mb-0.5">
                     {m.name} • {formatTime(m.createdAt)}
                   </p>
@@ -489,7 +491,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
             placeholder="พิมพ์คำถามหรือสินทรัพย์ให้ AI วิเคราะห์... (เช่น BTC, AOT, NVDA, EUR/USD)"
             disabled={isSending || isAiThinking}
             maxLength={500}
-            className="flex-1 bg-[#0F1117] border border-[#252A3A] rounded-xl px-3 py-2 text-xs sm:text-sm outline-none focus:border-[#00FF66] placeholder-[#6F7787] text-white disabled:opacity-60"
+            className="flex-1 bg-[#0F1117] border border-[#252A3A] rounded-xl px-3 py-2 text-xs sm:text-sm outline-none focus:border-[#FF2D55] placeholder-[#6F7787] text-white disabled:opacity-60"
           />
           <button
             onClick={() => handleSend()}

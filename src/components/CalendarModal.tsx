@@ -130,7 +130,7 @@ export const CalendarModal: React.FC<CalendarModalProps> = ({ isOpen, onClose, i
       key={id}
       onClick={() => setTab(id)}
       className={`flex-1 min-w-0 py-2 px-2 text-[11px] sm:text-xs font-semibold rounded-xl transition-all inline-flex items-center justify-center gap-1 ${
-        tab === id ? 'bg-[#7C6CFF] text-white shadow' : 'text-[#94A3B8] hover:text-white'
+        tab === id ? 'bg-[#FF2D55] text-white shadow' : 'text-[#94A3B8] hover:text-white'
       }`}
     >
       {icon}
@@ -203,7 +203,7 @@ export const CalendarModal: React.FC<CalendarModalProps> = ({ isOpen, onClose, i
                     </button>
                   ))}
                 </div>
-                <button onClick={() => loadEvents()} disabled={isLoading} className="px-3 py-1.5 bg-[#7C6CFF] hover:bg-[#6D5DFF] disabled:opacity-50 rounded-lg text-white text-xs font-semibold inline-flex items-center gap-1.5">
+                <button onClick={() => loadEvents()} disabled={isLoading} className="px-3 py-1.5 bg-[#FF2D55] hover:bg-[#FF2D55]/90 disabled:opacity-50 rounded-lg text-white text-xs font-semibold inline-flex items-center gap-1.5">
                   <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
                   <span>{isLoading ? 'กำลังโหลด...' : 'รีเฟรช'}</span>
                 </button>
@@ -297,7 +297,7 @@ export const CalendarModal: React.FC<CalendarModalProps> = ({ isOpen, onClose, i
                   {createMsg.text}
                 </div>
               )}
-              <button onClick={handleCreate} disabled={isCreating || !form.summary.trim()} className="w-full py-2.5 bg-[#7C6CFF] hover:bg-[#6D5DFF] disabled:opacity-50 rounded-xl text-white text-sm font-bold inline-flex items-center justify-center gap-2">
+              <button onClick={handleCreate} disabled={isCreating || !form.summary.trim()} className="w-full py-2.5 bg-[#FF2D55] hover:bg-[#FF2D55]/90 disabled:opacity-50 rounded-xl text-white text-sm font-bold inline-flex items-center justify-center gap-2">
                 <Plus className="w-4 h-4" />
                 <span>{isCreating ? 'กำลังสร้าง...' : 'สร้างกิจกรรมในปฏิทินหลัก'}</span>
               </button>

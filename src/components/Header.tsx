@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Bell, Settings, Zap, LogOut, User as UserIcon, Mail, Calendar as CalendarIcon, MessageSquare, Calculator, LayoutGrid, X, Radio, TrendingDown, Volume2, VolumeX } from 'lucide-react';
+import { Bell, Settings, LogOut, User as UserIcon, Mail, Calendar as CalendarIcon, MessageSquare, Calculator, LayoutGrid, X, Radio, TrendingDown, Volume2, VolumeX } from 'lucide-react';
 import { CryptoCoin } from '../types';
 import { TickerBar } from './TickerBar';
 
@@ -23,6 +23,7 @@ interface HeaderProps {
   onOpenRiskCalc?: () => void;
   onOpenDrawdown?: () => void;
   onOpenAtsMatrix?: () => void;
+  onSignIn?: () => void;
   onSignOut?: () => void;
   drawdownBreachCount?: number;
 }
@@ -47,6 +48,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenRiskCalc,
   onOpenDrawdown,
   onOpenAtsMatrix,
+  onSignIn,
   onSignOut,
   drawdownBreachCount = 0,
 }) => {
@@ -138,28 +140,30 @@ export const Header: React.FC<HeaderProps> = ({
     `w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl border flex items-center justify-center transition-all ${isDark ? darkCls : lightCls}`;
 
   return (
-    <header className={`sticky top-0 z-30 border-b backdrop-blur-md ${isDark ? 'bg-[#0B0F19]/90 border-[#1E2638]' : 'bg-white/90 border-[#E2E8F0]'}`}>
+    <header className={`sticky top-0 z-30 border-b backdrop-blur-md ${isDark ? 'bg-[#0A0A0A]/95 border-[#262626]' : 'bg-white/95 border-[#E2E8F0]'}`}>
       <div className="max-w-7xl mx-auto px-2 sm:px-4 h-16 flex items-center justify-between gap-1">
-        {/* Logo & Brand */}
+        {/* MotorBoy AI-TH Logo & Brand */}
         <div className="flex items-center space-x-1.5 sm:space-x-2.5 min-w-0">
-          <div className="w-7 h-7 sm:w-9 sm:h-9 shrink-0 rounded-lg sm:rounded-xl bg-[#131826] border border-[#1E2638] flex items-center justify-center text-lg shadow-xs">
-            <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-[#818CF8] fill-[#818CF8]" />
+          <div className="w-8 h-8 sm:w-9 sm:h-9 shrink-0 rounded-lg sm:rounded-xl bg-gradient-to-br from-[#FF2D55] via-[#A855F7] to-[#3B82F6] p-[1.5px] shadow-[0_0_15px_rgba(255,45,85,0.45)]">
+            <div className="w-full h-full bg-[#0A0A0A] rounded-[6.5px] sm:rounded-[10px] flex items-center justify-center text-sm sm:text-base">
+              <span role="img" aria-label="motorcycle">🏍️</span>
+            </div>
           </div>
 
           <div className="min-w-0">
-            <div className="flex items-center space-x-1 flex-wrap sm:flex-nowrap">
-              <span className={`font-black text-xs sm:text-base tracking-tight ${isDark ? 'text-slate-100' : 'text-[#0F172A]'}`}>
-                TRADING
+            <div className="flex items-center space-x-1.5 flex-wrap sm:flex-nowrap">
+              <span className="font-black text-xs sm:text-base tracking-tight bg-gradient-to-r from-[#FF2D55] via-[#A855F7] to-[#3B82F6] text-transparent bg-clip-text">
+                MOTORBOY
               </span>
-              <span className="font-black text-xs sm:text-base tracking-tight text-[#818CF8]">
-                ENGINE
+              <span className={`font-black text-xs sm:text-base tracking-tight ${isDark ? 'text-white' : 'text-[#0F172A]'}`}>
+                AI-TH
               </span>
-              <span className="bg-[#818CF8]/15 border border-[#818CF8]/30 text-[#A5B4FC] text-[8px] sm:text-[9px] font-extrabold px-1 py-0.5 rounded-md">
-                PRO
+              <span className="bg-gradient-to-r from-[#FF2D55]/20 to-[#A855F7]/20 border border-[#FF2D55]/40 text-[#FF2D55] text-[8px] sm:text-[9px] font-extrabold px-1.5 py-0.5 rounded-md">
+                HYBRID PRO
               </span>
             </div>
-            <p className="text-[#94A3B8] text-[9px] sm:text-[10px] leading-tight mt-0.5 truncate hidden min-[380px]:block">
-              Real-time Multi-Asset • Eye Care & Calming Mode
+            <p className="text-[#9CA3AF] text-[9px] sm:text-[10px] leading-tight mt-0.5 truncate hidden min-[380px]:block">
+              เร็ว แม่น ปลอดภัย แบบ MotorBoy • Auto API Co-Pilot
             </p>
           </div>
         </div>
@@ -308,8 +312,8 @@ export const Header: React.FC<HeaderProps> = ({
             <Settings className="w-4 h-4" />
           </button>
 
-          {/* User Profile & Sign Out */}
-          {user && (
+          {/* User Profile & Sign Out / Sign In */}
+          {user && user.email ? (
             <div className="flex items-center gap-1 sm:gap-2 pl-1.5 ml-0.5 sm:pl-2.5 sm:ml-1 border-l border-[#1E2638]">
               {user.photoURL ? (
                 <img
@@ -339,6 +343,24 @@ export const Header: React.FC<HeaderProps> = ({
                 </button>
               )}
             </div>
+          ) : (
+            onSignIn && (
+              <div className="flex items-center pl-1.5 ml-0.5 sm:pl-2.5 sm:ml-1 border-l border-[#1E2638]">
+                <button
+                  type="button"
+                  onClick={onSignIn}
+                  className={`flex items-center h-8 sm:h-9 px-2 sm:px-3 rounded-lg sm:rounded-xl border text-xs font-semibold transition-colors gap-1.5 ${
+                    isDark
+                      ? 'bg-[#818CF8]/15 border-[#818CF8]/40 text-[#A5B4FC] hover:bg-[#818CF8]/25 hover:border-[#818CF8]'
+                      : 'bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100'
+                  }`}
+                  title="Sign In with Google"
+                >
+                  <UserIcon className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">เข้าสู่ระบบ</span>
+                </button>
+              </div>
+            )
           )}
         </div>
       </div>

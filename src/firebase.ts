@@ -7,7 +7,7 @@ const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
 /** Firebase Authentication (Google SSO) */
 export const auth = getAuth(app);
-export const db = getFirestore(app);
+export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 export const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: 'select_account' });
 

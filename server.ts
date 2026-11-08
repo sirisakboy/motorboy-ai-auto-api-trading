@@ -2,7 +2,6 @@ import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { GoogleGenAI } from '@google/genai';
-import OpenAI from 'openai';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -14,7 +13,6 @@ app.use(express.json({ limit: '10mb' }));
 
 /** Shared Gemini model identifier */
 const GEMINI_MODEL = 'gemini-3.1-flash-lite';
-const POOLSIDE_MODEL = 'poolside/laguna-xs-2.1';
 
 /** Helper to instantiate GoogleGenAI client on the server */
 function getGeminiClient(userApiKey?: string) {
@@ -35,15 +33,6 @@ function getGeminiClient(userApiKey?: string) {
       },
     },
   });
-}
-
-/** Helper to instantiate Poolside OpenAI client on the server */
-function getPoolsideApiKey() {
-  return (
-    process.env.POOLSIDE_API_KEY ||
-    process.env.VITE_POOLSIDE_API_KEY ||
-    undefined
-  );
 }
 
 /** Extract JSON from response text safely */
@@ -89,7 +78,7 @@ function extractJsonFromText<T = Record<string, unknown>>(text: string): T | nul
 }
 
 // ============================================================================
-// SERVER-SIDE GEMINI & POOLSIDE API ROUTES
+// SERVER-SIDE GEMINI API ROUTES
 // ============================================================================
 
 /** 1. Test Gemini API Key */
@@ -175,14 +164,18 @@ ${signal ? `- สัญญาณเทคนิค: ${signal.type} (ความ
     const parsed = extractJsonFromText<any>(response.text || '{}');
     if (!parsed) throw new Error('Unparseable sentiment JSON');
 
+    const score = Math.min(100, Math.max(0, Number(parsed.score) || 50));
+    const safetyMargin = Math.max(5, Math.min(50, Number(parsed.safetyMargin) || Math.round((100 - score) * 0.35 + 8)));
+
     return res.json({
-      score: Math.min(100, Math.max(0, Number(parsed.score) || 50)),
+      score,
       sentimentLabel: parsed.sentimentLabel || 'NEUTRAL',
       sentimentTextTh: parsed.sentimentTextTh || 'เป็นกลาง',
       summaryReason: parsed.summaryReason || 'ประเมินจากราคาและสภาพคล่องตลาด',
       socialMomentum: parsed.socialMomentum || 'MODERATE',
       whaleActivity: parsed.whaleActivity || 'NEUTRAL',
       source: 'GEMINI_AI',
+      safetyMargin,
       timestamp: new Date().toISOString(),
     });
   } catch (error: any) {
@@ -260,6 +253,7 @@ ${signal ? `- สัญญาณเทคนิคระบบ: ${signal.type} (
         socialMomentum: parsed.socialMomentum || 'MODERATE',
         whaleActivity: parsed.whaleActivity || 'NEUTRAL',
         source: 'GEMINI_AI',
+        safetyMargin: Math.max(5, Math.min(50, Number(parsed.safetyMargin) || Math.round((100 - sScore) * 0.35 + 8))),
         timestamp: new Date().toISOString(),
       },
       source: 'GEMINI_AI',
@@ -411,7 +405,7 @@ ${topNewsSummary}
       bearishSignalsCount: signals.filter((s: any) => s.type === 'SHORT').length,
       bullishNewsCount: newsList.filter((n: any) => n.sentiment === 'BULLISH').length,
       bearishNewsCount: newsList.filter((n: any) => n.sentiment === 'BEARISH').length,
-      source: 'POOLSIDE_AI',
+      source: 'GEMINI_AI',
       timestamp: new Date().toISOString(),
     });
   } catch (error: any) {
@@ -547,7 +541,7 @@ app.post('/api/gemini/longterm-project', async (req, res) => {
       strategicRisk: parsed.strategicRisk || 'การล่าช้าของการก่อสร้างและต้นทุนวัตถุดิบ',
       investmentHorizon: parsed.investmentHorizon || '3 - 5 ปี',
       strategyAdvice: parsed.strategyAdvice || 'แนะนำทยอยสะสมเมื่อราคาย่อตัวลงมาใกล้แนวรับ',
-      source: 'POOLSIDE_AI',
+      source: 'GEMINI_AI',
       timestamp: new Date().toISOString(),
     });
   } catch (error: any) {
@@ -611,69 +605,49 @@ Respond ONLY with valid JSON array of objects:
   }
 });
 
-/** 9. Call Gemini / Poolside for Chat Reply */
+/** 9. Call Gemini for Chat Reply */
 app.post('/api/gemini/chat-reply', async (req, res) => {
   const { query, marketBrief, geminiApiKey } = req.body || {};
   const ai = getGeminiClient(geminiApiKey);
 
-  const prompt = `คุณคือผู้เชี่ยวชาญด้านการวางแผนตลาดการเงินและการวิเคราะห์ข่าวเศรษฐกิจระดับมืออาชีพ
-ภารกิจ: ให้คำปรึกษา แนะนำ และวิเคราะห์ข่าวสารการเงินและทิศทางตลาดด้วยความเป็นมืออาชีพ เน้นความชัดเจน เข้าใจง่าย แต่อยู่บนพื้นฐานของตรรกะและข้อมูลจริง
+  if (!ai) {
+    return res.status(400).json({ error: 'Missing Gemini API Key' });
+  }
+
+  const prompt = `คุณคือ MotorBoy AI-TH (น้องมอเตอร์บอย) AI Trading Co-Pilot + Auto API Assistant, Hybrid Pro จาก MotorBoy Studio AI-TH
+สโลแกน: "AI auto API Trading - เร็ว แม่น ปลอดภัย แบบ MotorBoy"
+บุคลิก: พี่ชายนักบิดมือโปร (pro_rider_brother) — รวดเร็ว แม่นยำ เป็นมิตร มีวินัยสูง ชัดเจน ไม่มีน้ำ
+หลักการ 5 เสาหลัก:
+1. ENGINE: วิเคราะห์แนวโน้ม แท่งเทียน Volume แนวรับ/แนวต้าน อย่างแม่นยำ
+2. API MODE: วางแผนการเทรด มี Entry, SL, TP1/TP2 และ RR Ratio ชัดเจนเสมอ
+3. RISK GUARD: คุมความเสี่ยงไม่เกิน 2% ต่อไม้ อัตรา RR Ratio ไม่ต่ำกว่า 1:1.5 ถ้าความเสี่ยงเกิน 2% ให้ปฏิเสธและเตือนทันที
+4. KILL SWITCH: ถ้าตลาดผันผวนรุนแรง หรือ Drawdown เกิน 5% ให้หยุดและบอก "🛑 เบรกก่อนจิ!"
+5. กฎเหล็ก: ห้ามการันตีผลกำไรเด็ดขาด และต้องปิดท้ายด้วยข้อความ: "นี่คือการวิเคราะห์ ไม่ใช่คำแนะนำการลงทุน" เสมอ
+คำพูดติดปากเมื่อเจอจุดเข้าที่ดี: "🏍️ Full Throttle! จุดเข้าตามแผน ล็อคความเสี่ยงเรียบร้อย"
 
 ข้อมูลตลาดสดประกอบการวิเคราะห์:
 ${marketBrief || 'ไม่มีข้อมูลตลาดสดเพิ่มเติม'}
 
 คำถามจากผู้ใช้: "${query}"
-
-แนวทางการวิเคราะห์:
-1. วิเคราะห์ด้วยข้อมูล: ใช้ข้อมูลตลาดจริงประกอบการอธิบาย
-2. ชัดเจนและตรงประเด็น: ตอบคำถามให้ตรงจุด เน้นการวางแผนและการจัดการความเสี่ยง
-3. ความยืดหยุ่น: เป็นการสนทนาแลกเปลี่ยนมุมมอง ไม่ใช้คำตอบสำเร็จรูป
-4. สรุปความเสี่ยง: ทุกครั้งที่มีคำแนะนำด้านการลงทุน ต้องปิดท้ายด้วยคำเตือนเรื่องความเสี่ยงเสมอ
 `.trim();
 
-  // Try Gemini API first if configured
-  if (ai) {
-    try {
-      const response = await ai.models.generateContent({
-        model: GEMINI_MODEL,
-        contents: prompt,
-        config: {
-          tools: [{ googleSearch: {} }],
-        },
-      });
+  try {
+    const response = await ai.models.generateContent({
+      model: GEMINI_MODEL,
+      contents: prompt,
+      config: {
+        tools: [{ googleSearch: {} }],
+      },
+    });
 
-      if (response?.text) {
-        return res.json({ reply: response.text, source: 'GEMINI_AI' });
-      }
-    } catch (err: any) {
-      console.warn('Server Gemini chat query warning:', err?.message);
+    if (response?.text) {
+      return res.json({ reply: response.text, source: 'GEMINI_AI' });
     }
+    return res.status(500).json({ error: 'Empty response from Gemini' });
+  } catch (err: any) {
+    console.warn('Server Gemini chat query error:', err?.message);
+    return res.status(500).json({ error: err?.message || 'Gemini chat query failed' });
   }
-
-  // Try Poolside API second if configured
-  const poolsideKey = getPoolsideApiKey();
-  if (poolsideKey && poolsideKey !== 'dummy_key') {
-    try {
-      const client = new OpenAI({
-        apiKey: poolsideKey,
-        baseURL: 'https://inference.poolside.ai/v1',
-      });
-      const response = await client.chat.completions.create({
-        model: POOLSIDE_MODEL,
-        messages: [{ role: 'user', content: prompt }],
-        stream: false,
-      });
-
-      const replyContent = response.choices[0]?.message?.content;
-      if (replyContent) {
-        return res.json({ reply: replyContent, source: 'POOLSIDE_AI' });
-      }
-    } catch (err: any) {
-      console.warn('Server Poolside chat query warning:', err?.message);
-    }
-  }
-
-  return res.status(503).json({ error: 'No live AI model available on server' });
 });
 
 // ============================================================================
@@ -690,7 +664,7 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     app.use(express.static(path.join(__dirname, 'dist')));
-    app.get('*', (_req, res) => {
+    app.use((_req, res) => {
       res.sendFile(path.join(__dirname, 'dist', 'index.html'));
     });
   }

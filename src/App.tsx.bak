@@ -1,0 +1,763 @@
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { Search, Sparkles, ShieldCheck, Zap } from 'lucide-react';
+import { signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/auth';
+import { auth, googleProvider } from './firebase';
+import {
+  CryptoCoin,
+  ForexPair,
+  StockIndex,
+  TradingSignal,
+  NewsArticle,
+  ChartData,
+  MarketHoursInfo,
+  ApiStatusState,
+} from './types';
+import {
+  CRYPTO_INITIAL,
+  STOCK_SYMBOLS,
+  startBinanceWebSocket,
+  fetchCryptoPrices,
+  fetchForexRates,
+  fetchNews,
+  computeMarketHours,
+  fetchPriceHistory,
+  generateRealSignals,
+  generateForexSignals,
+} from './services/apiClient';
+import { Header } from './components/Header';
+import { CryptoCard } from './components/CryptoCard';
+import { ForexCard } from './components/ForexCard';
+import { StockCard } from './components/StockCard';
+import { PriceChartCanvas } from './components/PriceChartCanvas';
+import { MarketHoursCard } from './components/MarketHoursCard';
+import { NewsCard } from './components/NewsCard';
+import { ApiStatusCard } from './components/ApiStatusCard';
+import { SignalDetailModal } from './components/SignalDetailModal';
+import { ForexDetailModal } from './components/ForexDetailModal';
+import { SettingsDialog } from './components/SettingsDialog';
+import { HistoryList } from './components/HistoryList';
+import { TradingHistoryEntry } from './types';
+import {
+  subscribeUserSettings,
+  saveUserSettings,
+  subscribeUserHistory,
+  addHistoryEntry,
+  deleteHistoryEntry,
+  clearAllUserHistory,
+  testFirestoreConnection,
+} from './services/firebaseSync';
+
+export const App: React.FC = () => {
+  const [user, setUser] = useState<User | null>(null);
+  const [authLoading, setAuthLoading] = useState<boolean>(true);
+  const [isSigningIn, setIsSigningIn] = useState<boolean>(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setAuthLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const handleGoogleSignIn = async () => {
+    setIsSigningIn(true);
+    setAuthError(null);
+    try {
+      await signInWithPopup(auth, googleProvider);
+    } catch (error: unknown) {
+      console.error('Error signing in with Google', error);
+      const err = error as { code?: string; message?: string };
+      if (err?.code === 'auth/popup-closed-by-user') {
+        setAuthError('หน้าต่างเข้าสู่ระบบถูกปิด กรุณาลองใหม่อีกครั้ง');
+      } else if (err?.code === 'auth/cancelled-popup-request') {
+        // Ignored
+      } else {
+        setAuthError(err?.message || 'เกิดข้อผิดพลาดในการเข้าสู่ระบบด้วย Google');
+      }
+    } finally {
+      setIsSigningIn(false);
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await signOut(auth);
+    } catch (error) {
+      console.error('Error signing out', error);
+    }
+  };
+
+  // State
+  const [cryptoList, setCryptoList] = useState<CryptoCoin[]>(CRYPTO_INITIAL);
+  const [forexRates, setForexRates] = useState<ForexPair[]>([]);
+  const [stockIndices] = useState<StockIndex[]>(STOCK_SYMBOLS);
+  const [signals, setSignals] = useState<TradingSignal[]>(() =>
+    generateRealSignals(CRYPTO_INITIAL)
+  );
+  const [forexSignals, setForexSignals] = useState<TradingSignal[]>([]);
+  const [newsList, setNewsList] = useState<NewsArticle[]>([]);
+  const [chartData, setChartData] = useState<ChartData | null>(null);
+  const [chartLoading, setChartLoading] = useState<boolean>(true);
+  const [selectedChartAsset, setSelectedChartAsset] = useState<string>('bitcoin');
+
+  const [marketHours, setMarketHours] = useState<MarketHoursInfo>(() =>
+    computeMarketHours()
+  );
+  const [apiStatus, setApiStatus] = useState<ApiStatusState>({
+    binanceWs: 'CONNECTING',
+    coinGecko: 'LIVE',
+    forex: 'LIVE',
+    news: 'LIVE',
+    signals: 'LIVE',
+    stocks: 'LIVE',
+  });
+
+  const [selectedTab, setSelectedTab] = useState<number>(0);
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [useThb, setUseThb] = useState<boolean>(false);
+  const [isDark, setIsDark] = useState<boolean>(true);
+  const [notificationsEnabled, setNotificationsEnabled] = useState<boolean>(false);
+  const [watchlist, setWatchlist] = useState<Set<string>>(new Set());
+  const [priceAlerts, setPriceAlerts] = useState<
+    Array<{ symbol: string; targetPrice: number }>
+  >([]);
+  const [alertToast, setAlertToast] = useState<string | null>(null);
+
+  const [selectedSignal, setSelectedSignal] = useState<TradingSignal | null>(null);
+  const [selectedForex, setSelectedForex] = useState<ForexPair | null>(null);
+  const [showSettings, setShowSettings] = useState<boolean>(false);
+  const [geminiApiKey, setGeminiApiKey] = useState<string>('');
+  const [historyEntries, setHistoryEntries] = useState<TradingHistoryEntry[]>([]);
+
+  // 0. Firestore Real-time Sync with Google Account
+  useEffect(() => {
+    if (!user) {
+      setGeminiApiKey('');
+      setHistoryEntries([]);
+      return;
+    }
+
+    testFirestoreConnection();
+
+    // Subscribe to User Settings (API Key, Watchlist, Alerts, Currency)
+    const unsubSettings = subscribeUserSettings(user.uid, (data) => {
+      if (data.geminiApiKey !== undefined) setGeminiApiKey(data.geminiApiKey);
+      if (data.watchlist !== undefined) setWatchlist(new Set(data.watchlist));
+      if (data.priceAlerts !== undefined) setPriceAlerts(data.priceAlerts);
+      if (data.useThb !== undefined) setUseThb(data.useThb);
+      if (data.notificationsEnabled !== undefined)
+        setNotificationsEnabled(data.notificationsEnabled);
+    });
+
+    // Subscribe to User Trading and AI Analysis History
+    const unsubHistory = subscribeUserHistory(user.uid, (items) => {
+      setHistoryEntries(items);
+    });
+
+    return () => {
+      unsubSettings();
+      unsubHistory();
+    };
+  }, [user]);
+
+  // Refs for tracking updates
+  const wsRef = useRef<WebSocket | null>(null);
+  const forexRef = useRef<ForexPair[]>([]);
+  forexRef.current = forexRates;
+
+  // 1. Binance WebSocket Connection
+  useEffect(() => {
+    let reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
+
+    const connectWs = () => {
+      wsRef.current = startBinanceWebSocket(
+        (updatedCoin) => {
+          setCryptoList((prev) => {
+            return prev.map((c) => {
+              if (c.binanceSymbol.toLowerCase() === updatedCoin.binanceSymbol.toLowerCase()) {
+                const flash =
+                  updatedCoin.price > c.price
+                    ? 'UP'
+                    : updatedCoin.price < c.price
+                    ? 'DOWN'
+                    : 'NONE';
+                return {
+                  ...c,
+                  price: updatedCoin.price,
+                  change: updatedCoin.change,
+                  high: updatedCoin.high,
+                  low: updatedCoin.low,
+                  volume: updatedCoin.volume,
+                  flash,
+                };
+              }
+              return c;
+            });
+          });
+        },
+        (status) => {
+          setApiStatus((prev) => ({ ...prev, binanceWs: status }));
+          if (status === 'OFFLINE' || status === 'CLOSED') {
+            // Reconnect after 5 seconds
+            reconnectTimeout = setTimeout(connectWs, 5000);
+          }
+        }
+      );
+    };
+
+    connectWs();
+
+    return () => {
+      if (reconnectTimeout) clearTimeout(reconnectTimeout);
+      if (wsRef.current) wsRef.current.close();
+    };
+  }, []);
+
+  // 2. Refresh signals when cryptoList updates
+  useEffect(() => {
+    setSignals(generateRealSignals(cryptoList));
+  }, [cryptoList]);
+
+  // 3. Periodic Crypto REST Fallback
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const prices = await fetchCryptoPrices();
+        setCryptoList((prev) =>
+          prev.map((c) => {
+            const match = prices.find((p) => p.id === c.id);
+            return match ? { ...c, ...match, flash: 'NONE' } : c;
+          })
+        );
+      } catch {
+        setApiStatus((prev) => ({ ...prev, coinGecko: 'FALLBACK' }));
+      }
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // 4. Forex Periodic Polling (15s)
+  useEffect(() => {
+    const updateForex = async () => {
+      try {
+        const rates = await fetchForexRates(forexRef.current);
+        setForexRates(rates);
+        setForexSignals(generateForexSignals(rates));
+        setApiStatus((prev) => ({ ...prev, forex: 'LIVE' }));
+      } catch {
+        setApiStatus((prev) => ({ ...prev, forex: 'FALLBACK' }));
+      }
+    };
+
+    updateForex();
+    const interval = setInterval(updateForex, 15000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // 5. News Periodic Polling (300s)
+  useEffect(() => {
+    const updateNews = async () => {
+      try {
+        const news = await fetchNews();
+        setNewsList(news);
+      } catch {
+        setApiStatus((prev) => ({ ...prev, news: 'FALLBACK' }));
+      }
+    };
+
+    updateNews();
+    const interval = setInterval(updateNews, 300000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // 6. Clock tick every 1s for Bangkok ICT Market Hours
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setMarketHours(computeMarketHours());
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // 7. Load Chart Data for Selected Asset
+  useEffect(() => {
+    let isCancelled = false;
+    setChartLoading(true);
+
+    fetchPriceHistory(selectedChartAsset, forexRates.some(f => f.pair === selectedChartAsset)).then((data) => {
+      if (!isCancelled) {
+        setChartData(data);
+        setChartLoading(false);
+      }
+    });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [selectedChartAsset]);
+
+  // 8. Check Price Alerts
+  useEffect(() => {
+    if (!notificationsEnabled || priceAlerts.length === 0) return;
+
+    priceAlerts.forEach((alert) => {
+      const coin = cryptoList.find((c) => c.symbol === alert.symbol);
+      if (coin && coin.price >= alert.targetPrice) {
+        setAlertToast(
+          `🔔 แจ้งเตือนราคา: ${alert.symbol} ถึงเป้าหมายที่ $${alert.targetPrice.toLocaleString()} แล้ว! (ปัจจุบัน: $${coin.price.toLocaleString()})`
+        );
+        // Remove triggered alert
+        setPriceAlerts((prev) =>
+          prev.filter(
+            (a) => !(a.symbol === alert.symbol && a.targetPrice === alert.targetPrice)
+          )
+        );
+      }
+    });
+  }, [cryptoList, priceAlerts, notificationsEnabled]);
+
+  // Handlers with Firestore Cloud Sync
+  const handleToggleWatchlist = (symbol: string) => {
+    setWatchlist((prev) => {
+      const next = new Set(prev);
+      if (next.has(symbol)) {
+        next.delete(symbol);
+      } else {
+        next.add(symbol);
+      }
+      if (user) {
+        saveUserSettings(user.uid, { watchlist: Array.from(next) }).catch((err) =>
+          console.error('Failed to sync watchlist:', err)
+        );
+      }
+      return next;
+    });
+  };
+
+  const handleSetAlert = (symbol: string, targetPrice: number) => {
+    const nextAlerts = [...priceAlerts, { symbol, targetPrice }];
+    setPriceAlerts(nextAlerts);
+    if (user) {
+      saveUserSettings(user.uid, { priceAlerts: nextAlerts }).catch((err) =>
+        console.error('Failed to sync alerts:', err)
+      );
+      addHistoryEntry(user.uid, {
+        type: 'PRICE_ALERT',
+        symbol,
+        action: 'ALERT',
+        price: targetPrice,
+        aiSummary: `ตั้งแจ้งเตือนราคาเป้าหมาย ${symbol} ที่ $${targetPrice.toLocaleString()}`,
+      }).catch((err) => console.error('Failed to record alert history:', err));
+    }
+  };
+
+  const handleRemoveAlert = (symbol: string, targetPrice: number) => {
+    const nextAlerts = priceAlerts.filter(
+      (a) => !(a.symbol === symbol && a.targetPrice === targetPrice)
+    );
+    setPriceAlerts(nextAlerts);
+    if (user) {
+      saveUserSettings(user.uid, { priceAlerts: nextAlerts }).catch((err) =>
+        console.error('Failed to sync alerts removal:', err)
+      );
+    }
+  };
+
+  const handleSaveApiKey = async (newKey: string) => {
+    setGeminiApiKey(newKey);
+    if (user) {
+      await saveUserSettings(user.uid, { geminiApiKey: newKey });
+    }
+  };
+
+  const handleToggleCurrency = (val: boolean) => {
+    setUseThb(val);
+    if (user) {
+      saveUserSettings(user.uid, { useThb: val }).catch(console.error);
+    }
+  };
+
+  const handleToggleNotifications = () => {
+    const nextVal = !notificationsEnabled;
+    setNotificationsEnabled(nextVal);
+    if (user) {
+      saveUserSettings(user.uid, { notificationsEnabled: nextVal }).catch(console.error);
+    }
+  };
+
+  const handleSaveToHistory = async (
+    entry: Omit<TradingHistoryEntry, 'id' | 'userId' | 'timestamp'>
+  ) => {
+    if (user) {
+      await addHistoryEntry(user.uid, entry);
+    }
+  };
+
+  const handleDeleteHistoryEntry = async (id: string) => {
+    if (user) {
+      await deleteHistoryEntry(user.uid, id);
+    }
+  };
+
+  const handleClearAllHistory = async () => {
+    if (user) {
+      await clearAllUserHistory(user.uid);
+    }
+  };
+
+  // Filtered lists
+  const filteredSignals = useMemo(() => {
+    return signals.filter((s) => {
+      const matchesSearch =
+        s.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        s.base.toLowerCase().includes(searchQuery.toLowerCase());
+      if (selectedTab === 3) {
+        return matchesSearch && watchlist.has(s.symbol);
+      }
+      return matchesSearch;
+    });
+  }, [signals, searchQuery, selectedTab, watchlist]);
+  
+  const filteredForexSignals = useMemo(() => {
+    return forexSignals.filter((s) => {
+      const matchesSearch =
+        s.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        s.base.toLowerCase().includes(searchQuery.toLowerCase());
+      if (selectedTab === 3) {
+        return matchesSearch && watchlist.has(s.symbol);
+      }
+      return matchesSearch;
+    });
+  }, [forexSignals, searchQuery, selectedTab, watchlist]);
+
+  const tabs = [
+    { label: 'คริปโต', count: signals.length },
+    { label: 'คู่เงิน', count: forexRates.length },
+    { label: 'หุ้น', count: stockIndices.length },
+    { label: 'Watchlist', count: [...filteredSignals, ...filteredForexSignals].length },
+    { label: 'ประวัติซิงค์ Google', count: historyEntries.length },
+  ];
+
+  return (
+    <div
+      className={`min-h-screen ${
+        isDark ? 'bg-[#0F1117] text-white' : 'bg-[#F8FAFC] text-[#0F172A]'
+      } flex flex-col font-sans transition-colors duration-200`}
+    >
+      {authLoading ? (
+        <div className="flex-1 flex flex-col items-center justify-center p-6">
+          <div className="w-10 h-10 border-3 border-[#7C6CFF] border-t-transparent rounded-full animate-spin mb-3" />
+          <p className="text-xs text-[#9CA3AF] font-medium animate-pulse">
+            กำลังตรวจสอบสิทธิ์การเข้าใช้งาน...
+          </p>
+        </div>
+      ) : !user ? (
+        <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-6">
+          <div className="w-full max-w-md rounded-3xl bg-[#1A1D29] border border-[#252A3A] p-6 sm:p-8 shadow-2xl text-center space-y-6">
+            {/* Brand icon */}
+            <div className="mx-auto w-14 h-14 rounded-2xl bg-[#7C6CFF]/20 border border-[#7C6CFF]/40 flex items-center justify-center shadow-lg">
+              <Zap className="w-8 h-8 text-[#7C6CFF] fill-[#7C6CFF]" />
+            </div>
+
+            {/* Title & Desc */}
+            <div>
+              <div className="flex items-center justify-center space-x-2">
+                <span className="font-black text-xl sm:text-2xl text-white tracking-tight">
+                  TRADING
+                </span>
+                <span className="font-black text-xl sm:text-2xl text-[#7C6CFF] tracking-tight">
+                  ENGINE
+                </span>
+                <span className="bg-[#7C6CFF]/20 border border-[#7C6CFF]/40 text-[#A5B4FC] text-[10px] font-extrabold px-2 py-0.5 rounded-md">
+                  PRO
+                </span>
+              </div>
+              <p className="text-xs text-[#9CA3AF] mt-2 leading-relaxed">
+                ระบบส่งสัญญาณซื้อขาย Multi-Asset Engine วิเคราะห์แบบเรียลไทม์
+                กรุณาเข้าสู่ระบบเพื่อเริ่มต้นใช้งาน
+              </p>
+            </div>
+
+            {/* Error notice */}
+            {authError && (
+              <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs text-left">
+                {authError}
+              </div>
+            )}
+
+            {/* Google Sign-in button */}
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={handleGoogleSignIn}
+                disabled={isSigningIn}
+                className="w-full py-3.5 px-4 rounded-2xl bg-white hover:bg-slate-100 text-slate-900 font-bold text-sm transition-all shadow-md hover:shadow-lg flex items-center justify-center space-x-3 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {isSigningIn ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-slate-900 border-t-transparent rounded-full animate-spin" />
+                    <span>กำลังเข้าสู่ระบบ...</span>
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-5 h-5" viewBox="0 0 24 24">
+                      <path
+                        fill="#4285F4"
+                        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                      />
+                      <path
+                        fill="#34A853"
+                        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                      />
+                      <path
+                        fill="#FBBC05"
+                        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                      />
+                      <path
+                        fill="#EA4335"
+                        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                      />
+                    </svg>
+                    <span>เข้าสู่ระบบด้วย Google</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Security note */}
+            <div className="pt-2 border-t border-[#252A3A]/70 flex items-center justify-center space-x-1.5 text-[11px] text-[#6B7280]">
+              <ShieldCheck className="w-3.5 h-3.5 text-[#22C55E]" />
+              <span>เข้าสู่ระบบปลอดภัยผ่าน Firebase Authentication</span>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* Toast Notification */}
+          {alertToast && (
+            <div className="fixed top-4 right-4 z-50 max-w-sm bg-[#7C6CFF] text-white px-4 py-3 rounded-2xl shadow-xl border border-white/20 flex items-center justify-between space-x-3 animate-fade-in">
+              <span className="text-xs font-semibold">{alertToast}</span>
+              <button
+                type="button"
+                onClick={() => setAlertToast(null)}
+                className="text-white/80 hover:text-white text-xs font-bold px-1"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+
+          {/* Header */}
+          <Header
+            cryptoList={cryptoList}
+            useThb={useThb}
+            isDark={isDark}
+            notifEnabled={notificationsEnabled}
+            alertCount={priceAlerts.length}
+            user={user}
+            onToggleCurrency={() => setUseThb(!useThb)}
+            onToggleTheme={() => setIsDark(!isDark)}
+            onToggleNotifications={() =>
+              setNotificationsEnabled(!notificationsEnabled)
+            }
+            onOpenSettings={() => setShowSettings(true)}
+            onSignOut={handleSignOut}
+          />
+
+          {/* Main Container */}
+          <main className="flex-1 max-w-7xl w-full mx-auto px-4 py-6">
+            {/* 2-Column Responsive Layout */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              {/* Main Column: Chart + Asset Tabs & Cards (col-span-8) */}
+              <div className="lg:col-span-8 space-y-6">
+                {/* Real Price Chart Canvas with Asset Selector */}
+                <div className="rounded-[20px] bg-[#1A1D29] border border-[#252A3A] p-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 mb-3 border-b border-[#252A3A]/60 gap-2">
+                    <div>
+                      <h2 className="text-white font-bold text-sm">
+                        กราฟราคา 90 วัน & ค่าเฉลี่ย EMA (20/50)
+                      </h2>
+                      <p className="text-[#6B7280] text-[11px] mt-0.5">
+                        ดึงข้อมูล Binance Klines จริงแบบ 1 วัน คำนวณเส้น EMA
+                      </p>
+                    </div>
+
+                    {/* Coin selector */}
+                    <div className="flex items-center space-x-1.5 overflow-x-auto">
+                      {cryptoList.map((coin) => (
+                        <button
+                          key={coin.id}
+                          type="button"
+                          onClick={() => setSelectedChartAsset(coin.id)}
+                          className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all ${
+                            selectedChartAsset === coin.id
+                              ? 'bg-[#7C6CFF] text-white shadow-xs'
+                              : 'bg-[#0F1117] text-[#9CA3AF] hover:text-white border border-[#252A3A]'
+                          }`}
+                        >
+                          {coin.symbol}
+                        </button>
+                      ))}
+                      {forexRates.map((forex) => (
+                        <button
+                          key={forex.pair}
+                          type="button"
+                          onClick={() => setSelectedChartAsset(forex.pair)}
+                          className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all ${
+                            selectedChartAsset === forex.pair
+                              ? 'bg-[#10B981] text-white shadow-xs'
+                              : 'bg-[#0F1117] text-[#9CA3AF] hover:text-white border border-[#252A3A]'
+                          }`}
+                        >
+                          {forex.pair}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {selectedTab === 1 && (
+                    <div className="space-y-3">
+                      {forexRates
+                        .filter((f) =>
+                          f.pair.toLowerCase().includes(searchQuery.toLowerCase())
+                        )
+                        .map((forex) => (
+                          <ForexCard
+                            key={forex.pair}
+                            forex={forex}
+                            apiStatus={apiStatus.forex}
+                            onSelect={() => setSelectedForex(forex)}
+                          />
+                        ))}
+                    </div>
+                  )}
+
+                  {selectedTab === 2 && (
+                    <div className="space-y-3">
+                      {stockIndices
+                        .filter(
+                          (s) =>
+                            s.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            s.name.toLowerCase().includes(searchQuery.toLowerCase())
+                        )
+                        .map((stock) => (
+                          <StockCard
+                            key={stock.symbol}
+                            stock={stock}
+                            marketStatusText={marketHours.setStatus}
+                            countdown={marketHours.countdown}
+                          />
+                        ))}
+                    </div>
+                  )}
+
+                  {selectedTab === 3 && (
+                    <div className="space-y-3">
+                      {filteredSignals.length > 0 ? (
+                        filteredSignals.map((sig) => {
+                          const coin = cryptoList.find((c) => c.symbol === sig.symbol);
+                          return (
+                            <CryptoCard
+                              key={sig.id}
+                              signal={sig}
+                              coin={coin}
+                              isWatchlisted={true}
+                              useThb={useThb}
+                              onToggleWatchlist={handleToggleWatchlist}
+                              onSelect={() => setSelectedSignal(sig)}
+                            />
+                          );
+                        })
+                      ) : (
+                        <div className="rounded-[18px] bg-[#1A1D29] border border-[#252A3A] p-8 text-center">
+                          <p className="text-white text-sm font-semibold">
+                            ยังไม่มีเหรียญใน Watchlist
+                          </p>
+                          <p className="text-[#6B7280] text-xs mt-1">
+                            แตะรูปดาว ⭐️ ที่การ์ดสัญญาณคริปโตเพื่อเพิ่มลงในรายการโปรด
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {selectedTab === 4 && (
+                    <HistoryList
+                      entries={historyEntries}
+                      userEmail={user.email}
+                      useThb={useThb}
+                      onDeleteEntry={handleDeleteHistoryEntry}
+                      onClearAll={handleClearAllHistory}
+                    />
+                  )}
+                </div>
+              </div>
+
+              {/* Right Sidebar Column: Market Hours, News & API Status (col-span-4) */}
+              <div className="lg:col-span-4 space-y-6">
+                <MarketHoursCard marketHours={marketHours} />
+                <NewsCard
+                  articles={newsList}
+                  signals={signals}
+                  geminiApiKey={geminiApiKey}
+                  onSaveToHistory={handleSaveToHistory}
+                  onNavigateToHistory={() => setSelectedTab(4)}
+                />
+                <ApiStatusCard status={apiStatus} />
+              </div>
+            </div>
+          </main>
+
+          {/* Signal Detail Modal */}
+          {selectedSignal && (
+            <SignalDetailModal
+              signal={selectedSignal}
+              coin={cryptoList.find((c) => c.symbol === selectedSignal?.symbol)}
+              useThb={useThb && !selectedSignal.symbol.includes('/')}
+              geminiApiKey={geminiApiKey}
+              onSaveToHistory={handleSaveToHistory}
+              onDismiss={() => setSelectedSignal(null)}
+            />
+          )}
+
+          {/* Settings Dialog */}
+          {selectedForex && (
+            <ForexDetailModal
+              forex={selectedForex}
+              geminiApiKey={geminiApiKey}
+              onDismiss={() => setSelectedForex(null)}
+            />
+          )}
+
+          {showSettings && (
+            <SettingsDialog
+              useThb={useThb}
+              onToggleCurrency={handleToggleCurrency}
+              notificationsEnabled={notificationsEnabled}
+              onToggleNotifications={handleToggleNotifications}
+              onSetAlert={handleSetAlert}
+              geminiApiKey={geminiApiKey}
+              onSaveApiKey={handleSaveApiKey}
+              userEmail={user.email}
+              priceAlerts={priceAlerts}
+              onRemoveAlert={handleRemoveAlert}
+              onDismiss={() => setShowSettings(false)}
+            />
+          )}
+
+          {/* Background Music */}
+          <iframe
+            src="https://www.youtube.com/embed/TM9WY22YAaw?autoplay=1&loop=1&playlist=TM9WY22YAaw&controls=0&mute=0"
+            allow="autoplay"
+            className="fixed left-[-9999px] top-[-9999px]"
+            title="Background Music"
+          />
+        </>
+      )}
+    </div>
+  );
+};
+
+export default App;

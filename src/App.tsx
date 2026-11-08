@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Search, Sparkles, X, Star, History, Radio } from 'lucide-react';
-import { signOut, User } from 'firebase/auth';
-import { auth, db } from './firebase';
+import { signOut, signInWithPopup, GoogleAuthProvider, User } from 'firebase/auth';
+import { auth, db, googleProvider } from './firebase';
+import { setCachedAccessToken } from './services/gmailService';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { AtsMatrixDashboard } from './components/AtsMatrixDashboard';
 import { isAtsMatrixTrigger } from './services/atsMatrixService';
@@ -64,6 +65,8 @@ import { ChatModal } from './components/ChatModal';
 import { RiskCalculatorModal } from './components/RiskCalculatorModal';
 import { DrawdownAlertBanner } from './components/DrawdownAlertBanner';
 import { DrawdownMonitorModal } from './components/DrawdownMonitorModal';
+import { MascotCoPilotCard } from './components/MascotCoPilotCard';
+import { useMascotStore } from './services/mascotService';
 import {
   buildDrawdownAssets,
   computePortfolioDrawdownSummary,
@@ -103,6 +106,21 @@ export const App: React.FC = () => {
       setUser({ uid: 'guest', displayName: 'Guest' } as unknown as User);
     } catch (error) {
       console.error('Error signing out', error);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      if (credential?.accessToken) {
+        setCachedAccessToken(credential.accessToken);
+      }
+    } catch (error: any) {
+      if (error?.code === 'auth/popup-closed-by-user' || error?.code === 'auth/cancelled-popup-request') {
+        return;
+      }
+      console.error('Error signing in with Google:', error);
     }
   };
 
@@ -153,13 +171,23 @@ export const App: React.FC = () => {
   const atsModalRef = useModalA11y({ onClose: () => setShowAtsMatrixModal(false), enabled: showAtsMatrixModal });
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [useThb, setUseThb] = useState<boolean>(false);
-  // The dashboard is dark-only by design. It used to flip to a "light" palette
-  // between 06:00 and 18:00, but only 8 of 26 components implement that palette —
-  // in Bangkok daytime the page background, header and two modals turned light
-  // while every card, table and chart stayed dark. Until the colour palette is
-  // migrated to CSS custom properties (see CODE_REVIEW.md, UI section), the
-  // theme stays fixed so the UI is never half-inverted.
+  // The dashboard is dark-only by design: only 8 of 26 components implement a
+  // light palette, so the old 06:00–18:00 auto-flip half-inverted the UI.
   const [isDark] = useState<boolean>(true);
+
+  // Mascot: initial onboarding greeting (kept from the Co-Pilot feature).
+  useEffect(() => {
+    const openTimer = setTimeout(() => {
+      useMascotStore.getState().setMascotState('ONBOARDING');
+    }, 1500);
+    const closeTimer = setTimeout(() => {
+      useMascotStore.getState().resetToIdle();
+    }, 11500);
+    return () => {
+      clearTimeout(openTimer);
+      clearTimeout(closeTimer);
+    };
+  }, []);
 
   const [notificationsEnabled, setNotificationsEnabled] = useState<boolean>(false);
   const [watchlist, setWatchlist] = useState<Set<string>>(new Set());
@@ -259,9 +287,27 @@ export const App: React.FC = () => {
       drawdownThresholds.soundEnabled
     ) {
       playDrawdownAlertChime('CRITICAL');
+      useMascotStore.getState().setMascotState('KILL_SWITCH_ACTIVE');
     }
     prevBreachedCountRef.current = criticalCount;
   }, [criticalOrExtremeAssets.length, drawdownThresholds.soundEnabled]);
+
+  // Mascot: Volatility Monitor (SIDEWAYS / VOLATILITY_SPIKE)
+  useEffect(() => {
+    const activeMascotState = useMascotStore.getState().state;
+    if (activeMascotState !== 'IDLE' && activeMascotState !== 'SIDEWAYS') return;
+
+    const avgChange = cryptoList.reduce((acc, c) => acc + Math.abs(c.change), 0) / cryptoList.length;
+    const maxChange = Math.max(...cryptoList.map(c => Math.abs(c.change)));
+
+    if (maxChange > 10) {
+      useMascotStore.getState().setMascotState('KILL_SWITCH_ACTIVE', '🛑 ตลาดผันผวนรุนแรงมาก! ระวังการโดนล้างพอร์ตนะครับ');
+    } else if (avgChange < 0.2) {
+      useMascotStore.getState().setMascotState('SIDEWAYS');
+    } else if (activeMascotState === 'SIDEWAYS' && avgChange >= 0.2) {
+      useMascotStore.getState().resetToIdle();
+    }
+  }, [cryptoList]);
 
   const handleSendDrawdownToChat = async (reportText: string) => {
     try {
@@ -301,9 +347,8 @@ export const App: React.FC = () => {
     }
   };
 
-  // Embedded calming music: load YouTube IFrame API, ramp volume 0→70%, loop forever.
+  // Cleanup background audio when component unmounts
   useEffect(() => {
-    initBgMusic();
     return () => {
       stopBgMusic();
     };
@@ -455,6 +500,10 @@ export const App: React.FC = () => {
       second: '2-digit',
     });
 
+    const setMascotState = useMascotStore.getState().setMascotState;
+    const resetMascot = useMascotStore.getState().resetToIdle;
+
+    setMascotState('SCANNING');
     await Promise.allSettled([
       updateCryptoPrices(),
       updateForex(),
@@ -467,12 +516,43 @@ export const App: React.FC = () => {
       isChecking: false,
       lastChecked: `${nowStr} ICT`,
     }));
+    setTimeout(resetMascot, 2000);
   }, [updateCryptoPrices, updateForex, updateStocks, updateNews]);
 
-  // 1. Binance WebSocket Connection with auto-reconnect & immediate fallback
+  // 1. Binance WebSocket Connection with auto-reconnect & throttled batch update (1s max)
   useEffect(() => {
     let reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
     let reconnectAttempt = 0;
+    const pendingUpdates = new Map<string, CryptoCoin>();
+    let flushTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const flushUpdates = () => {
+      if (pendingUpdates.size === 0) return;
+      const updates = new Map(pendingUpdates);
+      pendingUpdates.clear();
+
+      setCryptoList((prev) => {
+        return prev.map((c) => {
+          const u = updates.get(c.binanceSymbol.toLowerCase());
+          if (!u) return c;
+          const flash =
+            u.price > c.price
+              ? 'UP'
+              : u.price < c.price
+              ? 'DOWN'
+              : 'NONE';
+          return {
+            ...c,
+            price: u.price,
+            change: u.change,
+            high: u.high,
+            low: u.low,
+            volume: u.volume,
+            flash,
+          };
+        });
+      });
+    };
 
     const connectWs = () => {
       if (wsRef.current) {
@@ -485,28 +565,13 @@ export const App: React.FC = () => {
 
       wsRef.current = startBinanceWebSocket(
         (updatedCoin) => {
-          setCryptoList((prev) => {
-            return prev.map((c) => {
-              if (c.binanceSymbol.toLowerCase() === updatedCoin.binanceSymbol.toLowerCase()) {
-                const flash =
-                  updatedCoin.price > c.price
-                    ? 'UP'
-                    : updatedCoin.price < c.price
-                    ? 'DOWN'
-                    : 'NONE';
-                return {
-                  ...c,
-                  price: updatedCoin.price,
-                  change: updatedCoin.change,
-                  high: updatedCoin.high,
-                  low: updatedCoin.low,
-                  volume: updatedCoin.volume,
-                  flash,
-                };
-              }
-              return c;
-            });
-          });
+          pendingUpdates.set(updatedCoin.binanceSymbol.toLowerCase(), updatedCoin);
+          if (!flushTimer) {
+            flushTimer = setTimeout(() => {
+              flushTimer = null;
+              flushUpdates();
+            }, 1000);
+          }
         },
         (status) => {
           setApiStatus((prev) => ({ ...prev, binanceWs: status }));
@@ -527,6 +592,7 @@ export const App: React.FC = () => {
     connectWs();
 
     return () => {
+      if (flushTimer) clearTimeout(flushTimer);
       if (reconnectTimeout) clearTimeout(reconnectTimeout);
       if (wsRef.current) {
         try {
@@ -598,11 +664,11 @@ export const App: React.FC = () => {
     };
   }, [newsList.length, geminiApiKey]);
 
-  // 7. Clock tick every 1s for Bangkok ICT Market Hours
+  // 7. Clock tick every 30s for Bangkok ICT Market Hours (ultra-low CPU)
   useEffect(() => {
     const interval = setInterval(() => {
       setMarketHours(computeMarketHours());
-    }, 1000);
+    }, 30000);
     return () => clearInterval(interval);
   }, []);
 
@@ -668,6 +734,7 @@ export const App: React.FC = () => {
           current: fmt(currentPrice * multiplier),
         })
       );
+      useMascotStore.getState().setMascotState('TP_CELEBRATE');
       setPriceAlerts((prev) =>
         prev.filter(
           (a) => !(a.symbol === symbol && a.targetPrice === targetPrice)
@@ -890,7 +957,7 @@ export const App: React.FC = () => {
         <div
           role="status"
           aria-live="polite"
-          className="fixed top-4 right-4 left-4 sm:left-auto z-[60] sm:max-w-sm bg-[#818CF8] text-white px-4 py-3 rounded-2xl shadow-xl border border-white/20 flex items-center justify-between space-x-3 animate-fade-in"
+          className="fixed top-4 right-4 left-4 sm:left-auto z-[60] sm:max-w-sm bg-[#FF2D55] text-white px-4 py-3 rounded-2xl shadow-xl border border-white/20 flex items-center justify-between space-x-3 animate-fade-in"
         >
           <span className="text-xs font-semibold">{alertToast}</span>
           <button
@@ -927,6 +994,7 @@ export const App: React.FC = () => {
         onOpenRiskCalc={() => setShowRiskCalc(true)}
         onOpenDrawdown={() => setShowDrawdownModal(true)}
         onOpenAtsMatrix={() => setShowAtsMatrixModal(true)}
+        onSignIn={handleGoogleSignIn}
         onSignOut={handleSignOut}
         drawdownBreachCount={breachedDrawdownAssets.length}
       />
@@ -973,7 +1041,7 @@ export const App: React.FC = () => {
                             }}
                             className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors flex items-center space-x-1.5 shrink-0 ${
                               selectedTab === idx
-                                ? 'bg-[#818CF8] text-white font-bold shadow-xs'
+                                ? 'bg-[#FF2D55] text-white font-bold shadow-xs'
                                 : 'text-[#94A3B8] hover:text-white'
                             }`}
                           >
@@ -1002,17 +1070,17 @@ export const App: React.FC = () => {
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             placeholder="ค้นหาสินทรัพย์..."
-                            className="w-full sm:w-44 bg-[#0B0F19] border border-[#1E2638] focus:border-[#818CF8] rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-100 outline-none placeholder-[#94A3B8]"
+                            className="w-full sm:w-44 bg-[#0B0F19] border border-[#1E2638] focus:border-[#FF2D55] rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-100 outline-none placeholder-[#94A3B8]"
                           />
                         </div>
 
                         <button
                           type="button"
                           onClick={() => setShowWatchlistModal(true)}
-                          className="px-3 py-1.5 bg-[#818CF8]/15 hover:bg-[#818CF8]/25 border border-[#818CF8]/30 text-[#A5B4FC] rounded-xl text-xs font-bold inline-flex items-center gap-1.5 transition-all shrink-0"
+                          className="px-3 py-1.5 bg-[#FF2D55]/15 hover:bg-[#FF2D55]/25 border border-[#FF2D55]/30 text-[#FF2D55] rounded-xl text-xs font-bold inline-flex items-center gap-1.5 transition-all shrink-0"
                           title="เปิดหน้าต่าง Watchlist (รายการโปรด)"
                         >
-                          <Star className="w-3.5 h-3.5 text-[#818CF8] fill-[#818CF8]" />
+                          <Star className="w-3.5 h-3.5 text-[#FF2D55] fill-[#FF2D55]" />
                           <span className="hidden sm:inline">Watchlist</span>
                           {[
                             ...signals.map((s) => s.symbol),
@@ -1020,7 +1088,7 @@ export const App: React.FC = () => {
                             ...thaiStocks.map((s) => s.symbol),
                             ...foreignStocks.map((s) => s.symbol),
                           ].filter((sym) => watchlist.has(sym)).length > 0 && (
-                            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[#818CF8] text-white">
+                            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[#FF2D55] text-white">
                               {[
                                 ...signals.map((s) => s.symbol),
                                 ...forexSignals.map((s) => s.symbol),
@@ -1345,6 +1413,7 @@ export const App: React.FC = () => {
 
               {/* Right Sidebar Column: Market Hours & API Status (col-span-4) */}
               <div className="lg:col-span-4 space-y-6">
+                <MascotCoPilotCard />
                 <MarketHoursCard marketHours={marketHours} />
                 <ApiStatusCard status={apiStatus} onRefresh={handleRefreshAllApis} />
               </div>
@@ -1355,7 +1424,7 @@ export const App: React.FC = () => {
           <footer className="py-6 border-t border-[#1E2638] text-xs text-[#94A3B8] transition-colors">
             <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
               <div className="flex items-center gap-2">
-                <span className="font-semibold text-slate-300">Trading Engine Pro</span>
+                <span className="font-semibold text-slate-300">MotorBoy AI-TH</span>
                 <span>·</span>
                 <span>Real-Time Multi-Asset & AI Deep Analytics</span>
               </div>
@@ -1465,6 +1534,7 @@ export const App: React.FC = () => {
             useThb={useThb}
             usdThbRate={usdThbRate}
             signals={allSignals}
+            cryptoList={cryptoList}
             geminiApiKey={geminiApiKey}
             onSaveToHistory={handleSaveToHistory}
           />
@@ -1539,9 +1609,13 @@ export const App: React.FC = () => {
               <div className="w-full max-w-2xl bg-[#131722] border border-[#2A2E39] rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
                 <div className="p-4 border-b border-[#2A2E39] flex items-center justify-between bg-gradient-to-r from-[#1E222D] to-[#131722]">
                   <div className="flex items-center gap-2">
-                    <Sparkles className="w-5 h-5 text-[#38BDF8]" />
-                    <h2 className="text-white font-bold text-sm">
-                      ศูนย์รวมข่าวสารตลาด & วิเคราะห์ AI (Poolside)
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#FF2D55] via-[#A855F7] to-[#3B82F6] p-[1.5px]">
+                      <div className="w-full h-full bg-[#0A0A0A] rounded-[6.5px] flex items-center justify-center text-xs">
+                        🏍️
+                      </div>
+                    </div>
+                    <h2 className="text-white font-black text-sm tracking-tight">
+                      MotorBoy News & Analysis Hub
                     </h2>
                   </div>
                   <button
@@ -1764,8 +1838,7 @@ function startWebAudioNatureSynth() {
     if (!AudioCtx) return;
     webAudioCtx = new AudioCtx();
     const masterGain = webAudioCtx.createGain();
-    // 50% max locked volume mapped to soft calming gain
-    masterGain.gain.setValueAtTime(0.08, webAudioCtx.currentTime);
+    masterGain.gain.setValueAtTime(0.04, webAudioCtx.currentTime);
 
     // Warm 432Hz sine oscillator chord (A4 = 432Hz, E5 = 648Hz, C#5 = 540Hz)
     const freqs = [432, 540, 648];
@@ -1775,44 +1848,14 @@ function startWebAudioNatureSynth() {
       const oscGain = webAudioCtx!.createGain();
       osc.type = 'sine';
       osc.frequency.setValueAtTime(freq, webAudioCtx!.currentTime);
-      oscGain.gain.setValueAtTime(0.02, webAudioCtx!.currentTime);
+      oscGain.gain.setValueAtTime(0.015, webAudioCtx!.currentTime);
       osc.connect(oscGain);
       oscGain.connect(masterGain);
       osc.start();
       oscNodes.push(osc);
     });
 
-    // Gentle nature pink-noise filter for stream water / rain ambient feel
-    const bufferSize = webAudioCtx.sampleRate * 2;
-    const noiseBuffer = webAudioCtx.createBuffer(1, bufferSize, webAudioCtx.sampleRate);
-    const output = noiseBuffer.getChannelData(0);
-    let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
-    for (let i = 0; i < bufferSize; i++) {
-      const white = Math.random() * 2 - 1;
-      b0 = 0.99886 * b0 + white * 0.0555179;
-      b1 = 0.99332 * b1 + white * 0.0750759;
-      b2 = 0.96900 * b2 + white * 0.1538520;
-      b3 = 0.86650 * b3 + white * 0.3104856;
-      b4 = 0.55000 * b4 + white * 0.5329522;
-      b5 = -0.7616 * b5 - white * 0.0168980;
-      output[i] = b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362;
-      output[i] *= 0.03;
-      b6 = white * 0.115926;
-    }
-
-    const whiteNoise = webAudioCtx.createBufferSource();
-    whiteNoise.buffer = noiseBuffer;
-    whiteNoise.loop = true;
-
-    const filter = webAudioCtx.createBiquadFilter();
-    filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(600, webAudioCtx.currentTime);
-
-    whiteNoise.connect(filter);
-    filter.connect(masterGain);
     masterGain.connect(webAudioCtx.destination);
-    whiteNoise.start();
-
     natureSynthNodes = { gainNode: masterGain, oscNodes };
   } catch (err) {
     console.warn('Web Audio Nature Synth init warning:', err);
@@ -1831,13 +1874,11 @@ function stopWebAudioNatureSynth() {
 }
 
 /**
- * Start / restart the calming nature healing background audio with soft ramp up.
- * Volume locked at maximum 50% (reduced 20% from previous 70%).
- * Loops continuously without stopping or stuttering.
+ * Start / restart calming nature healing background audio with soft ramp up.
+ * Single lightweight player with playlist to minimize browser CPU usage.
  */
 function initBgMusic(): void {
   const launch = () => {
-    // Start nature sound synth as ambient audio layer
     startWebAudioNatureSynth();
 
     if (bgPlayers.length > 0) return;
@@ -1862,64 +1903,59 @@ function initBgMusic(): void {
 
       // Nature Healing Ambient Stream Video IDs
       const musicIds = ['lE6RYpe9IT0', 'XA_EYOPNJqI', 'hK-OPtECSkw', 'xrvEs5q1vKQ'];
+      const targetId = 'bg-music-single-player';
+      let playerTarget = document.getElementById(targetId);
+      if (!playerTarget) {
+        playerTarget = document.createElement('div');
+        playerTarget.id = targetId;
+        host.appendChild(playerTarget);
+      }
 
-      musicIds.forEach((videoId, index) => {
-        const targetId = `bg-music-target-${index}`;
-        let playerTarget = document.getElementById(targetId);
-        if (!playerTarget) {
-          playerTarget = document.createElement('div');
-          playerTarget.id = targetId;
-          host!.appendChild(playerTarget);
-        }
+      const player = new YT.Player(targetId, {
+        videoId: musicIds[0],
+        playerVars: {
+          autoplay: 1,
+          loop: 1,
+          playlist: musicIds.join(','),
+          controls: 0,
+        },
+        events: {
+          onReady: (event: any) => {
+            try {
+              event.target.setVolume(MAX_LOCKED_VOLUME);
+              event.target.playVideo();
+            } catch {}
 
-        const player = new YT.Player(targetId, {
-          videoId: videoId,
-          playerVars: {
-            autoplay: 1,
-            loop: 1,
-            playlist: videoId,
-            controls: 0,
-          },
-          events: {
-            onReady: (event: any) => {
-              try {
-                event.target.mute();
-                event.target.setVolume(MAX_LOCKED_VOLUME);
-                event.target.playVideo();
-              } catch {}
-              
-              const onGesture = () => {
-                if (webAudioCtx && webAudioCtx.state === 'suspended') {
-                  webAudioCtx.resume();
-                }
-                cleanupGesture();
-              };
-
-              const cleanupGesture = () => {
-                window.removeEventListener('click', onGesture);
-                window.removeEventListener('keydown', onGesture);
-                window.removeEventListener('touchstart', onGesture);
-                bgGestureCleanup = null;
-              };
-
-              bgGestureCleanup = cleanupGesture;
-              window.addEventListener('click', onGesture, { once: true });
-              window.addEventListener('keydown', onGesture, { once: true });
-              window.addEventListener('touchstart', onGesture, { once: true });
-            },
-            onStateChange: (event: any) => {
-              // Loop video instantly if ended or paused
-              if (event.data === 0 || event.data === 2) {
-                try {
-                  event.target.playVideo();
-                  event.target.setVolume(MAX_LOCKED_VOLUME);
-                } catch {}
+            const onGesture = () => {
+              if (webAudioCtx && webAudioCtx.state === 'suspended') {
+                webAudioCtx.resume();
               }
-            },
+              cleanupGesture();
+            };
+
+            const cleanupGesture = () => {
+              window.removeEventListener('click', onGesture);
+              window.removeEventListener('keydown', onGesture);
+              window.removeEventListener('touchstart', onGesture);
+              bgGestureCleanup = null;
+            };
+
+            bgGestureCleanup = cleanupGesture;
+            window.addEventListener('click', onGesture, { once: true });
+            window.addEventListener('keydown', onGesture, { once: true });
+            window.addEventListener('touchstart', onGesture, { once: true });
           },
-        });
-        bgPlayers.push(player);
+          onStateChange: (event: any) => {
+            if (event.data === 0 || event.data === 2) {
+              try {
+                event.target.playVideo();
+                event.target.setVolume(MAX_LOCKED_VOLUME);
+              } catch {}
+            }
+          },
+        },
       });
+      bgPlayers.push(player);
     } catch {
       // Silently ignore if API cannot initialize
     }
@@ -1954,7 +1990,7 @@ function stopBgMusic(): void {
     clearInterval(bgRampTimer);
     bgRampTimer = null;
   }
-  bgPlayers.forEach(player => {
+  bgPlayers.forEach((player) => {
     try { player.stopVideo(); } catch {}
     try { player.destroy(); } catch {}
   });
