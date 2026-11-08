@@ -26,7 +26,7 @@
 | Check | Command | Result |
 |---|---|---|
 | Typecheck | `npx tsc --noEmit` | ✅ pass (0 errors) |
-| Tests (added 2026-11-04) | `npx vitest run` | ✅ 56/56 pass in 7 files (incl. dialog a11y render tests) |
+| Tests (added 2026-11-04) | `npx vitest run` | ✅ 68/68 pass in 8 files (dialog a11y + mascot overlay render tests) |
 | Production build | `npx vite build` | ✅ builds, ⚠️ single 1.78 MB chunk (440 kB gzip) |
 | Prod boot | `NODE_ENV=production node server.ts` | ❌ **crash** — `PathError: Missing parameter name at index 1: *` |
 | Dev boot | `npx tsx server.ts` | ✅ listens, `GET /` → 200 |
@@ -373,6 +373,36 @@ Also discovered while writing expectations: `getDecimals(0.0000245)` (SHIB) retu
 - **HTTP routes** — impossible to unit-test today because `server.ts` calls `startServer()` at module load and implements every handler inline; importing the module starts a listener. Extract handlers into `server/routes/*.ts` and export them, then add supertest-style contract tests for the 9 `/api/gemini/*` routes.
 - **React components** — needs `jsdom` + `@testing-library/react`; the modals are the highest-value targets once P3-1 (state extraction) happens.
 - **Network fetchers** (`apiClient` REST/proxy chains) — need `msw` or recorded fixtures; also blocked on P1-3 (dev/prod proxy divergence).
+
+---
+
+## AI mascot overlay — adapted from the `123.txt` drop-in snippet (2026-11-04)
+
+**Step 0 (as asked): pull.** `origin/main` had 5 commits we did not have — `926228b` modern frontend stack, `aa2d00f` Poolside → Gemini migration, `0739c6b` Zustand store + MotorBoy Co-Pilot card, plus the brand switch to `#FF2D55`. Merged into this branch; 6 conflicts resolved (`index.html`, `App.tsx`, `index.css`, `ChatModal`, `RiskCalculatorModal`, `SignalDetailModal`) keeping **both** sides: upstream's Gemini/Zustand/Co-Pilot work *and* this branch's a11y + contrast + live-FX fixes. `tsc`, `vite build` and all tests are green after the merge.
+
+**The snippet** proposed two fixed `<div>`s injected into `index.html`, a CSS "mini" state, a plain-JS `ZenitsuUI` class on `window`, and proximity checks against `.buy-btn` / `.sell-btn` / `.price-label`. That works for a static page — none of it fits here:
+
+| Snippet | What this project actually got | Why |
+|---|---|---|
+| `<div id="zenitsu-mascot">` pasted into `index.html` + `zenitsu-ui.js` | React `<MascotOverlay />` mounted once in `App.tsx` | No global script, no duplicate DOM ids, state survives modal/hot-reload, tree-shaken |
+| private state machine + `window.zenitsuUI.showGod()` | the existing Zustand `useMascotStore` (10 states: `SCANNING`, `CONFIRM_TRADE`, `READY_TO_EXECUTE`, `TP_CELEBRATE`, `SL_RESPECTED`, `RISK_REJECT`, `KILL_SWITCH_ACTIVE`, `SIDEWAYS`, `ONBOARDING`, `IDLE`) already triggered from `App.tsx` and the modals | The triggers were already wired by upstream; a second state machine would desync the sidebar Co-Pilot card |
+| `matches('.buy-btn, .sell-btn, .price-label')` | `closest('button, a[href], input, select, textarea, canvas, [role="button"], [data-mascot-avoid]')` via `elementFromPoint` in a rAF-throttled `pointermove` | Those class names do not exist in this Tailwind codebase; this covers every real control **and** the price chart canvas |
+| `<img src="./projects/zenitsu_ai/pose_1_scan.png">` | `import mascotHero from '../assets/images/nong_motorboy_hero_*.jpg'` | Hashed, cache-busted asset — a literal `/src/...` path 404s after `vite build` |
+| `el.innerHTML = '…SCAN…'` | React text node inside a `role="status" aria-live="polite"` bubble | XSS-safe, and screen readers hear the mascot |
+| "3 วิแล้วหายเอง" | auto-collapse to a 56px chip after 7 s, plus manual "ซ่อน" for the session | 3 s is too short to read a Thai sentence |
+| — | **real Gemini speech**: `POST /api/gemini/mascot-line` writes one in-character Thai sentence from the live snapshot (`BTC +2.10%, 6 signals (4 LONG/2 SHORT)`, FX when ฿ mode) | This is the "เชื่อมต่อ AI จริง gemini" part: server-side key, 1 request/minute throttle, silent fallback to the canned store line so the UI never waits on the network |
+| — | safe-area insets, `z-40` (below modals at `z-50`), Escape collapses, chip is a real `<button>` with a Thai accessible name | Mobile notches + keyboard users + modals must stay on top |
+
+**Layout contract (unchanged from the snippet's intent):** the fixed wrapper is `pointer-events-none`, only the bubble/card is `pointer-events-auto`, and while the pointer is over any control or the chart the mascot fades to 30 % and shrinks. Nothing is ever blocked.
+
+**Bug found while wiring it:** `MascotCoPilotCard` used `src="/src/assets/images/nong_motorboy_hero_….jpg"` — that path only exists in dev; production builds emitted no such file. Switched to a module import; `vite build` now emits `dist/assets/nong_motorboy_hero_1794000288918-<hash>.jpg` (verified).
+
+**Verified:** 13 new tests in `src/__tests__/mascot.test.tsx` — pointer-events contract, chip ↔ card, critical styling, `GOD SPEED` flourish, Gemini line replacement, fallback on failure, and no flicker while the 15 s market poll re-renders — plus `tsc --noEmit` and `vite build`.
+
+**Notes / follow-ups:**
+- The route needs `GEMINI_API_KEY` in `.env`; without it the mascot still works on canned lines (the smoke test returns `400 missing_gemini_key`).
+- `/api/gemini/mascot-line` is unauthenticated like the other 9 routes — see **P1-1**; it caps `state` at 40 chars and `marketBrief` at 600 chars, but it still needs the rate limiter.
+- Two mascot surfaces now coexist: the sidebar `MascotCoPilotCard` (detailed) and this floating chip (always-on, non-blocking). If that feels redundant, the card is the one to drop.
 
 ---
 

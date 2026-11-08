@@ -66,6 +66,7 @@ import { RiskCalculatorModal } from './components/RiskCalculatorModal';
 import { DrawdownAlertBanner } from './components/DrawdownAlertBanner';
 import { DrawdownMonitorModal } from './components/DrawdownMonitorModal';
 import { MascotCoPilotCard } from './components/MascotCoPilotCard';
+import { MascotOverlay } from './components/MascotOverlay';
 import { useMascotStore } from './services/mascotService';
 import {
   buildDrawdownAssets,
@@ -1818,6 +1819,15 @@ export const App: React.FC = () => {
               </div>
             </div>
           )}
+
+      {/* Floating AI mascot — pointer-events-none wrapper, never blocks the UI */}
+      <MascotOverlay
+        cryptoList={cryptoList}
+        signals={signals}
+        useThb={useThb}
+        usdThbRate={usdThbRate}
+        geminiApiKey={geminiApiKey}
+      />
     </>
   );
 };

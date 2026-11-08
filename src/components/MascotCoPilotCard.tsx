@@ -1,5 +1,6 @@
 import React from 'react';
 import { useMascotStore, MascotState } from '../services/mascotService';
+import mascotHero from '../assets/images/nong_motorboy_hero_1794000288918.jpg';
 import { 
   Zap, 
   ShieldAlert, 
@@ -48,7 +49,7 @@ export const MascotCoPilotCard: React.FC = () => {
             <div className="w-full h-full bg-[#0A0A0A] rounded-[14.5px] flex items-center justify-center overflow-hidden relative">
               {/* Character Image */}
               <img 
-                src="/src/assets/images/nong_motorboy_hero_1794000288918.jpg" 
+                src={mascotHero} 
                 alt="Nong MotorBoy"
                 className={`w-full h-full object-cover transition-all duration-500 ${
                   state === 'IDLE' ? 'scale-100' : 'scale-110 brightness-110'
