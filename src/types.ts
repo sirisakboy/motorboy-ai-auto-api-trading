@@ -213,7 +213,8 @@ export interface TradingHistoryEntry {
     | 'PRICE_ALERT'
     | 'NEWS_ANALYSIS'
     | 'AUTO_MARKET_IMPACT'
-    | 'LONG_TERM_PROJECT';
+    | 'LONG_TERM_PROJECT'
+    | 'PORTFOLIO_REBALANCE';
   symbol: string;
   action: 'LONG' | 'SHORT' | 'ALERT' | 'NEUTRAL' | 'BUY' | 'SELL' | 'HOLD';
   price: number;
@@ -222,6 +223,44 @@ export interface TradingHistoryEntry {
   sl?: number;
   tp?: number;
   timestamp: string;
+}
+
+export interface PortfolioRebalanceAsset {
+  id: string;
+  symbol: string;
+  name: string;
+  currentUnits: number;
+  currentPrice: number;
+  targetPct: number;
+  category?: 'CRYPTO' | 'STOCK' | 'FOREX' | 'CASH';
+}
+
+export interface PortfolioRebalanceItemResult {
+  asset: PortfolioRebalanceAsset;
+  currentValue: number;
+  currentPct: number;
+  targetValue: number;
+  targetUnits: number;
+  driftPct: number;
+  deltaValue: number; // positive = BUY, negative = SELL
+  deltaUnits: number;
+  action: 'BUY' | 'SELL' | 'HOLD';
+}
+
+export interface PortfolioRebalancePlan {
+  totalCurrentValue: number;
+  effectiveTotalValue: number;
+  cashAdjustment: number;
+  totalTargetPct: number;
+  isBalanced: boolean;
+  items: PortfolioRebalanceItemResult[];
+  ordersToExecute: {
+    symbol: string;
+    action: 'BUY' | 'SELL';
+    amountValue: number;
+    amountUnits: number;
+    targetPct: number;
+  }[];
 }
 
 export interface HolisticMarketAdvice {

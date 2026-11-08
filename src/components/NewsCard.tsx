@@ -225,9 +225,9 @@ export const NewsCard: React.FC<NewsCardProps> = ({
       {/* Header with MSN Money & Auto-Analysis Status */}
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-2">
-          <div className="w-2.5 h-2.5 rounded-full bg-[#0284C7] animate-pulse" />
-          <h3 className="text-white font-bold text-sm">
-            ข่าวสาร & วิเคราะห์ AI (Gemini)
+          <div className="w-2.5 h-2.5 rounded-full bg-[#FF2D55] animate-pulse shadow-[0_0_8px_rgba(255,45,85,0.6)]" />
+          <h3 className="text-white font-black text-sm tracking-tight">
+            MotorBoy News & Analysis Hub
           </h3>
         </div>
 

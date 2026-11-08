@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Search, Sparkles, X, Star, History, Radio } from 'lucide-react';
-import { signOut, User } from 'firebase/auth';
-import { auth, db } from './firebase';
+import { signOut, signInWithPopup, GoogleAuthProvider, User } from 'firebase/auth';
+import { auth, db, googleProvider } from './firebase';
+import { setCachedAccessToken } from './services/gmailService';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { AtsMatrixDashboard } from './components/AtsMatrixDashboard';
 import { isAtsMatrixTrigger } from './services/atsMatrixService';
@@ -63,6 +64,8 @@ import { ChatModal } from './components/ChatModal';
 import { RiskCalculatorModal } from './components/RiskCalculatorModal';
 import { DrawdownAlertBanner } from './components/DrawdownAlertBanner';
 import { DrawdownMonitorModal } from './components/DrawdownMonitorModal';
+import { MascotCoPilotCard } from './components/MascotCoPilotCard';
+import { useMascotStore } from './services/mascotService';
 import {
   buildDrawdownAssets,
   computePortfolioDrawdownSummary,
@@ -102,6 +105,21 @@ export const App: React.FC = () => {
       setUser({ uid: 'guest', displayName: 'Guest' } as unknown as User);
     } catch (error) {
       console.error('Error signing out', error);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      if (credential?.accessToken) {
+        setCachedAccessToken(credential.accessToken);
+      }
+    } catch (error: any) {
+      if (error?.code === 'auth/popup-closed-by-user' || error?.code === 'auth/cancelled-popup-request') {
+        return;
+      }
+      console.error('Error signing in with Google:', error);
     }
   };
 
@@ -160,6 +178,13 @@ export const App: React.FC = () => {
     };
     updateThemeByTime();
     const interval = setInterval(updateThemeByTime, 60000);
+    
+    // Mascot: Initial Onboarding
+    setTimeout(() => {
+      useMascotStore.getState().setMascotState('ONBOARDING');
+      setTimeout(() => useMascotStore.getState().resetToIdle(), 10000);
+    }, 1500);
+
     return () => clearInterval(interval);
   }, []);
 
@@ -261,9 +286,27 @@ export const App: React.FC = () => {
       drawdownThresholds.soundEnabled
     ) {
       playDrawdownAlertChime('CRITICAL');
+      useMascotStore.getState().setMascotState('KILL_SWITCH_ACTIVE');
     }
     prevBreachedCountRef.current = criticalCount;
   }, [criticalOrExtremeAssets.length, drawdownThresholds.soundEnabled]);
+
+  // Mascot: Volatility Monitor (SIDEWAYS / VOLATILITY_SPIKE)
+  useEffect(() => {
+    const activeMascotState = useMascotStore.getState().state;
+    if (activeMascotState !== 'IDLE' && activeMascotState !== 'SIDEWAYS') return;
+
+    const avgChange = cryptoList.reduce((acc, c) => acc + Math.abs(c.change), 0) / cryptoList.length;
+    const maxChange = Math.max(...cryptoList.map(c => Math.abs(c.change)));
+
+    if (maxChange > 10) {
+      useMascotStore.getState().setMascotState('KILL_SWITCH_ACTIVE', '🛑 ตลาดผันผวนรุนแรงมาก! ระวังการโดนล้างพอร์ตนะครับ');
+    } else if (avgChange < 0.2) {
+      useMascotStore.getState().setMascotState('SIDEWAYS');
+    } else if (activeMascotState === 'SIDEWAYS' && avgChange >= 0.2) {
+      useMascotStore.getState().resetToIdle();
+    }
+  }, [cryptoList]);
 
   const handleSendDrawdownToChat = async (reportText: string) => {
     try {
@@ -456,6 +499,10 @@ export const App: React.FC = () => {
       second: '2-digit',
     });
 
+    const setMascotState = useMascotStore.getState().setMascotState;
+    const resetMascot = useMascotStore.getState().resetToIdle;
+
+    setMascotState('SCANNING');
     await Promise.allSettled([
       updateCryptoPrices(),
       updateForex(),
@@ -468,6 +515,7 @@ export const App: React.FC = () => {
       isChecking: false,
       lastChecked: `${nowStr} ICT`,
     }));
+    setTimeout(resetMascot, 2000);
   }, [updateCryptoPrices, updateForex, updateStocks, updateNews]);
 
   // 1. Binance WebSocket Connection with auto-reconnect & throttled batch update (1s max)
@@ -679,6 +727,7 @@ export const App: React.FC = () => {
           current: fmt(currentPrice * multiplier),
         })
       );
+      useMascotStore.getState().setMascotState('TP_CELEBRATE');
       setPriceAlerts((prev) =>
         prev.filter(
           (a) => !(a.symbol === symbol && a.targetPrice === targetPrice)
@@ -898,7 +947,7 @@ export const App: React.FC = () => {
     >
       {/* Toast Notification */}
       {alertToast && (
-        <div className="fixed top-4 right-4 left-4 sm:left-auto z-[60] sm:max-w-sm bg-[#818CF8] text-white px-4 py-3 rounded-2xl shadow-xl border border-white/20 flex items-center justify-between space-x-3 animate-fade-in">
+        <div className="fixed top-4 right-4 left-4 sm:left-auto z-[60] sm:max-w-sm bg-[#FF2D55] text-white px-4 py-3 rounded-2xl shadow-xl border border-white/20 flex items-center justify-between space-x-3 animate-fade-in">
           <span className="text-xs font-semibold">{alertToast}</span>
           <button
             type="button"
@@ -933,6 +982,7 @@ export const App: React.FC = () => {
         onOpenRiskCalc={() => setShowRiskCalc(true)}
         onOpenDrawdown={() => setShowDrawdownModal(true)}
         onOpenAtsMatrix={() => setShowAtsMatrixModal(true)}
+        onSignIn={handleGoogleSignIn}
         onSignOut={handleSignOut}
         drawdownBreachCount={breachedDrawdownAssets.length}
       />
@@ -979,7 +1029,7 @@ export const App: React.FC = () => {
                             }}
                             className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors flex items-center space-x-1.5 shrink-0 ${
                               selectedTab === idx
-                                ? 'bg-[#818CF8] text-white font-bold shadow-xs'
+                                ? 'bg-[#FF2D55] text-white font-bold shadow-xs'
                                 : 'text-[#94A3B8] hover:text-white'
                             }`}
                           >
@@ -1008,17 +1058,17 @@ export const App: React.FC = () => {
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             placeholder="ค้นหาสินทรัพย์..."
-                            className="w-full sm:w-44 bg-[#0B0F19] border border-[#1E2638] focus:border-[#818CF8] rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-100 outline-none placeholder-[#94A3B8]"
+                            className="w-full sm:w-44 bg-[#0B0F19] border border-[#1E2638] focus:border-[#FF2D55] rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-100 outline-none placeholder-[#94A3B8]"
                           />
                         </div>
 
                         <button
                           type="button"
                           onClick={() => setShowWatchlistModal(true)}
-                          className="px-3 py-1.5 bg-[#818CF8]/15 hover:bg-[#818CF8]/25 border border-[#818CF8]/30 text-[#A5B4FC] rounded-xl text-xs font-bold inline-flex items-center gap-1.5 transition-all shrink-0"
+                          className="px-3 py-1.5 bg-[#FF2D55]/15 hover:bg-[#FF2D55]/25 border border-[#FF2D55]/30 text-[#FF2D55] rounded-xl text-xs font-bold inline-flex items-center gap-1.5 transition-all shrink-0"
                           title="เปิดหน้าต่าง Watchlist (รายการโปรด)"
                         >
-                          <Star className="w-3.5 h-3.5 text-[#818CF8] fill-[#818CF8]" />
+                          <Star className="w-3.5 h-3.5 text-[#FF2D55] fill-[#FF2D55]" />
                           <span className="hidden sm:inline">Watchlist</span>
                           {[
                             ...signals.map((s) => s.symbol),
@@ -1026,7 +1076,7 @@ export const App: React.FC = () => {
                             ...thaiStocks.map((s) => s.symbol),
                             ...foreignStocks.map((s) => s.symbol),
                           ].filter((sym) => watchlist.has(sym)).length > 0 && (
-                            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[#818CF8] text-white">
+                            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[#FF2D55] text-white">
                               {[
                                 ...signals.map((s) => s.symbol),
                                 ...forexSignals.map((s) => s.symbol),
@@ -1351,6 +1401,7 @@ export const App: React.FC = () => {
 
               {/* Right Sidebar Column: Market Hours & API Status (col-span-4) */}
               <div className="lg:col-span-4 space-y-6">
+                <MascotCoPilotCard />
                 <MarketHoursCard marketHours={marketHours} />
                 <ApiStatusCard status={apiStatus} onRefresh={handleRefreshAllApis} />
               </div>
@@ -1361,7 +1412,7 @@ export const App: React.FC = () => {
           <footer className="py-6 border-t border-[#1E2638] text-xs text-[#94A3B8] transition-colors">
             <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
               <div className="flex items-center gap-2">
-                <span className="font-semibold text-slate-300">Trading Engine Pro</span>
+                <span className="font-semibold text-slate-300">MotorBoy AI-TH</span>
                 <span>·</span>
                 <span>Real-Time Multi-Asset & AI Deep Analytics</span>
               </div>
@@ -1471,6 +1522,7 @@ export const App: React.FC = () => {
             useThb={useThb}
             usdThbRate={usdThbRate}
             signals={allSignals}
+            cryptoList={cryptoList}
             geminiApiKey={geminiApiKey}
             onSaveToHistory={handleSaveToHistory}
           />
@@ -1540,9 +1592,13 @@ export const App: React.FC = () => {
               <div className="w-full max-w-2xl bg-[#131722] border border-[#2A2E39] rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
                 <div className="p-4 border-b border-[#2A2E39] flex items-center justify-between bg-gradient-to-r from-[#1E222D] to-[#131722]">
                   <div className="flex items-center gap-2">
-                    <Sparkles className="w-5 h-5 text-[#38BDF8]" />
-                    <h2 className="text-white font-bold text-sm">
-                      ศูนย์รวมข่าวสารตลาด & วิเคราะห์ AI (Gemini)
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#FF2D55] via-[#A855F7] to-[#3B82F6] p-[1.5px]">
+                      <div className="w-full h-full bg-[#0A0A0A] rounded-[6.5px] flex items-center justify-center text-xs">
+                        🏍️
+                      </div>
+                    </div>
+                    <h2 className="text-white font-black text-sm tracking-tight">
+                      MotorBoy News & Analysis Hub
                     </h2>
                   </div>
                   <button

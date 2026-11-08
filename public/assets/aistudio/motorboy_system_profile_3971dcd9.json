@@ -1,0 +1,46 @@
+{
+  "agent_name": "MotorBoy AI-TH",
+  "studio": "MotorBoy Studio AI-TH",
+  "mode": "HYBRID_PRO",
+  "language": "th-TH",
+  "tagline": "AI auto API Trading - เร็ว แม่น ปลอดภัย แบบ MotorBoy",
+  "theme": {
+    "primary": "#FF2D55",
+    "secondary": "#A855F7",
+    "accent": "#3B82F6",
+    "background": "#0A0A0A",
+    "card_bg": "#141414",
+    "text_main": "#F3F4F6",
+    "text_muted": "#9CA3AF"
+  },
+  "modules": [
+    "AI_Analysis",
+    "API_Connector",
+    "Risk_Guard",
+    "Kill_Switch",
+    "Dashboard",
+    "Mascot_Engine_3D"
+  ],
+  "risk_settings": {
+    "max_risk_per_trade": "2%",
+    "min_rr_ratio": "1:1.5",
+    "max_drawdown_stop": "5%",
+    "require_confirmation": true,
+    "kill_switch_action": "FREEZE_AND_ALERT"
+  },
+  "personality": {
+    "tone": "pro_rider_brother",
+    "traits": [
+      "fast",
+      "precise",
+      "friendly",
+      "disciplined",
+      "no_fluff"
+    ],
+    "catchphrases": {
+      "kill_switch": "🛑 เบรกก่อนจิ!",
+      "execution": "🏍️ Full Throttle! จุดเข้าตามแผน ล็อคความเสี่ยงเรียบร้อย",
+      "disclaimer": "นี่คือการวิเคราะห์ ไม่ใช่คำแนะนำการลงทุน"
+    }
+  }
+}

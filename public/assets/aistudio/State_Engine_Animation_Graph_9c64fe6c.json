@@ -1,0 +1,83 @@
+{
+  "engine": "MotorBoy_AI_TH_State_Engine",
+  "version": "1.0.0",
+  "root_state": "IDLE",
+  "states": {
+    "IDLE": {
+      "animation_clip": "Anim_Idle_Breath_Loop.fbx",
+      "sprite_fallback": "Pose_07_TP_Hit_Success_ThumbsUp.jpeg",
+      "transitions": {
+        "MARKET_SCAN": "SCANNING",
+        "VOLATILITY_SPIKE": "KILL_SWITCH_ACTIVE",
+        "ORDER_DETECTED": "CONFIRM_TRADE",
+        "MARKET_FLAT": "SIDEWAYS"
+      }
+    },
+    "SCANNING": {
+      "animation_clip": "Anim_Inspect_Chart_Visor.fbx",
+      "sprite_fallback": "Pose_00_Engine_Scanning_Inspect.png",
+      "transitions": {
+        "SETUP_FOUND": "READY_TO_EXECUTE",
+        "NO_SETUP": "IDLE"
+      }
+    },
+    "CONFIRM_TRADE": {
+      "animation_clip": "Anim_Safety_Check_Hesitant.fbx",
+      "sprite_fallback": "Pose_01_Safety_Check_Shy.jpeg",
+      "transitions": {
+        "CONFIRMED": "READY_TO_EXECUTE",
+        "REJECTED": "RISK_REJECT"
+      }
+    },
+    "READY_TO_EXECUTE": {
+      "animation_clip": "Anim_Ready_With_Tool.fbx",
+      "sprite_fallback": "Pose_05_Setup_Ready_Drill_Execute.jpeg",
+      "transitions": {
+        "TRADE_WON": "TP_CELEBRATE",
+        "TRADE_LOST": "SL_RESPECTED"
+      }
+    },
+    "TP_CELEBRATE": {
+      "animation_clip": "Anim_Victory_ThumbsUp.fbx",
+      "sprite_fallback": "Pose_07_TP_Hit_Success_ThumbsUp.jpeg",
+      "transitions": {
+        "TIMEOUT_5S": "IDLE"
+      }
+    },
+    "SL_RESPECTED": {
+      "animation_clip": "Anim_Disappointed_Crying.fbx",
+      "sprite_fallback": "Pose_08_SL_Triggered_LossCut_Cry.jpeg",
+      "transitions": {
+        "TIMEOUT_5S": "IDLE"
+      }
+    },
+    "RISK_REJECT": {
+      "animation_clip": "Anim_Risk_Guard_Pout.fbx",
+      "sprite_fallback": "Pose_02_Risk_Guard_Reject_Pout.jpeg",
+      "transitions": {
+        "RESOLVED": "IDLE"
+      }
+    },
+    "KILL_SWITCH_ACTIVE": {
+      "animation_clip": "Anim_Panic_Slap_Switch.fbx",
+      "sprite_fallback": "Pose_04_Kill_Switch_Market_Crash.jpeg",
+      "transitions": {
+        "MANUAL_RESET": "IDLE"
+      }
+    },
+    "SIDEWAYS": {
+      "animation_clip": "Anim_Bored_Yawn.fbx",
+      "sprite_fallback": "Pose_06_Sideways_Market_Yawn.jpeg",
+      "transitions": {
+        "VOLUME_RETURN": "IDLE"
+      }
+    },
+    "ONBOARDING": {
+      "animation_clip": "Anim_Chibi_Wave_Greeting.fbx",
+      "sprite_fallback": "Pose_03_Onboarding_Chibi_Junior.png",
+      "transitions": {
+        "TUTORIAL_COMPLETE": "IDLE"
+      }
+    }
+  }
+}

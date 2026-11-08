@@ -2,6 +2,42 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+:root {
+  /* MotorBoy Studio AI-TH Brand Tokens */
+  --mb-color-primary: #FF2D55;        /* Neon Crimson Red */
+  --mb-color-secondary: #A855F7;      /* Cyber Purple */
+  --mb-color-accent: #3B82F6;         /* Electric Cyan Blue */
+  --mb-color-success: #10B981;        /* Profit Green */
+  --mb-color-warning: #F59E0B;        /* Caution Amber */
+  --mb-color-danger: #EF4444;         /* Risk / Kill Switch Red */
+  --mb-bg-deep: #0A0A0A;              /* Cyber Black Background */
+  --mb-bg-card: #141417;              /* Tactical Dark Surface */
+  --mb-border-circuit: #262626;
+
+  /* Neon Glow Gradients */
+  --mb-gradient-brand: linear-gradient(135deg, #FF2D55 0%, #A855F7 50%, #3B82F6 100%);
+  --mb-gradient-surface: linear-gradient(180deg, rgba(255, 45, 85, 0.05) 0%, rgba(10, 10, 10, 0.95) 100%);
+
+  /* Neon Box Shadows / Bloom */
+  --mb-neon-glow-red: 0 0 15px rgba(255, 45, 85, 0.45);
+  --mb-neon-glow-purple: 0 0 15px rgba(168, 85, 247, 0.45);
+  --mb-neon-glow-blue: 0 0 15px rgba(59, 130, 246, 0.45);
+}
+
+.bg-motorboy-gradient {
+  background: linear-gradient(135deg, #FF2D55 0%, #A855F7 50%, #3B82F6 100%);
+}
+
+.text-motorboy-gradient {
+  background: linear-gradient(135deg, #FF2D55 0%, #A855F7 50%, #3B82F6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.border-motorboy-circuit {
+  border-color: #262626;
+}
+
 @layer base {
   body {
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
@@ -65,5 +101,10 @@ button, a {
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #f9df7b;
+  background: #FF2D55;
+}
+
+::selection {
+  background: rgba(255, 45, 85, 0.35);
+  color: #fff;
 }

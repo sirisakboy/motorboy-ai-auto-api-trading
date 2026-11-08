@@ -1,0 +1,15 @@
+[MOTORBOY AI-TH — COMFYUI & SDXL WORKFLOW RECOMMENDATIONS]
+
+Recommended Base Models:
+1. Animagine XL 3.1 / Pony Diffusion V6 XL (for anime stylized proportion)
+2. Juggernaut XL / RealVisXL (for PBR realistic skin and leather textures)
+3. 3D Blend: Combine with "3DMM / Clay / Pixar-style" LoRA at 0.45 weight
+
+Key ControlNet Stack:
+- OpenPose XL: Use OpenPose to replicate exact poses from Pose 00 - 08.
+- Depth Map (Z-Buffer): To preserve 3D volume of tool belts and boots.
+- Tile / LineArt: For retaining the crisp jacket patches ("AI", "SPEED", "RPM").
+
+Color Palette Conditioning:
+Ensure color prompt weights:
+(crimson red #FF2D55:1.2), (neon purple #A855F7:1.1), (cyber blue #3B82F6:1.2), (deep dark background #0A0A0A:1.4).

@@ -436,7 +436,7 @@ export function buildTradingReportEmailHtml(
     })
     .join('');
 
-  const subject = `[Trading Engine Pro] รายงานสรุปสัญญาณการเทรด • ${now}`;
+  const subject = `[MotorBoy AI-TH] รายงานสรุปสัญญาณการเทรด • ${now}`;
 
   const html = `
     <!DOCTYPE html>
@@ -450,7 +450,7 @@ export function buildTradingReportEmailHtml(
           <!-- Header -->
           <div style="background: #0F1117; padding: 24px; color: #FFFFFF; border-bottom: 3px solid #7C6CFF;">
             <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #A5B4FC; font-weight: 700;">
-              AI Trading Engine Pro • Gmail Alert Hub
+              AI MotorBoy AI-TH • Gmail Alert Hub
             </div>
             <h1 style="margin: 8px 0 4px 0; font-size: 20px; font-weight: 800; color: #FFFFFF;">
               รายงานสรุปสัญญาณซื้อขาย Multi-Asset
@@ -500,7 +500,7 @@ export function buildTradingReportEmailHtml(
                 * การลงทุนมีความเสี่ยง ข้อมูลในอีเมลนี้เป็นการคำนวณโมเมนตัมและระดับ Stop Loss / Take Profit ทางเทคนิคเพื่อการศึกษาและติดตามเท่านั้น
               </p>
               <p style="margin: 0;">
-                ส่งอัตโนมัติผ่าน Google Gmail API โดย Trading Engine Pro
+                ส่งอัตโนมัติผ่าน Google Gmail API โดย MotorBoy AI-TH
               </p>
             </div>
           </div>

@@ -1,0 +1,38 @@
+[MOTORBOY AI-TH — ALL 9 EMOTIONAL STATES 3D RENDER PROMPTS]
+Use these prompts with Character LoRA / Consistent Character seeds to generate all 9 dashboard poses:
+
+---
+STATE 00: ENGINE SCANNING (Technical Inspection)
+Prompt: 3D render of female mascot Nong MotorBoy, leaning forward intently, holding a high-tech glowing blue holographic laser scanner flashlight over a floating holographic candlestick chart, focused analytical expression, furrowed brows, AR visor displaying green and red support/resistance trendlines, dramatic low-angle cyberpunk lighting, neon red-purple ambient glow, Octane render, 8k. --ar 9:16
+
+---
+STATE 01: SAFETY CHECK (Confirmation Request)
+Prompt: 3D render of female mascot Nong MotorBoy, standing with crossed arms, looking sideways with a shy blushing expression, sweat drop anime motif holographic sticker floating near cheek, slight hesitant pucker, warning badge glowing yellow on her tactical belt, soft rim light, Unreal Engine 5 render, 8k. --ar 9:16
+
+---
+STATE 02: RISK GUARD REJECT (Risk > 2% Warning)
+Prompt: 3D render of female mascot Nong MotorBoy, defiant and strict stance, arms crossed tightly over chest, cute puffed cheeks, pouting tsundere expression, furrowed eyebrows, an emergency holographic red shield icon hovering beside her displaying "RISK REJECTED: > 2%", intense red neon backlighting, high contrast, 8k. --ar 9:16
+
+---
+STATE 03: SYSTEM ONBOARDING (Junior Chibi Mode)
+Prompt: Super-cute 3D Chibi figurine render of young mascot in oversized bright orange pit-crew jumpsuit with gear patch, standing and cheerfully waving right hand at camera, sparkling large hazel anime eyes, warm happy smile, soft clay-style 3D render with subsurface scattering, miniature collectible vinyl figure on dark podium, studio lighting, 8k. --ar 9:16
+
+---
+STATE 04: KILL SWITCH ACTIVATED (Market Crash / Panic)
+Prompt: 3D render of female mascot Nong MotorBoy in comical panic, hands grabbing head in disbelief, swirly dizzy spiral eyes, glowing question marks and exclamation marks floating above head, jacket lights flashing emergency red hazard strobe, physical red Kill Switch toggle on belt flipped UP, dramatic chaos lighting, 8k. --ar 9:16
+
+---
+STATE 05: SETUP READY (Execution Phase)
+Prompt: 3D render of female mascot Nong MotorBoy, standing heroically and holding an illuminated cybernetic cordless power-driver tool, enthusiastic confident grin, thumbs resting on tool trigger, blue energy aura, glowing AI chip patch radiating bright golden-cyan light, ready for full throttle entry, 8k. --ar 9:16
+
+---
+STATE 06: SIDEWAYS MARKET (Bored / Sleepy)
+Prompt: 3D render of female mascot Nong MotorBoy, hand covering mouth yawning, sleepy heavy eyelids, lazy relaxed stance, glowing "ZZZ" and flatline horizontal trendline hologram floating nearby, soft dimmed ambient purple lighting, cozy cyberpunk workshop vibe, 8k. --ar 9:16
+
+---
+STATE 07: TAKE PROFIT HIT (Success / Win Rate Boost)
+Prompt: 3D render of female mascot Nong MotorBoy, triumphant celebratory pose, giving a crisp thumbs-up to viewer, winking one eye with a bright radiant smile, glowing green digital profit ticks and floating holographic coins, jacket neon lights pulsating vivid blue and cyan, victory rim lighting, 8k. --ar 9:16
+
+---
+STATE 08: STOP LOSS TRIGGERED (Disciplined Loss Cut)
+Prompt: 3D render of female mascot Nong MotorBoy, standing looking down with sad apologetic expression, soft translucent tears running down flushed cheeks, hands resting quietly by her side, dim melancholic blue ambient lighting, holographic "SL RESPECTED - CAPITAL SAFE" text fading in background, cinematic depth of field, 8k. --ar 9:16

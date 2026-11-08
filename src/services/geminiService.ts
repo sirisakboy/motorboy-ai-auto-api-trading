@@ -121,8 +121,15 @@ export async function fetchMarketSentimentScore(
 
     if (res.ok) {
       const data: MarketSentimentScore = await res.json();
-      sentimentCache.set(cacheKey, { data, expiresAt: Date.now() + 120000 });
-      return data;
+      const safeData: MarketSentimentScore = {
+        ...data,
+        safetyMargin:
+          typeof data.safetyMargin === 'number'
+            ? data.safetyMargin
+            : Math.max(5, Math.min(50, 100 - (data.score || 50))),
+      };
+      sentimentCache.set(cacheKey, { data: safeData, expiresAt: Date.now() + 120000 });
+      return safeData;
     }
   } catch (error) {
     console.warn('Server sentiment fetch warning, fallback to technical model:', error);
@@ -167,6 +174,12 @@ export async function analyzeMarketWithGemini(
 
     if (res.ok) {
       const data: AiAnalysisResult = await res.json();
+      if (data.sentiment) {
+        data.sentiment.safetyMargin =
+          typeof data.sentiment.safetyMargin === 'number'
+            ? data.sentiment.safetyMargin
+            : Math.max(5, Math.min(50, 100 - (data.sentiment.score || 50)));
+      }
       return data;
     }
   } catch (error) {

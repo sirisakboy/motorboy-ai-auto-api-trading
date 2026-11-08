@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   X,
+  Settings,
   Key,
   Eye,
   EyeOff,
@@ -143,8 +144,11 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between border-b border-[#252A3A] pb-3">
           <div className="flex items-center space-x-2">
-            <h2 className="text-white font-extrabold text-base">
-              ⚙️ การตั้งค่า & ซิงค์บัญชี Google
+            <div className="w-8 h-8 rounded-lg bg-[#FF2D55]/10 border border-[#FF2D55]/30 flex items-center justify-center">
+              <Settings className="w-4 h-4 text-[#FF2D55]" />
+            </div>
+            <h2 className="text-white font-extrabold text-base tracking-tight">
+              MotorBoy AI-TH Settings
             </h2>
           </div>
           <button
@@ -156,12 +160,11 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
           </button>
         </div>
 
-        {/* Google Account & Google Search Info Box */}
-        <div className="rounded-2xl bg-[#0F1117] border border-[#252A3A] p-4 space-y-3">
+        <div className="rounded-2xl bg-[#0A0A0A] border border-[#262626] p-4 space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2.5">
-              <div className="w-8 h-8 rounded-xl bg-[#7C6CFF]/20 border border-[#7C6CFF]/40 flex items-center justify-center text-[#A5B4FC]">
-                <Mail className="w-4 h-4 text-[#7C6CFF]" />
+              <div className="w-8 h-8 rounded-xl bg-[#3B82F6]/10 border border-[#3B82F6]/30 flex items-center justify-center text-[#3B82F6]">
+                <Mail className="w-4 h-4" />
               </div>
               <div>
                 <div className="flex items-center space-x-1.5">
@@ -187,7 +190,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
               </span>
             </div>
             <span className="text-[10px] bg-[#38BDF8]/15 border border-[#38BDF8]/30 text-[#38BDF8] px-2 py-0.5 rounded-md font-semibold">
-              Live Grounding
+              Live Grounding (MotorBoy Pro)
             </span>
           </div>
         </div>
@@ -197,11 +200,11 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
           <button
             type="button"
             onClick={() => setIsApiKeySectionOpen(!isApiKeySectionOpen)}
-            className="w-full p-3.5 flex items-center justify-between text-left hover:bg-[#151926] transition-colors cursor-pointer"
+            className="w-full p-3.5 flex items-center justify-between text-left hover:bg-[#141417] transition-colors cursor-pointer"
           >
             <div className="flex items-center space-x-2.5">
-              <div className="w-8 h-8 rounded-xl bg-[#7C6CFF]/20 border border-[#7C6CFF]/40 flex items-center justify-center text-[#A5B4FC]">
-                <Key className="w-4 h-4 text-[#7C6CFF]" />
+              <div className="w-8 h-8 rounded-xl bg-[#A855F7]/10 border border-[#A855F7]/30 flex items-center justify-center text-[#A855F7]">
+                <Key className="w-4 h-4" />
               </div>
               <div>
                 <div className="flex items-center space-x-2">
@@ -221,7 +224,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
             </div>
 
             <div className="flex items-center space-x-2">
-              <span className="text-[10px] text-[#7C6CFF] font-medium hidden sm:inline">
+              <span className="text-[10px] text-[#FF2D55] font-medium hidden sm:inline">
                 {isApiKeySectionOpen ? 'ซ่อน' : 'แสดง'}
               </span>
               {isApiKeySectionOpen ? (
@@ -233,13 +236,13 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
           </button>
 
           {isApiKeySectionOpen && (
-            <div className="p-4 pt-2 border-t border-[#1F2433] space-y-3 bg-[#0A0D14]">
+            <div className="p-4 pt-2 border-t border-[#1F2433] space-y-3 bg-[#0A0A0A]">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-bold text-white flex items-center space-x-1.5">
-                  <Key className="w-4 h-4 text-[#7C6CFF]" />
+                  <Key className="w-4 h-4 text-[#A855F7]" />
                   <span>Google Gemini API Key (ซิงค์กับบัญชี Google)</span>
                 </label>
-                <span className="text-[10px] text-[#9CA3AF] bg-[#252A3A] px-2 py-0.5 rounded-md font-medium">
+                <span className="text-[10px] text-[#9CA3AF] bg-[#262626] px-2 py-0.5 rounded-md font-medium">
                   Google AI Studio
                 </span>
               </div>
@@ -254,7 +257,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                   value={keyInput}
                   onChange={(e) => setKeyInput(e.target.value)}
                   placeholder="AIzaSy..."
-                  className="w-full bg-[#0F1117] border border-[#252A3A] focus:border-[#7C6CFF] rounded-xl pl-3.5 pr-10 py-2.5 text-xs text-white outline-none font-mono placeholder-[#4B5563]"
+                  className="w-full bg-[#0F1117] border border-[#252A3A] focus:border-[#FF2D55] rounded-xl pl-3.5 pr-10 py-2.5 text-xs text-white outline-none font-mono placeholder-[#4B5563]"
                 />
                 <button
                   type="button"
@@ -272,7 +275,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                   href="https://aistudio.google.com/app/apikey"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-[10px] text-[#7C6CFF] hover:text-[#A5B4FC] flex items-center space-x-1 transition-colors"
+                  className="text-[10px] text-[#FF2D55] hover:text-[#FF2D55]/80 flex items-center space-x-1 transition-colors"
                 >
                   <span>รับ API Key ฟรีได้ที่ Google AI Studio</span>
                   <ExternalLink className="w-3 h-3" />
@@ -285,7 +288,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                   type="button"
                   onClick={handleSaveKey}
                   disabled={isSavingKey}
-                  className="flex-1 bg-[#7C6CFF] hover:bg-[#6a5ad7] text-white font-bold text-xs py-2 rounded-xl transition-colors flex items-center justify-center space-x-1.5 cursor-pointer disabled:opacity-50"
+                  className="flex-1 bg-gradient-to-r from-[#FF2D55] to-[#A855F7] hover:opacity-90 text-white font-bold text-xs py-2 rounded-xl transition-all flex items-center justify-center space-x-1.5 cursor-pointer disabled:opacity-50 shadow-[0_0_10px_rgba(255,45,85,0.2)]"
                 >
                   {isSavingKey ? (
                     <>
@@ -304,7 +307,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                   type="button"
                   onClick={handleTestKey}
                   disabled={isTestingKey}
-                  className="px-3.5 bg-[#0F1117] hover:bg-[#252A3A] border border-[#252A3A] text-[#A5B4FC] font-semibold text-xs py-2 rounded-xl transition-colors flex items-center space-x-1.5 cursor-pointer disabled:opacity-50"
+                  className="px-3.5 bg-[#141417] hover:bg-[#262626] border border-[#262626] text-[#3B82F6] font-semibold text-xs py-2 rounded-xl transition-colors flex items-center space-x-1.5 cursor-pointer disabled:opacity-50"
                   title="ทดสอบการเชื่อมต่อ Gemini AI และระบบค้นหาตลาดสด"
                 >
                   {isTestingKey ? (
@@ -374,7 +377,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
             type="button"
             onClick={() => onToggleCurrency(!useThb)}
             className={`w-12 h-6 flex items-center rounded-full p-1 transition-colors duration-200 cursor-pointer ${
-              useThb ? 'bg-[#7C6CFF]' : 'bg-[#0F1117] border border-[#252A3A]'
+              useThb ? 'bg-[#FF2D55]' : 'bg-[#0F1117] border border-[#252A3A]'
             }`}
           >
             <div
@@ -402,7 +405,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
             className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
               notificationsEnabled
                 ? 'bg-[#22C55E]/20 text-[#4ADE80] border border-[#22C55E]/40'
-                : 'bg-[#7C6CFF] text-white hover:bg-[#6366F1]'
+                : 'bg-[#FF2D55] text-white hover:bg-[#FF2D55]/90'
             }`}
           >
             {notificationsEnabled ? 'เปิดอยู่ ✓' : 'เปิดแจ้งเตือน'}
@@ -454,7 +457,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                   type="text"
                   value={symbolInput}
                   onChange={(e) => setSymbolInput(e.target.value.toUpperCase())}
-                  className="w-full bg-[#0F1117] border border-[#252A3A] focus:border-[#7C6CFF] rounded-xl px-3 py-2 text-xs text-white outline-none"
+                  className="w-full bg-[#0F1117] border border-[#252A3A] focus:border-[#FF2D55] rounded-xl px-3 py-2 text-xs text-white outline-none"
                   placeholder="BTC"
                 />
               </div>
@@ -465,7 +468,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                   step="any"
                   value={priceInput}
                   onChange={(e) => setPriceInput(e.target.value)}
-                  className="w-full bg-[#0F1117] border border-[#252A3A] focus:border-[#7C6CFF] rounded-xl px-3 py-2 text-xs text-white outline-none"
+                  className="w-full bg-[#0F1117] border border-[#252A3A] focus:border-[#FF2D55] rounded-xl px-3 py-2 text-xs text-white outline-none"
                   placeholder="95000"
                 />
               </div>
@@ -473,7 +476,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
 
             <button
               type="submit"
-              className="w-full bg-[#7C6CFF] hover:bg-[#6366F1] text-white font-bold text-xs py-2 rounded-xl transition-colors cursor-pointer"
+              className="w-full bg-[#FF2D55] hover:bg-[#FF2D55]/90 text-white font-bold text-xs py-2 rounded-xl transition-colors cursor-pointer"
             >
               บันทึกการแจ้งเตือนราคา
             </button>

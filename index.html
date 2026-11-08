@@ -2,6 +2,97 @@
 <html lang="th">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      (function() {
+        if (typeof window !== 'undefined') {
+          var origErr = console.error;
+          console.error = function() {
+            if (typeof arguments[0] === 'string' && arguments[0].indexOf('React instrumentation encountered an error') !== -1) {
+              return;
+            }
+            return origErr.apply(this, arguments);
+          };
+          var safeFn = function(fn) {
+            if (typeof fn !== 'function') return function() {};
+            return function() {
+              try { return fn.apply(this, arguments); } catch (e) { return undefined; }
+            };
+          };
+          var patch = function(h) {
+            if (!h || typeof h !== 'object') return;
+            if (!h.renderers) h.renderers = new Map();
+            h.supportsFiber = true;
+            if (typeof h.inject !== 'function') {
+              var id = 1;
+              h.inject = function() { return id++; };
+            } else {
+              var oi = h.inject;
+              h.inject = function() {
+                try { return oi.apply(this, arguments); } catch (e) { return 1; }
+              };
+            }
+            var methods = ['onScheduleFiberRoot', 'onCommitFiberRoot', 'onPostCommitFiberRoot', 'onCommitFiberUnmount', 'setStrictMode'];
+            for (var i = 0; i < methods.length; i++) {
+              var m = methods[i];
+              h[m] = typeof h[m] === 'function' ? safeFn(h[m]) : function() {};
+            }
+            if (typeof h.emit === 'function') {
+              var oe = h.emit;
+              h.emit = function(event) {
+                try {
+                  if (h._listeners && Array.isArray(h._listeners[event])) {
+                    h._listeners[event] = h._listeners[event].filter(function(cb) { return typeof cb === 'function'; });
+                  }
+                  if (h.subscribers && Array.isArray(h.subscribers[event])) {
+                    h.subscribers[event] = h.subscribers[event].filter(function(cb) { return typeof cb === 'function'; });
+                  }
+                  return oe.apply(this, arguments);
+                } catch (e) { return undefined; }
+              };
+            } else {
+              h.emit = function() {};
+            }
+            if (typeof h.sub !== 'function') h.sub = function() { return function() {}; };
+            if (typeof h.on !== 'function') h.on = function() {};
+            if (typeof h.off !== 'function') h.off = function() {};
+          };
+          var hook = window.__REACT_DEVTOOLS_GLOBAL_HOOK__;
+          if (hook) {
+            patch(hook);
+          } else {
+            var nextId = 1;
+            hook = {
+              renderers: new Map(),
+              supportsFiber: true,
+              inject: function() { return nextId++; },
+              onScheduleFiberRoot: function() {},
+              onCommitFiberRoot: function() {},
+              onPostCommitFiberRoot: function() {},
+              onCommitFiberUnmount: function() {},
+              setStrictMode: function() {},
+              sub: function() { return function() {}; },
+              on: function() {},
+              off: function() {},
+              emit: function() {},
+              _listeners: {},
+              subscribers: {}
+            };
+            window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = hook;
+          }
+          try {
+            var _curr = window.__REACT_DEVTOOLS_GLOBAL_HOOK__;
+            Object.defineProperty(window, '__REACT_DEVTOOLS_GLOBAL_HOOK__', {
+              configurable: true,
+              enumerable: true,
+              get: function() { return _curr; },
+              set: function(val) { _curr = val; patch(_curr); }
+            });
+          } catch (e) {
+            patch(window.__REACT_DEVTOOLS_GLOBAL_HOOK__);
+          }
+        }
+      })();
+    </script>
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Trading Engine Pro</title>

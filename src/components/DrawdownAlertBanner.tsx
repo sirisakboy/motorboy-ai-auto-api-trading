@@ -40,10 +40,10 @@ export const DrawdownAlertBanner: React.FC<DrawdownAlertBannerProps> = ({
           </div>
           <div className="text-xs leading-snug truncate">
             <span className="font-bold tracking-wide mr-1.5 uppercase font-mono">
-              {isExtreme ? '🚨 DRAWDOWN EXTREME ALERT' : isCritical ? '⚠️ DRAWDOWN CRITICAL' : '⚡ DRAWDOWN WARNING'}:
+              {isExtreme ? '🛑 เบรกก่อนจิ! [KILL SWITCH EXTREME]' : isCritical ? '🛑 เบรกก่อนจิ! [KILL SWITCH CRITICAL]' : '⚡ MOTORBOY RISK WARNING'}:
             </span>
             <span className="text-slate-200 hidden md:inline">
-              ตรวจพบ {breachedAssets.length} สินทรัพย์ย่อตัวหลุดเกณฑ์ความเสี่ยง (Peak-to-Trough)
+              ตรวจพบ {breachedAssets.length} สินทรัพย์ย่อตัวหลุดเกณฑ์ความเสี่ยง (Drawdown &gt; 5%) สั่งตัดความเสี่ยงทันที
             </span>
             <span className="text-slate-300 font-mono ml-1.5">
               [{breachedAssets.slice(0, 3).map((a) => `${a.symbol} ${a.currentDrawdownPct}%`).join(', ')}

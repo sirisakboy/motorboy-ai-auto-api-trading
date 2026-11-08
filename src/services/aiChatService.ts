@@ -25,15 +25,15 @@ export function getAiEngineStatus(userKey?: string): {
   if (userKey && userKey.trim()) {
     return {
       mode: 'GEMINI_LLM',
-      labelTh: 'Google Gemini 3.1 Flash Lite (Google AI)',
-      badgeTh: '✨ GEMINI AI',
+      labelTh: 'MotorBoy AI-TH Co-Pilot (Gemini AI + Google Grounding)',
+      badgeTh: '🏍️ MOTORBOY AI',
       isOnlineLlm: true,
     };
   }
   return {
     mode: 'QUANT_LIVE',
-    labelTh: 'Dynamic Quant AI (Real-time Analyst)',
-    badgeTh: '⚡ QUANT AI',
+    labelTh: 'MotorBoy Real-time Quant Engine (Hybrid Pro)',
+    badgeTh: '⚡ MOTORBOY QUANT',
     isOnlineLlm: false,
   };
 }
@@ -399,11 +399,11 @@ function analyzeCryptoAssetDynamically(
     directAnswer = `ภาพรวมแนวโน้ม ${coin.symbol}: ทิศทาง 24 ชม. เป็น ${isUp ? 'BULLISH (แรงซื้อคุมตลาด)' : 'BEARISH (แรงขายกดดัน)'} การเคลื่อนไหวอยู่ในกรอบ $${low.toLocaleString()} - $${high.toLocaleString()}`;
   }
 
-  return `⚡ [AI DEEP ANALYZE // ${coin.name} (${coin.symbol})]
+  return `🏍️ [MotorBoy AI-TH // ${coin.name} (${coin.symbol})]
 ▶ ตอบคำถาม: "${query}"
 ${directAnswer}
 
-📊 ตัวเลขทางเทคนิคสด (Real-Time Quantitative Levels):
+📊 ตัวเลขทางเทคนิคสด (MotorBoy Real-Time Quantitative Levels):
 • ราคา Spot ปัจจุบัน: $${p.toLocaleString()} (${isUp ? '+' : ''}${coin.change.toFixed(2)}%)
 • กรอบ 24 ชม. (High / Low): $${high.toLocaleString()} / $${low.toLocaleString()}
 • จุดหมุนหลัก (Pivot Point): $${Math.round(pp).toLocaleString()}
@@ -411,11 +411,11 @@ ${directAnswer}
 • แนวรับ (Key Supports): S1 $${s1.toLocaleString()} | S2 $${s2.toLocaleString()}
 • ปริมาณซื้อขาย (Volume): $${Math.round(coin.volume || 0).toLocaleString()} USD
 
-🎯 แผน Action Plan สำหรับเทรดเดอร์:
-- กลยุทธ์: ${isUp ? 'รอจังหวะย่อทดสอบแนวรับ S1 แล้วเข้าซื้อเกาะเทรนด์ (Buy on Dip)' : 'เฝ้ารอการสร้างฐานเหนือแนวรับ S2 ห้ามสวนซื้อจนกว่าจะมีสัญญาณแท่งเทียนกลับตัว'}
-- การคุมความเสี่ยง: เสี่ยงไม่เกิน 1-2% ต่อไม้ อัตรา Risk/Reward ขั้นต่ำ 1:2
+🎯 แผน Action Plan สไตล์ MotorBoy:
+- กลยุทธ์: ${isUp ? '🏍️ Full Throttle! รอจังหวะย่อทดสอบแนวรับ S1 แล้วเข้าซื้อเกาะเทรนด์ (Buy on Dip)' : '🛑 เบรกก่อนจิ! เฝ้ารอการสร้างฐานเหนือแนวรับ S2 ห้ามสวนซื้อจนกว่าจะมีสัญญาณแท่งเทียนกลับตัว'}
+- การคุมความเสี่ยง (Risk Guard): เสี่ยงไม่เกิน 2% ต่อไม้ อัตรา RR Ratio ไม่ต่ำกว่า 1:1.5
 
-⚠️ การเทรดมีความเสี่ยง โปรดบริหารความเสี่ยงอย่างรอบคอบ`;
+นี่คือการวิเคราะห์ ไม่ใช่คำแนะนำการลงทุน`;
 }
 
 function analyzeThaiStockDynamically(
@@ -463,7 +463,7 @@ ${angle}
 💡 กลยุทธ์การเทรด:
 ${isUp ? 'เกาะโมเมนตัมตามรอบ โดยเลื่อน Trailing Stop ตามแนวรับ' : 'ตั้งรับบริเวณแนวรับ ฿' + sup1 + ' คุมไม้ให้เล็กลงในสภาวะตลาดผันผวน'}
 
-⚠️ การเทรดมีความเสี่ยง โปรดบริหารความเสี่ยงอย่างรอบคอบ`;
+นี่คือการวิเคราะห์ ไม่ใช่คำแนะนำการลงทุน`;
 }
 
 function analyzeUsStockDynamically(
@@ -509,7 +509,7 @@ ${advice}
 🎯 คำแนะนำการเข้าสถานะ:
 - บริหารความเสี่ยงสไตล์ US Trader: ไม่ถือ Over-leverage ข้ามสัปดาห์ และจับตาผลประกอบการ Earnings รายไตรมาส
 
-⚠️ การเทรดมีความเสี่ยง โปรดบริหารความเสี่ยงอย่างรอบคอบ`;
+นี่คือการวิเคราะห์ ไม่ใช่คำแนะนำการลงทุน`;
 }
 
 function analyzeForexDynamically(
@@ -550,7 +550,7 @@ ${focus}
 - ควบคุม Lot Size อย่างเคร่งครัดตามขนาดบัญชี
 - วาง Stop Loss ทุกออเดอร์เพื่อป้องกัน Slippage จากข่าวแรง
 
-⚠️ การเทรดมีความเสี่ยง โปรดบริหารความเสี่ยงอย่างรอบคอบ`;
+นี่คือการวิเคราะห์ ไม่ใช่คำแนะนำการลงทุน`;
 }
 
 function analyzeGoldCommodityDynamically(query: string, ctx: AiChatContext): string {
@@ -571,7 +571,7 @@ function analyzeGoldCommodityDynamically(query: string, ctx: AiChatContext): str
 - สายเทรด Spot/Futures: รอจังหวะย่อสะสมบริเวณ $2,710 - $2,720 วาง Stop Loss ที่ $2,695
 - ทองคำแท่งในไทย: หากเงินบาทอ่อนค่าจะช่วยหนุนราคาทองคำแท่งในประเทศให้ทรงตัวสูงกว่าทองโลก
 
-⚠️ การเทรดมีความเสี่ยง โปรดบริหารความเสี่ยงอย่างรอบคอบ`;
+นี่คือการวิเคราะห์ ไม่ใช่คำแนะนำการลงทุน`;
 }
 
 function analyzeOilCommodityDynamically(query: string): string {
@@ -585,7 +585,7 @@ function analyzeOilCommodityDynamically(query: string): string {
 
 💡 แผนการเทรด: น้ำมันมีความผันผวนสูงตามข่าวสงคราม แนะนำเทรดตามกรอบแนวรับ-แนวต้านและไม่ถือสถานะข้ามสัปดาห์
 
-⚠️ การเทรดมีความเสี่ยง โปรดบริหารความเสี่ยงอย่างรอบคอบ`;
+นี่คือการวิเคราะห์ ไม่ใช่คำแนะนำการลงทุน`;
 }
 
 function analyzeIndexDynamically(idx: StockIndex, query: string): string {
@@ -600,7 +600,7 @@ function analyzeIndexDynamically(idx: StockIndex, query: string): string {
 
 💡 กลยุทธ์ภาพรวม: หากเทรดดัชนีผ่าน Index Futures หรือ ETF ให้จับตาเส้นค่าเฉลี่ย EMA 20 วันเป็นแนวรับหลัก
 
-⚠️ การเทรดมีความเสี่ยง โปรดบริหารความเสี่ยงอย่างรอบคอบ`;
+นี่คือการวิเคราะห์ ไม่ใช่คำแนะนำการลงทุน`;
 }
 
 function analyzeDrawdownDynamically(query: string): string {
@@ -619,7 +619,7 @@ function analyzeDrawdownDynamically(query: string): string {
 3. บังคับใช้กฎ 2% Risk Cap: ห้ามเสี่ยงเกิน 2% ของเงินทุนที่เหลืออยู่ในไม้เดียว
 4. เปิดใช้โมดูล "Drawdown Monitor" จากแถบเมนูด้านบนเพื่อตรวจเส้น Underwater Curve
 
-⚠️ การเทรดมีความเสี่ยง โปรดบริหารความเสี่ยงอย่างรอบคอบ`;
+นี่คือการวิเคราะห์ ไม่ใช่คำแนะนำการลงทุน`;
 }
 
 function analyzeMacroNewsDynamically(query: string, ctx: AiChatContext): string {
@@ -639,7 +639,7 @@ ${newsList}
 • ข่าวเศรษฐกิจและอัตราดอกเบี้ยส่งผลกระทบต่อสเปรด FX และสินทรัพย์เสี่ยงโดยตรง
 • คำแนะนำ: ในช่วงที่มีการประกาศตัวเลขเศรษฐกิจสำคัญ (เช่น CPI, Non-farm, Fed Rate) ให้ขยายกรอบ Stop Loss หรือลดขนาดไม้เทรดเพื่อหลีกเลี่ยงการถูกกวาดสภาพคล่อง (Liquidity Sweep)
 
-⚠️ การเทรดมีความเสี่ยง โปรดบริหารความเสี่ยงอย่างรอบคอบ`;
+นี่คือการวิเคราะห์ ไม่ใช่คำแนะนำการลงทุน`;
 }
 
 function analyzeTradingEducationDynamically(query: string): string {
@@ -657,7 +657,7 @@ function analyzeTradingEducationDynamically(query: string): string {
    - DCA: เหมาะกับการสะสมสินทรัพย์พื้นฐานดีรอบ 1-3 ปีขึ้นไป
    - Swing Trade: เหมาะกับการเทรดตามรอบคลื่น Fibonacci และเส้น EMA
 
-⚠️ การเทรดมีความเสี่ยง โปรดบริหารความเสี่ยงอย่างรอบคอบ`;
+นี่คือการวิเคราะห์ ไม่ใช่คำแนะนำการลงทุน`;
 }
 
 function generateGeneralMarketSynthesis(query: string, ctx: AiChatContext): string {
@@ -681,5 +681,5 @@ function generateGeneralMarketSynthesis(query: string, ctx: AiChatContext): stri
 - พิมพ์ "ATS" เพื่อขอรายงาน ATS Matrix & Polymarket Inefficiency
 - ใส่ Gemini API Key ในเมนูตั้งค่า เพื่อเปิดใช้งานโมเดล Gemini 3.8 Flash พร้อมค้นหาข้อมูล Google สด
 
-⚠️ การเทรดมีความเสี่ยง โปรดบริหารความเสี่ยงอย่างรอบคอบ`;
+นี่คือการวิเคราะห์ ไม่ใช่คำแนะนำการลงทุน`;
 }

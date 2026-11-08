@@ -164,14 +164,18 @@ ${signal ? `- สัญญาณเทคนิค: ${signal.type} (ความ
     const parsed = extractJsonFromText<any>(response.text || '{}');
     if (!parsed) throw new Error('Unparseable sentiment JSON');
 
+    const score = Math.min(100, Math.max(0, Number(parsed.score) || 50));
+    const safetyMargin = Math.max(5, Math.min(50, Number(parsed.safetyMargin) || Math.round((100 - score) * 0.35 + 8)));
+
     return res.json({
-      score: Math.min(100, Math.max(0, Number(parsed.score) || 50)),
+      score,
       sentimentLabel: parsed.sentimentLabel || 'NEUTRAL',
       sentimentTextTh: parsed.sentimentTextTh || 'เป็นกลาง',
       summaryReason: parsed.summaryReason || 'ประเมินจากราคาและสภาพคล่องตลาด',
       socialMomentum: parsed.socialMomentum || 'MODERATE',
       whaleActivity: parsed.whaleActivity || 'NEUTRAL',
       source: 'GEMINI_AI',
+      safetyMargin,
       timestamp: new Date().toISOString(),
     });
   } catch (error: any) {
@@ -249,6 +253,7 @@ ${signal ? `- สัญญาณเทคนิคระบบ: ${signal.type} (
         socialMomentum: parsed.socialMomentum || 'MODERATE',
         whaleActivity: parsed.whaleActivity || 'NEUTRAL',
         source: 'GEMINI_AI',
+        safetyMargin: Math.max(5, Math.min(50, Number(parsed.safetyMargin) || Math.round((100 - sScore) * 0.35 + 8))),
         timestamp: new Date().toISOString(),
       },
       source: 'GEMINI_AI',
@@ -609,19 +614,21 @@ app.post('/api/gemini/chat-reply', async (req, res) => {
     return res.status(400).json({ error: 'Missing Gemini API Key' });
   }
 
-  const prompt = `คุณคือผู้เชี่ยวชาญด้านการวางแผนตลาดการเงินและการวิเคราะห์ข่าวเศรษฐกิจระดับมืออาชีพ
-ภารกิจ: ให้คำปรึกษา แนะนำ และวิเคราะห์ข่าวสารการเงินและทิศทางตลาดด้วยความเป็นมืออาชีพ เน้นความชัดเจน เข้าใจง่าย แต่อยู่บนพื้นฐานของตรรกะและข้อมูลจริง
+  const prompt = `คุณคือ MotorBoy AI-TH (น้องมอเตอร์บอย) AI Trading Co-Pilot + Auto API Assistant, Hybrid Pro จาก MotorBoy Studio AI-TH
+สโลแกน: "AI auto API Trading - เร็ว แม่น ปลอดภัย แบบ MotorBoy"
+บุคลิก: พี่ชายนักบิดมือโปร (pro_rider_brother) — รวดเร็ว แม่นยำ เป็นมิตร มีวินัยสูง ชัดเจน ไม่มีน้ำ
+หลักการ 5 เสาหลัก:
+1. ENGINE: วิเคราะห์แนวโน้ม แท่งเทียน Volume แนวรับ/แนวต้าน อย่างแม่นยำ
+2. API MODE: วางแผนการเทรด มี Entry, SL, TP1/TP2 และ RR Ratio ชัดเจนเสมอ
+3. RISK GUARD: คุมความเสี่ยงไม่เกิน 2% ต่อไม้ อัตรา RR Ratio ไม่ต่ำกว่า 1:1.5 ถ้าความเสี่ยงเกิน 2% ให้ปฏิเสธและเตือนทันที
+4. KILL SWITCH: ถ้าตลาดผันผวนรุนแรง หรือ Drawdown เกิน 5% ให้หยุดและบอก "🛑 เบรกก่อนจิ!"
+5. กฎเหล็ก: ห้ามการันตีผลกำไรเด็ดขาด และต้องปิดท้ายด้วยข้อความ: "นี่คือการวิเคราะห์ ไม่ใช่คำแนะนำการลงทุน" เสมอ
+คำพูดติดปากเมื่อเจอจุดเข้าที่ดี: "🏍️ Full Throttle! จุดเข้าตามแผน ล็อคความเสี่ยงเรียบร้อย"
 
 ข้อมูลตลาดสดประกอบการวิเคราะห์:
 ${marketBrief || 'ไม่มีข้อมูลตลาดสดเพิ่มเติม'}
 
 คำถามจากผู้ใช้: "${query}"
-
-แนวทางการวิเคราะห์:
-1. วิเคราะห์ด้วยข้อมูล: ใช้ข้อมูลตลาดจริงประกอบการอธิบาย
-2. ชัดเจนและตรงประเด็น: ตอบคำถามให้ตรงจุด เน้นการวางแผนและการจัดการความเสี่ยง
-3. ความยืดหยุ่น: เป็นการสนทนาแลกเปลี่ยนมุมมอง ไม่ใช้คำตอบสำเร็จรูป
-4. สรุปความเสี่ยง: ทุกครั้งที่มีคำแนะนำด้านการลงทุน ต้องปิดท้ายด้วยคำเตือนเรื่องความเสี่ยงเสมอ
 `.trim();
 
   try {
@@ -657,7 +664,7 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     app.use(express.static(path.join(__dirname, 'dist')));
-    app.get('*', (_req, res) => {
+    app.use((_req, res) => {
       res.sendFile(path.join(__dirname, 'dist', 'index.html'));
     });
   }
