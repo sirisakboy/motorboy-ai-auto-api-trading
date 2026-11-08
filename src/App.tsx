@@ -40,7 +40,8 @@ import {
 } from './services/apiClient';
 import { categorizeHeadlinesWithGemini } from './services/headlineCategorizationService';
 import { t } from './i18n';
-import { getLiveUsdThb } from './utils';
+import { getLiveUsdThb, setActiveUsdThbRate } from './utils';
+import { useModalA11y } from './hooks/useModalA11y';
 import { Header } from './components/Header';
 import { CryptoCard } from './components/CryptoCard';
 import { ForexCard } from './components/ForexCard';
@@ -144,24 +145,21 @@ export const App: React.FC = () => {
   const [showHistoryModal, setShowHistoryModal] = useState<boolean>(false);
   const [showAtsMatrixModal, setShowAtsMatrixModal] = useState<boolean>(false);
   const [isAtsMatrixMode, setIsAtsMatrixMode] = useState<boolean>(false);
+
+  // Accessibility wiring for the four inline dialogs rendered in this component.
+  const newsModalRef = useModalA11y({ onClose: () => setShowNewsModal(false), enabled: showNewsModal });
+  const watchlistModalRef = useModalA11y({ onClose: () => setShowWatchlistModal(false), enabled: showWatchlistModal });
+  const historyModalRef = useModalA11y({ onClose: () => setShowHistoryModal(false), enabled: showHistoryModal });
+  const atsModalRef = useModalA11y({ onClose: () => setShowAtsMatrixModal(false), enabled: showAtsMatrixModal });
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [useThb, setUseThb] = useState<boolean>(false);
-  const [isDark, setIsDark] = useState<boolean>(() => {
-    const hours = new Date().getHours();
-    return hours < 6 || hours >= 18;
-  });
-
-  // Automatic day/night theme check according to current time (Day: 06:00-18:00 light, Night: 18:00-06:00 dark)
-  useEffect(() => {
-    const updateThemeByTime = () => {
-      const hours = new Date().getHours();
-      const isNight = hours < 6 || hours >= 18;
-      setIsDark(isNight);
-    };
-    updateThemeByTime();
-    const interval = setInterval(updateThemeByTime, 60000);
-    return () => clearInterval(interval);
-  }, []);
+  // The dashboard is dark-only by design. It used to flip to a "light" palette
+  // between 06:00 and 18:00, but only 8 of 26 components implement that palette —
+  // in Bangkok daytime the page background, header and two modals turned light
+  // while every card, table and chart stayed dark. Until the colour palette is
+  // migrated to CSS custom properties (see CODE_REVIEW.md, UI section), the
+  // theme stays fixed so the UI is never half-inverted.
+  const [isDark] = useState<boolean>(true);
 
   const [notificationsEnabled, setNotificationsEnabled] = useState<boolean>(false);
   const [watchlist, setWatchlist] = useState<Set<string>>(new Set());
@@ -620,6 +618,12 @@ export const App: React.FC = () => {
     [forexRates]
   );
 
+  // Publish the same rate to the formatters so every ฿ amount on screen —
+  // ticker, cards, detail modals, history — converts with one number.
+  useEffect(() => {
+    setActiveUsdThbRate(usdThbRate);
+  }, [usdThbRate]);
+
   // All tradeable signals for the risk calculator picker
   const allSignals = useMemo(
     () => [...signals, ...forexSignals, ...thaiStockSignals, ...foreignStockSignals],
@@ -883,11 +887,16 @@ export const App: React.FC = () => {
     >
       {/* Toast Notification */}
       {alertToast && (
-        <div className="fixed top-4 right-4 left-4 sm:left-auto z-[60] sm:max-w-sm bg-[#818CF8] text-white px-4 py-3 rounded-2xl shadow-xl border border-white/20 flex items-center justify-between space-x-3 animate-fade-in">
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed top-4 right-4 left-4 sm:left-auto z-[60] sm:max-w-sm bg-[#818CF8] text-white px-4 py-3 rounded-2xl shadow-xl border border-white/20 flex items-center justify-between space-x-3 animate-fade-in"
+        >
           <span className="text-xs font-semibold">{alertToast}</span>
           <button
             type="button"
             onClick={() => setAlertToast(null)}
+            aria-label="ปิดการแจ้งเตือน"
             className="text-white/80 hover:text-white text-xs font-bold px-1"
           >
             ✕
@@ -1123,7 +1132,7 @@ export const App: React.FC = () => {
                       <h2 className="text-white font-bold text-sm">
                         กราฟราคา 90 วัน & ค่าเฉลี่ย EMA (20/50)
                       </h2>
-                      <p className="text-[#6B7280] text-[11px] mt-0.5">
+                      <p className="text-[#909AAB] text-[11px] mt-0.5">
                         {selectedTab === 0 && 'ดึงข้อมูล Binance 1D Klines จริง วิเคราะห์เส้น EMA (20/50) และแนวรับ-แนวต้าน'}
                         {selectedTab === 1 && 'ดึงข้อมูลอัตราแลกเปลี่ยน Forex 1D Closes จริง วิเคราะห์กรอบสวิง 90 วัน'}
                         {selectedTab === 2 && 'ดึงข้อมูลราคาปิดหุ้นไทย SET (.BK) รายวันจากตลาดหลักทรัพย์ พร้อมแนวรับ-แนวต้าน'}
@@ -1521,7 +1530,12 @@ export const App: React.FC = () => {
 
           {/* News & AI Analysis Hub Modal */}
           {showNewsModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm overflow-y-auto">
+            <div
+              ref={newsModalRef}
+              role="dialog"
+              aria-modal="true"
+              aria-label="ศูนย์รวมข่าวสารตลาดและวิเคราะห์ AI"
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm overflow-y-auto">
               <div className="w-full max-w-2xl bg-[#131722] border border-[#2A2E39] rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
                 <div className="p-4 border-b border-[#2A2E39] flex items-center justify-between bg-gradient-to-r from-[#1E222D] to-[#131722]">
                   <div className="flex items-center gap-2">
@@ -1555,7 +1569,12 @@ export const App: React.FC = () => {
 
           {/* Watchlist Modal */}
           {showWatchlistModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm overflow-y-auto">
+            <div
+              ref={watchlistModalRef}
+              role="dialog"
+              aria-modal="true"
+              aria-label="รายการโปรด Watchlist"
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm overflow-y-auto">
               <div className="w-full max-w-2xl bg-[#131722] border border-[#2A2E39] rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
                 <div className="p-4 border-b border-[#2A2E39] flex items-center justify-between bg-gradient-to-r from-[#1E222D] to-[#131722]">
                   <div className="flex items-center gap-2">
@@ -1659,7 +1678,7 @@ export const App: React.FC = () => {
                       <p className="text-white text-sm font-semibold">
                         ยังไม่มีรายการใน Watchlist
                       </p>
-                      <p className="text-[#6B7280] text-xs mt-1">
+                      <p className="text-[#909AAB] text-xs mt-1">
                         แตะรูปดาว ⭐️ ที่การ์ดคริปโต คู่เงิน Forex หรือหุ้นไทย/ต่างประเทศ เพื่อเพิ่มลงในรายการโปรด
                       </p>
                     </div>
@@ -1671,7 +1690,12 @@ export const App: React.FC = () => {
 
           {/* History Modal */}
           {showHistoryModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm overflow-y-auto">
+            <div
+              ref={historyModalRef}
+              role="dialog"
+              aria-modal="true"
+              aria-label="ประวัติการวิเคราะห์"
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm overflow-y-auto">
               <div className="w-full max-w-3xl bg-[#131722] border border-[#2A2E39] rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
                 <div className="p-4 border-b border-[#2A2E39] flex items-center justify-between bg-gradient-to-r from-[#1E222D] to-[#131722]">
                   <div className="flex items-center gap-2">
@@ -1703,7 +1727,12 @@ export const App: React.FC = () => {
 
           {/* ATS Matrix Mode Modal */}
           {showAtsMatrixModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md overflow-y-auto animate-in fade-in duration-200">
+            <div
+              ref={atsModalRef}
+              role="dialog"
+              aria-modal="true"
+              aria-label="ATS Matrix Cockpit"
+              className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md overflow-y-auto animate-in fade-in duration-200">
               <div className="w-full max-w-5xl my-auto">
                 <AtsMatrixDashboard
                   isModal

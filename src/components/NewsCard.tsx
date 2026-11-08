@@ -333,7 +333,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
               className={`text-[10px] font-semibold px-2 py-1 rounded-lg border transition-colors ${
                 isAutoEnabled
                   ? 'border-[#22C55E]/40 text-[#4ADE80] bg-[#22C55E]/10'
-                  : 'border-[#6B7280]/40 text-[#94A3B8] bg-[#252A3A]/40'
+                  : 'border-[#909AAB]/40 text-[#94A3B8] bg-[#252A3A]/40'
               }`}
               title={isAutoEnabled ? 'หยุดชั่วคราว' : 'เปิดใช้งานอัตโนมัติ'}
             >
@@ -588,7 +588,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
                         {item.source}
                       </span>
                     )}
-                    <span className="text-[#6B7280]">• {item.time}</span>
+                    <span className="text-[#909AAB]">• {item.time}</span>
                   </div>
 
                   <div className="flex items-center gap-1.5 shrink-0">
@@ -679,7 +679,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
                     href={item.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[#6B7280] hover:text-[#CBD5E1] text-xs flex items-center gap-1 transition-colors px-2 py-1"
+                    className="text-[#909AAB] hover:text-[#CBD5E1] text-xs flex items-center gap-1 transition-colors px-2 py-1"
                     title="เปิดลิงก์ข่าว"
                   >
                     <span>{isMsn ? 'ไปที่ MSN' : 'อ่านข่าว'}</span>

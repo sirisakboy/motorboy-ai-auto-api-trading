@@ -39,7 +39,7 @@ export const MarketHoursCard: React.FC<MarketHoursCardProps> = ({ marketHours })
         <span className="text-[#A5B4FC] font-medium text-[11px]">
           {marketHours.countdown}
         </span>
-        <span className="text-[#6B7280] text-[10px]">
+        <span className="text-[#909AAB] text-[10px]">
           {marketHours.timestamp}
         </span>
       </div>
@@ -58,7 +58,7 @@ const MarketRow: React.FC<MarketRowProps> = ({ title, subtitle, isOpen }) => {
     <div className="w-full rounded-xl bg-[#0F1117] border border-[#252A3A] px-3 py-2 flex items-center justify-between">
       <div>
         <h4 className="text-white text-xs font-semibold">{title}</h4>
-        <p className="text-[#6B7280] text-[10px] mt-0.5">{subtitle}</p>
+        <p className="text-[#909AAB] text-[10px] mt-0.5">{subtitle}</p>
       </div>
 
       <span

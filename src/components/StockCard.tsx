@@ -36,7 +36,7 @@ export const StockCard: React.FC<StockCardProps> = ({
             <h3 className="text-white font-bold text-[15px] leading-tight truncate">
               {stock.symbol} • {stock.name}
             </h3>
-            <p className="text-[#6B7280] text-[11px] mt-0.5 leading-tight truncate">
+            <p className="text-[#909AAB] text-[11px] mt-0.5 leading-tight truncate">
               {stock.schedule} • {marketStatusText} • {countdown}
             </p>
           </div>
@@ -80,7 +80,7 @@ export const StockCard: React.FC<StockCardProps> = ({
             />
             <circle cx="70" cy="14" r="4.5" fill="#7C6CFF" />
           </svg>
-          <span className="text-[#6B7280] text-[11px]">
+          <span className="text-[#909AAB] text-[11px]">
             {stock.isLive
               ? 'กราฟแสดงข้อมูลแบบเรียลไทม์'
               : 'ตลาดปิดหรือออฟไลน์ • ใช้ราคาสำรอง'}

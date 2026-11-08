@@ -74,7 +74,7 @@ export const CryptoCard: React.FC<CryptoCardProps> = ({
                 {signal.base}/{signal.quote}
               </span>
             </div>
-            <p className="text-[#6B7280] text-[11px] leading-tight mt-0.5 truncate">
+            <p className="text-[#909AAB] text-[11px] leading-tight mt-0.5 truncate">
               {signal.sources.join(' • ')}
             </p>
           </div>
@@ -87,7 +87,7 @@ export const CryptoCard: React.FC<CryptoCardProps> = ({
               e.stopPropagation();
               onToggleWatchlist(signal.symbol);
             }}
-            className="p-2 text-[#6B7280] hover:text-[#7C6CFF] transition-colors rounded-full"
+            className="p-2 text-[#909AAB] hover:text-[#7C6CFF] transition-colors rounded-full"
             aria-label="Toggle Watchlist"
             data-testid={`watchlist_btn_${signal.symbol}`}
           >
@@ -95,7 +95,7 @@ export const CryptoCard: React.FC<CryptoCardProps> = ({
               className={`w-5 h-5 ${
                 isWatchlisted
                   ? 'fill-[#7C6CFF] text-[#7C6CFF]'
-                  : 'text-[#6B7280]'
+                  : 'text-[#909AAB]'
               }`}
             />
           </button>

@@ -91,7 +91,7 @@ export const ThaiStockCard: React.FC<ThaiStockCardProps> = ({
             className={`p-1.5 rounded-lg transition-colors ${
               isWatchlisted
                 ? 'bg-[#F59E0B]/20 text-[#FBBF24]'
-                : 'bg-[#0F1117] text-[#6B7280] hover:text-[#FBBF24]'
+                : 'bg-[#0F1117] text-[#909AAB] hover:text-[#FBBF24]'
             }`}
             title={isWatchlisted ? 'ลบออกจากรายการ' : 'เพิ่มลง Watchlist'}
           >
@@ -139,7 +139,7 @@ export const ThaiStockCard: React.FC<ThaiStockCardProps> = ({
               ความน่าจะเป็น {signal.probability}%
             </span>
           </div>
-          <span className="text-[10px] text-[#6B7280]">
+          <span className="text-[10px] text-[#909AAB]">
             SL: ฿{signal.sl.toFixed(2)} • TP: ฿{signal.tp.toFixed(2)}
           </span>
         </div>

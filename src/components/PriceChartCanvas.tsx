@@ -214,7 +214,7 @@ export const PriceChartCanvas: React.FC<PriceChartCanvasProps> = ({
             ? `○ ออฟไลน์${chartData?.source ? ` • ${chartData.source}` : ''} — ไม่มีข้อมูลจริง`
             : `● LIVE${chartData?.source ? ` • ${chartData.source}` : ''}`}
         </span>
-        <span className="text-[#6B7280] font-mono text-[10px]">
+        <span className="text-[#909AAB] font-mono text-[10px]">
           {chartData?.source ? `${chartData.source} 1D Closes` : assetSymbol.includes('/') ? 'Forex Daily Closes' : '1D Closes'} ({currencySymbol})
         </span>
       </div>
@@ -261,7 +261,7 @@ export const PriceChartCanvas: React.FC<PriceChartCanvasProps> = ({
             onMouseLeave={handleMouseLeave}
           />
         ) : (
-          <span className="text-xs text-[#6B7280]">
+          <span className="text-xs text-[#909AAB]">
             {chartData?.isLive === false
               ? 'ดึงประวัติย้อนหลังไม่สำเร็จ (ออฟไลน์) — จะลองใหม่เมื่อเปลี่ยนสินทรัพย์'
               : 'เลือกสินทรัพย์เพื่อดูกราฟ 1000 วัน'}
@@ -293,7 +293,7 @@ export const PriceChartCanvas: React.FC<PriceChartCanvasProps> = ({
           </div>
         </div>
 
-        <span className="text-[#6B7280] font-mono text-[10px]">
+        <span className="text-[#909AAB] font-mono text-[10px]">
           {chartData?.source ? `${chartData.source} Daily Candles & Pivots` : assetSymbol.includes('/') ? 'Forex Daily Candles & Pivots' : '1D Candles & Pivots'} • {currencySymbol}
         </span>
       </div>

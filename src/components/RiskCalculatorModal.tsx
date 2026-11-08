@@ -6,6 +6,7 @@ import {
 import { TradingSignal, TradingHistoryEntry, AiAnalysisResult, CryptoCoin } from '../types';
 import { analyzeMarketWithGemini } from '../services/geminiService';
 import { t } from '../i18n';
+import { useModalA11y } from '../hooks/useModalA11y';
 
 interface Props {
   isOpen: boolean;
@@ -152,6 +153,7 @@ export const RiskCalculatorModal: React.FC<Props> = ({
     }
   };
 
+  const dialogRef = useModalA11y({ onClose, enabled: isOpen });
   if (!isOpen) return null;
 
   const fmtPrice = (v: number) =>
@@ -195,14 +197,20 @@ export const RiskCalculatorModal: React.FC<Props> = ({
   const labelCls = 'block text-[11px] text-[#9CA3AF] mb-1';
 
   return (
-    <div className="fixed inset-0 bg-black/70 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto">
+    <div
+      ref={dialogRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label="เครื่องคำนวณความเสี่ยงและขนาดโพซิชัน"
+      className="fixed inset-0 bg-black/70 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto"
+    >
       <div className="bg-[#1A1D29] border-t sm:border border-[#252A3A] rounded-t-3xl sm:rounded-3xl w-full sm:max-w-md p-5 sm:p-6 shadow-2xl max-h-[92vh] overflow-y-auto sm:my-8">
         <div className="flex justify-between items-center mb-4">
           <div className="flex items-center space-x-2 text-white">
             <Calculator className="w-5 h-5 text-[#7C6CFF]" />
             <h2 className="font-bold text-lg">{t('risk_calc.title')}</h2>
           </div>
-          <button onClick={onClose} className="text-[#6B7280] hover:text-white p-1" aria-label="ปิด">
+          <button onClick={onClose} className="text-[#909AAB] hover:text-white p-1" aria-label="ปิด">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -345,7 +353,7 @@ export const RiskCalculatorModal: React.FC<Props> = ({
                 </div>
                 <div className="flex items-center justify-between text-xs pt-1 border-t border-[#7C6CFF]/20">
                   <span className="text-[#A5B4FC]">SL {calc.slDistPct.toFixed(2)}% • TP {fmtPrice(calc.tp)}</span>
-                  <span className="text-[#6B7280]">SL {fmtPrice(calc.sl)}</span>
+                  <span className="text-[#909AAB]">SL {fmtPrice(calc.sl)}</span>
                 </div>
                 <p className="text-[11px] text-[#CBD5E1] leading-relaxed bg-[#0F1117]/60 rounded-xl px-3 py-2">
                   {t('risk_calc.results.summary', {
@@ -401,7 +409,7 @@ export const RiskCalculatorModal: React.FC<Props> = ({
                 {aiResult.strategyAdvice && (
                   <p className="text-[#A5B4FC] leading-relaxed">เทคนิก: {aiResult.strategyAdvice}</p>
                 )}
-                <p className="text-[11px] text-[#6B7280]">
+                <p className="text-[11px] text-[#909AAB]">
                   แนวรับ {fmtPrice(aiResult.supportLevel)} • แนวต้าน {fmtPrice(aiResult.resistanceLevel)}
                 </p>
               </div>
@@ -415,7 +423,7 @@ export const RiskCalculatorModal: React.FC<Props> = ({
               <span>{isAnalyzing ? t('risk_calc.ai.analyze_loading') : aiResult ? t('risk_calc.ai.reanalyze_btn') : t('risk_calc.ai.analyze_btn')}</span>
             </button>
             {!geminiApiKey && (
-              <p className="text-[10px] text-[#6B7280] text-center">
+              <p className="text-[10px] text-[#909AAB] text-center">
                 {t('risk_calc.ai.api_missing')}
               </p>
             )}

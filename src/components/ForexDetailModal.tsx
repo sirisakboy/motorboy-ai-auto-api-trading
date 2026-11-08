@@ -24,6 +24,7 @@ import {
   analyzeMarketWithGemini,
   fetchMarketSentimentScore,
 } from '../services/geminiService';
+import { useModalA11y } from '../hooks/useModalA11y';
 
 interface ForexDetailModalProps {
   forex: ForexPair | null;
@@ -51,6 +52,7 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
   const [sentiment, setSentiment] = useState<MarketSentimentScore | null>(null);
   const [isFetchingSentiment, setIsFetchingSentiment] = useState(false);
 
+  const dialogRef = useModalA11y({ onClose: onDismiss, enabled: !!forex });
   if (!forex) return null;
 
   const [base, quote] = forex.pair.includes('/')
@@ -187,6 +189,10 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
 
   return (
     <div
+      ref={dialogRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label="รายละเอียดคู่เงิน"
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/75 backdrop-blur-xs p-0 sm:p-4 overflow-y-auto"
       onClick={onDismiss}
       data-testid="forex_detail_sheet"
@@ -360,7 +366,7 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
                   <span className="text-2xl sm:text-3xl font-black text-white tracking-tight">
                     {sentiment.score}
                   </span>
-                  <span className="text-xs text-[#6B7280]">/ 100</span>
+                  <span className="text-xs text-[#909AAB]">/ 100</span>
                   <span className="text-[11px] text-[#A5B4FC] font-semibold ml-1">
                     [{sentiment.sentimentLabel.replace('_', ' ')}]
                   </span>
@@ -411,7 +417,7 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
               </div>
 
               {/* Scale Labels */}
-              <div className="flex justify-between text-[9px] text-[#6B7280] font-mono">
+              <div className="flex justify-between text-[9px] text-[#909AAB] font-mono">
                 <span>0 (Strong Sell)</span>
                 <span>50 (Neutral)</span>
                 <span>100 (Strong Buy)</span>
@@ -546,7 +552,7 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
                       </span>
                     </div>
 
-                    <span className="text-[10px] text-[#6B7280]">
+                    <span className="text-[10px] text-[#909AAB]">
                       {aiResult.source === 'GEMINI_AI' ? 'Gemini AI' : 'Technical Engine'}
                     </span>
                   </div>
@@ -559,7 +565,7 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
                   {/* Support & Resistance AI Derived */}
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <div className="bg-[#1A1D29] p-2.5 rounded-xl border border-[#252A3A]">
-                      <span className="text-[#6B7280] text-[10px] block">
+                      <span className="text-[#909AAB] text-[10px] block">
                         แนวรับ AI (Support)
                       </span>
                       <span className="text-[#4ADE80] font-bold font-mono">
@@ -567,7 +573,7 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
                       </span>
                     </div>
                     <div className="bg-[#1A1D29] p-2.5 rounded-xl border border-[#252A3A]">
-                      <span className="text-[#6B7280] text-[10px] block">
+                      <span className="text-[#909AAB] text-[10px] block">
                         แนวต้าน AI (Resistance)
                       </span>
                       <span className="text-[#f9df7b] font-bold font-mono">
@@ -632,7 +638,7 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
             <div className="space-y-2.5">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div className="bg-[#0F1117] border border-[#252A3A] rounded-xl p-3">
-                  <span className="text-[#6B7280] text-[10px] block">สถานะสัญญาณ</span>
+                  <span className="text-[#909AAB] text-[10px] block">สถานะสัญญาณ</span>
                   <p className="text-white text-xs font-bold mt-0.5">{activeSignal.statusText}</p>
                   <p className="text-[#9CA3AF] text-[10px] mt-0.5 leading-snug">
                     {activeSignal.reason}
@@ -640,7 +646,7 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
                 </div>
 
                 <div className="bg-[#0F1117] border border-[#252A3A] rounded-xl p-3">
-                  <span className="text-[#6B7280] text-[10px] block">EMA & Momentum</span>
+                  <span className="text-[#909AAB] text-[10px] block">EMA & Momentum</span>
                   <p
                     className={`text-xs font-bold mt-0.5 ${
                       forex.change >= 0 ? 'text-[#4ADE80]' : 'text-[#f9df7b]'
@@ -667,7 +673,7 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
                     <span className="text-white font-mono font-bold">
                       {displaySupport}
                     </span>
-                    <span className="text-[#6B7280] text-[9px] block">
+                    <span className="text-[#909AAB] text-[9px] block">
                       กรอบราคาต่ำสุด 90 วัน / Swing Low
                     </span>
                   </div>
@@ -678,7 +684,7 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
                     <span className="text-white font-mono font-bold">
                       {displayResistance}
                     </span>
-                    <span className="text-[#6B7280] text-[9px] block">
+                    <span className="text-[#909AAB] text-[9px] block">
                       กรอบราคาสูงสุด 90 วัน / Swing High
                     </span>
                   </div>
@@ -686,7 +692,7 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
               </div>
 
               <div className="bg-[#0F1117] border border-[#252A3A] rounded-xl p-3">
-                <span className="text-[#6B7280] text-[10px] block">
+                <span className="text-[#909AAB] text-[10px] block">
                   สภาพคล่องและโฟลว์การซื้อขาย (Interbank FX Liquidity)
                 </span>
                 <p className="text-white text-xs font-bold mt-0.5">
@@ -714,7 +720,7 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
                   <span className="text-white font-mono font-bold text-sm block mt-0.5">
                     {displaySl}
                   </span>
-                  <span className="text-[#6B7280] text-[10px] block mt-0.5">
+                  <span className="text-[#909AAB] text-[10px] block mt-0.5">
                     -{slPercent}% จากจุดเข้า (ใต้แนวรับ {displaySupport})
                   </span>
                 </div>
@@ -726,7 +732,7 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
                   <span className="text-white font-mono font-bold text-sm block mt-0.5">
                     {displayTp}
                   </span>
-                  <span className="text-[#6B7280] text-[10px] block mt-0.5">
+                  <span className="text-[#909AAB] text-[10px] block mt-0.5">
                     +{tpPercent}% เป้ากำไร (ใกล้แนวต้าน {displayResistance})
                   </span>
                 </div>
@@ -750,7 +756,7 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
                   <h4 className="text-white text-xs font-bold">
                     Momentum Score (โมเมนตัมเทคนิคัล)
                   </h4>
-                  <p className="text-[#6B7280] text-[11px] mt-0.5">
+                  <p className="text-[#909AAB] text-[11px] mt-0.5">
                     ประเมินจากขนาดการเปลี่ยนแปลงราคา 24 ชม. และแนวโน้มทิศทางของคู่เงิน (โดยประมาณ ไม่ใช่ผลลัพธ์ AI)
                   </p>
                 </div>
@@ -767,7 +773,7 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
                 ))}
               </div>
 
-              <p className="text-[#6B7280] text-[10px]">
+              <p className="text-[#909AAB] text-[10px]">
                 Tags: {activeSignal.tags.join(' • ')} • วิเคราะห์อิงระดับแนวรับ {displaySupport} / แนวต้าน {displayResistance}
               </p>
             </div>

@@ -17,6 +17,10 @@ export default defineConfig(({ mode }) => {
     server: {
       host: '0.0.0.0',
       port: 3000,
+      // Required when the dev server is reached through a proxy/preview host
+      // (Arena previews, tunnels, e2b sandboxes). Vite 6 blocks unknown Host
+      // headers by default, which broke the live preview with a 403.
+      allowedHosts: true,
       proxy: {
         '/api/yahoo': {
           target: 'https://query1.finance.yahoo.com',

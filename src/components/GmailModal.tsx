@@ -26,6 +26,7 @@ import {
 } from '../services/gmailService';
 import { TradingSignal } from '../types';
 import { sanitizeEmailHtml } from '../services/sanitizeHtml';
+import { useModalA11y } from '../hooks/useModalA11y';
 
 interface GmailModalProps {
   isOpen: boolean;
@@ -242,10 +243,17 @@ export const GmailModal: React.FC<GmailModalProps> = ({
     }
   };
 
+  const dialogRef = useModalA11y({ onClose, enabled: isOpen });
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/75 backdrop-blur-xs">
+    <div
+      ref={dialogRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label="กล่องแจ้งเตือน Gmail"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/75 backdrop-blur-xs"
+    >
       <div
         className={`w-full max-w-4xl h-[90vh] max-h-[780px] rounded-2xl flex flex-col overflow-hidden shadow-2xl border ${
           isDark ? 'bg-[#0F1117] border-[#252A3A] text-white' : 'bg-white border-[#E2E8F0] text-slate-900'
@@ -295,6 +303,7 @@ export const GmailModal: React.FC<GmailModalProps> = ({
             <button
               type="button"
               onClick={onClose}
+              aria-label="ปิดหน้าต่าง Gmail"
               className={`p-2 rounded-lg border transition-colors ${
                 isDark
                   ? 'border-[#252A3A] text-[#9CA3AF] hover:text-white hover:bg-[#1F2330]'
@@ -358,7 +367,7 @@ export const GmailModal: React.FC<GmailModalProps> = ({
               )}
             </button>
 
-            <div className="mt-8 flex items-center space-x-2 text-xs text-[#6B7280]">
+            <div className="mt-8 flex items-center space-x-2 text-xs text-[#909AAB]">
               <ShieldCheck className="w-4 h-4 text-[#22C55E]" />
               <span>ความปลอดภัยตามมาตรฐาน Google Workspace API • จัดเก็บโทเค็นในหน่วยความจำเท่านั้น</span>
             </div>
@@ -431,7 +440,7 @@ export const GmailModal: React.FC<GmailModalProps> = ({
                   {/* Search and Filters */}
                   <div className="p-3 border-b border-[#252A3A] space-y-2">
                     <div className="relative">
-                      <Search className="w-4 h-4 absolute left-3 top-2.5 text-[#6B7280]" />
+                      <Search className="w-4 h-4 absolute left-3 top-2.5 text-[#909AAB]" />
                       <input
                         type="text"
                         placeholder="ค้นหาอีเมลใน Gmail..."
@@ -442,7 +451,7 @@ export const GmailModal: React.FC<GmailModalProps> = ({
                         }}
                         className={`w-full pl-9 pr-3 py-1.5 rounded-xl text-xs border focus:outline-hidden focus:border-[#7C6CFF] ${
                           isDark
-                            ? 'bg-[#1A1D29] border-[#252A3A] text-white placeholder-[#6B7280]'
+                            ? 'bg-[#1A1D29] border-[#252A3A] text-white placeholder-[#6F7787]'
                             : 'bg-white border-slate-200 text-slate-900 placeholder-slate-400'
                         }`}
                       />
@@ -520,7 +529,7 @@ export const GmailModal: React.FC<GmailModalProps> = ({
                       </div>
                     ) : messages.length === 0 ? (
                       <div className="p-8 text-center text-xs text-[#9CA3AF] space-y-2">
-                        <Mail className="w-8 h-8 mx-auto text-[#6B7280]" />
+                        <Mail className="w-8 h-8 mx-auto text-[#909AAB]" />
                         <p>ไม่พบข้อความตามเงื่อนไขที่เลือก</p>
                       </div>
                     ) : (
@@ -546,7 +555,7 @@ export const GmailModal: React.FC<GmailModalProps> = ({
                             >
                               {m.from.split('<')[0].replace(/"/g, '') || m.from}
                             </span>
-                            <span className="text-[10px] text-[#6B7280] shrink-0 ml-2">
+                            <span className="text-[10px] text-[#909AAB] shrink-0 ml-2">
                               {m.date ? new Date(m.date).toLocaleDateString('th-TH') : ''}
                             </span>
                           </div>
@@ -557,7 +566,7 @@ export const GmailModal: React.FC<GmailModalProps> = ({
                           >
                             {m.subject}
                           </p>
-                          <p className="text-[11px] text-[#6B7280] line-clamp-1">{m.snippet}</p>
+                          <p className="text-[11px] text-[#909AAB] line-clamp-1">{m.snippet}</p>
                         </div>
                       ))
                     )}
@@ -606,11 +615,11 @@ export const GmailModal: React.FC<GmailModalProps> = ({
                         </h3>
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs text-[#9CA3AF] gap-1">
                           <div>
-                            <span className="text-[#6B7280]">จาก: </span>
+                            <span className="text-[#909AAB]">จาก: </span>
                             <span className="text-white font-medium">{selectedMessage.from}</span>
                           </div>
                           <div>
-                            <span className="text-[#6B7280]">ส่งเมื่อ: </span>
+                            <span className="text-[#909AAB]">ส่งเมื่อ: </span>
                             <span>{selectedMessage.date}</span>
                           </div>
                         </div>
@@ -631,10 +640,10 @@ export const GmailModal: React.FC<GmailModalProps> = ({
                       </div>
                     </div>
                   ) : (
-                    <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-[#6B7280]">
+                    <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-[#909AAB]">
                       <Mail className="w-12 h-12 mb-3 stroke-1 text-[#3E455B]" />
                       <p className="text-sm font-semibold text-[#9CA3AF]">เลือกอีเมลเพื่อดูรายละเอียด</p>
-                      <p className="text-xs text-[#6B7280] mt-1 max-w-xs">
+                      <p className="text-xs text-[#909AAB] mt-1 max-w-xs">
                         ตรวจสอบรายงานการส่งคำสั่งซื้อขายหรือข้อความเตือนจากโบรเกอร์และระบบของคุณ
                       </p>
                     </div>
@@ -787,17 +796,17 @@ export const GmailModal: React.FC<GmailModalProps> = ({
 
               <div className="p-3 rounded-xl bg-[#0F1117] border border-[#252A3A] text-xs space-y-1.5">
                 <div>
-                  <span className="text-[#6B7280]">ผู้รับ: </span>
+                  <span className="text-[#909AAB]">ผู้รับ: </span>
                   <span className="text-white font-semibold">{recipient}</span>
                 </div>
                 <div>
-                  <span className="text-[#6B7280]">หัวเรื่อง: </span>
+                  <span className="text-[#909AAB]">หัวเรื่อง: </span>
                   <span className="text-white font-semibold">
                     {subject.trim() || '[Trading Engine Pro] รายงานสรุปสัญญาณการเทรด'}
                   </span>
                 </div>
                 <div>
-                  <span className="text-[#6B7280]">ประเภทข้อมูล: </span>
+                  <span className="text-[#909AAB]">ประเภทข้อมูล: </span>
                   <span className="text-[#A5B4FC]">
                     {includeSignalReport ? 'รายงานสัญญาณและระดับราคาอัตโนมัติ' : 'ข้อความกำหนดเอง'}
                   </span>

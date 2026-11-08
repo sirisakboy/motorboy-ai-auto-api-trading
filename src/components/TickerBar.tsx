@@ -40,7 +40,7 @@ export const TickerBar: React.FC<TickerBarProps> = ({ coins, useThb, usdThbRate 
                 </span>
               </div>
               {index < Math.min(coins.length, 6) - 1 && (
-                <span className="text-[#374151] select-none text-[10px]" aria-hidden="true">
+                <span className="text-[#5B6478] select-none text-[10px]" aria-hidden="true">
                   •
                 </span>
               )}

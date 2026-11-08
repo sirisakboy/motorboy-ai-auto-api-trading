@@ -3,6 +3,11 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @layer base {
+  /* Dark-only UI: keep native controls, scrollbars and form widgets dark. */
+  html {
+    color-scheme: dark;
+  }
+
   body {
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
@@ -13,6 +18,26 @@
   code, pre {
     font-family: 'JetBrains Mono', monospace;
   }
+
+  /* Calm 200ms default for interactive elements.
+     Scoped on purpose: a blanket `* { transition-duration: 400ms }` used to
+     override every `duration-*` utility in the app (20 of them), so intentional
+     150/300/500ms animations silently became 400ms. */
+  button,
+  a,
+  input,
+  select,
+  textarea,
+  summary {
+    transition-duration: 200ms;
+  }
+}
+
+/* Keyboard focus must always be visible — several inputs use
+   `focus:outline-hidden`, which removed the only affordance for tab users. */
+:where(button, a, [role='button'], input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid #7C6CFF;
+  outline-offset: 2px;
 }
 
 /* Soothing slowed-down (20-30% slower) animations to match healing nature audio */
@@ -43,11 +68,6 @@
   animation: calmMarquee 42s linear infinite;
 }
 
-/* Global 20-30% smoother card & UI hover transitions */
-*, *::before, *::after {
-  transition-duration: 400ms;
-}
-
 /* Custom Eye-Friendly Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
@@ -65,4 +85,17 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: #f9df7b;
+}
+
+/* Respect the OS "reduce motion" setting (WCAG 2.3.3): the app ships a lot of
+   marquees, pulses and glows that must be switchable off. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

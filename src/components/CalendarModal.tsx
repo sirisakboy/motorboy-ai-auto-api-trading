@@ -7,6 +7,7 @@ import {
   fetchCalendarEvents, createCalendarEvent, upcomingWindow, CalendarEventItem,
 } from '../services/calendarService';
 import { clearCachedAccessToken } from '../services/gmailService';
+import { useModalA11y } from '../hooks/useModalA11y';
 
 interface CalendarModalProps {
   isOpen: boolean;
@@ -121,6 +122,7 @@ export const CalendarModal: React.FC<CalendarModalProps> = ({ isOpen, onClose, i
     }
   };
 
+  const dialogRef = useModalA11y({ onClose, enabled: isOpen });
   if (!isOpen) return null;
 
   const tabBtn = (id: Tab, label: string, icon: React.ReactNode) => (
@@ -137,7 +139,13 @@ export const CalendarModal: React.FC<CalendarModalProps> = ({ isOpen, onClose, i
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-6 bg-black/75 backdrop-blur-xs overflow-y-auto">
+    <div
+      ref={dialogRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label="ปฏิทินกิจกรรม Google Calendar"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-6 bg-black/75 backdrop-blur-xs overflow-y-auto"
+    >
       <div className={`w-full sm:max-w-2xl rounded-t-2xl sm:rounded-2xl flex flex-col overflow-hidden border-t sm:border max-h-[92vh] sm:my-8 ${isDark ? 'bg-[#0F1117] text-white border-[#252A3A]' : 'bg-white text-slate-900 border-slate-200'}`}>
         {/* Header + connection status */}
         <div className="flex justify-between items-center px-5 py-4 border-b border-[#252A3A]/60">
@@ -146,7 +154,7 @@ export const CalendarModal: React.FC<CalendarModalProps> = ({ isOpen, onClose, i
             Google Calendar
             <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-[#22C55E]/15 border border-[#22C55E]/40 text-[#4ADE80]">● เชื่อมผ่าน SSO</span>
           </h2>
-          <button onClick={onClose} className="text-[#6B7280] hover:text-white p-1" aria-label="ปิดปฏิทิน">
+          <button onClick={onClose} className="text-[#909AAB] hover:text-white p-1" aria-label="ปิดปฏิทิน">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -224,7 +232,7 @@ export const CalendarModal: React.FC<CalendarModalProps> = ({ isOpen, onClose, i
                               {fmtTime(e.start?.dateTime || e.start?.date)} → {fmtTime(e.end?.dateTime || e.end?.date)}
                             </p>
                           </div>
-                          <ChevronDown className={`w-4 h-4 shrink-0 text-[#6B7280] transition-transform ${expanded ? 'rotate-180' : ''}`} />
+                          <ChevronDown className={`w-4 h-4 shrink-0 text-[#909AAB] transition-transform ${expanded ? 'rotate-180' : ''}`} />
                         </button>
                         {expanded && (
                           <div className="mt-2 pt-2 border-t border-[#252A3A]/60 space-y-1.5 text-xs text-[#CBD5E1]">
@@ -293,7 +301,7 @@ export const CalendarModal: React.FC<CalendarModalProps> = ({ isOpen, onClose, i
                 <Plus className="w-4 h-4" />
                 <span>{isCreating ? 'กำลังสร้าง...' : 'สร้างกิจกรรมในปฏิทินหลัก'}</span>
               </button>
-              <p className="text-[11px] text-[#6B7280]">สร้างลงปฏิทินหลัก (primary) ของบัญชีที่ล็อกอินเท่านั้น</p>
+              <p className="text-[11px] text-[#909AAB]">สร้างลงปฏิทินหลัก (primary) ของบัญชีที่ล็อกอินเท่านั้น</p>
             </div>
           )}
 

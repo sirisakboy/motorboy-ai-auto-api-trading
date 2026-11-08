@@ -19,6 +19,7 @@ import {
   analyzeMarketWithGemini,
   fetchMarketSentimentScore,
 } from '../services/geminiService';
+import { useModalA11y } from '../hooks/useModalA11y';
 
 interface StockDetailModalProps {
   symbol: string;
@@ -80,8 +81,19 @@ export const StockDetailModal: React.FC<StockDetailModalProps> = ({
     } catch (err) { console.warn('Failed to save:', err); }
   };
 
+  const dialogRef = useModalA11y({ onClose: onDismiss });
+
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/75 backdrop-blur-sm overflow-y-auto" onClick={(e) => { if (e.target === e.currentTarget) onDismiss(); }}>
+    <div
+      ref={dialogRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label={`รายละเอียดหุ้น ${symbol}`}
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/75 backdrop-blur-sm overflow-y-auto"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onDismiss();
+      }}
+    >
       <div className="w-full sm:max-w-2xl bg-[#131722] border-t sm:border border-[#2A2E39] rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] sm:my-8 flex flex-col">
         <div className="p-5 border-b border-[#2A2E39] flex items-start justify-between bg-gradient-to-r from-[#1E222D] to-[#131722]">
           <div className="flex-1 pr-4">
@@ -98,7 +110,7 @@ export const StockDetailModal: React.FC<StockDetailModalProps> = ({
               <span className={`text-sm font-bold ${change >= 0 ? 'text-[#22C55E]' : 'text-[#f9df7b]'}`}>{change >= 0 ? '+' : ''}{change.toFixed(2)}%</span>
             </div>
           </div>
-          <button onClick={onDismiss} className="text-[#94A3B8] hover:text-white p-1.5 rounded-lg hover:bg-[#2A2E39] transition-colors shrink-0"><X className="w-5 h-5" /></button>
+          <button type="button" onClick={onDismiss} aria-label="ปิดหน้าต่างรายละเอียดหุ้น" className="text-[#94A3B8] hover:text-white p-1.5 rounded-lg hover:bg-[#2A2E39] transition-colors shrink-0"><X className="w-5 h-5" /></button>
         </div>
 
         <div className="flex border-b border-[#2A2E39] bg-[#171B26] px-5 pt-2 gap-2 text-xs">

@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { TradingPsychologySettings } from '../types';
 import { testGeminiApiKeyWithSearch } from '../services/geminiService';
+import { useModalA11y } from '../hooks/useModalA11y';
 
 interface SettingsDialogProps {
   useThb: boolean;
@@ -127,8 +128,14 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
     }
   };
 
+  const dialogRef = useModalA11y({ onClose: onDismiss });
+
   return (
     <div
+      ref={dialogRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label="ตั้งค่าและคีย์ API"
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/75 backdrop-blur-xs p-0 sm:p-4 overflow-y-auto"
       onClick={onDismiss}
       data-testid="settings_dialog"
@@ -150,7 +157,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
           <button
             type="button"
             onClick={onDismiss}
-            className="text-[#6B7280] hover:text-white p-1 rounded-lg transition-colors"
+            aria-label="ปิดหน้าต่างตั้งค่า"
+            className="text-[#909AAB] hover:text-white p-1 rounded-lg transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -259,7 +267,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowKey(!showKey)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6B7280] hover:text-white p-1 cursor-pointer"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#909AAB] hover:text-white p-1 cursor-pointer"
                 >
                   {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -267,7 +275,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
 
               {/* Quick link to poolside AI Platform & AI Studio */}
               <div className="flex items-center justify-between px-1">
-                <span className="text-[10px] text-[#6B7280]">ต้องการ API Key เพิ่มเติม?</span>
+                <span className="text-[10px] text-[#909AAB]">ต้องการ API Key เพิ่มเติม?</span>
                 <a
                   href="https://poolside.ai"
                   target="_blank"
@@ -365,7 +373,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-white text-xs font-semibold">สกุลเงินแสดงผล</h3>
-            <p className="text-[#6B7280] text-[11px]">
+            <p className="text-[#909AAB] text-[11px]">
               {useThb ? 'บาทไทย (฿ THB)' : 'ดอลลาร์สหรัฐ ($ USD)'}
             </p>
           </div>
@@ -391,7 +399,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-white text-xs font-semibold">การแจ้งเตือนสัญญาณ</h3>
-            <p className="text-[#6B7280] text-[11px]">
+            <p className="text-[#909AAB] text-[11px]">
               {notificationsEnabled ? 'เปิดใช้งานและส่งเตือน' : 'ปิดการแจ้งเตือนอยู่'}
             </p>
           </div>
@@ -449,7 +457,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
           <form onSubmit={handleSaveAlert} className="space-y-2.5">
             <div className="grid grid-cols-5 gap-2">
               <div className="col-span-2">
-                <label className="text-[10px] text-[#6B7280] block mb-1">เหรียญ</label>
+                <label className="text-[10px] text-[#909AAB] block mb-1">เหรียญ</label>
                 <input
                   type="text"
                   value={symbolInput}
@@ -459,7 +467,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                 />
               </div>
               <div className="col-span-3">
-                <label className="text-[10px] text-[#6B7280] block mb-1">ราคาเป้าหมาย ($ USD)</label>
+                <label className="text-[10px] text-[#909AAB] block mb-1">ราคาเป้าหมาย ($ USD)</label>
                 <input
                   type="number"
                   step="any"
@@ -505,7 +513,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                       <button
                         type="button"
                         onClick={() => onRemoveAlert(a.symbol, a.targetPrice)}
-                        className="text-[#6B7280] hover:text-[#f9df7b] p-1"
+                        className="text-[#909AAB] hover:text-[#f9df7b] p-1"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -519,7 +527,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
 
         {/* Footer */}
         <div className="pt-2 border-t border-[#252A3A] flex items-center justify-between">
-          <div className="flex items-center space-x-1 text-[11px] text-[#6B7280]">
+          <div className="flex items-center space-x-1 text-[11px] text-[#909AAB]">
             <ShieldCheck className="w-3.5 h-3.5 text-[#22C55E]" />
             <span>ข้อมูลทั้งหมดซิงค์ด้วยบัญชี Google ของคุณ</span>
           </div>

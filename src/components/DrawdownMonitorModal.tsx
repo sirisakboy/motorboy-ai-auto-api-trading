@@ -28,6 +28,7 @@ import {
   saveCustomPeak,
   playDrawdownAlertChime,
 } from '../services/drawdownService';
+import { useModalA11y } from '../hooks/useModalA11y';
 
 interface DrawdownMonitorModalProps {
   isOpen: boolean;
@@ -113,6 +114,7 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
     });
   }, [processedAssets, selectedCategory, searchQuery]);
 
+  const dialogRef = useModalA11y({ onClose, enabled: isOpen });
   if (!isOpen) return null;
 
   const handleSaveThresholdSettings = () => {
@@ -209,7 +211,13 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-xs overflow-y-auto">
+    <div
+      ref={dialogRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label="ติดตาม Drawdown ของพอร์ต"
+      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-xs overflow-y-auto"
+    >
       <div
         className={`w-full max-w-5xl rounded-2xl flex flex-col overflow-hidden border shadow-2xl max-h-[94vh] my-auto ${
           isDark ? 'bg-[#0F1117] text-white border-[#252A3A]' : 'bg-white text-slate-900 border-slate-200'

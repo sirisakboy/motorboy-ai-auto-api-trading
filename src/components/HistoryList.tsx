@@ -183,13 +183,13 @@ export const HistoryList: React.FC<HistoryListProps> = ({
         </div>
 
         <div className="relative">
-          <Search className="w-4 h-4 text-[#6B7280] absolute left-3 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-[#909AAB] absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="ค้นหาในประวัติ..."
-            className="w-full sm:w-56 bg-[#1A1D29] border border-[#252A3A] focus:border-[#7C6CFF] rounded-xl pl-9 pr-3 py-1.5 text-xs text-white outline-none placeholder-[#6B7280]"
+            className="w-full sm:w-56 bg-[#1A1D29] border border-[#252A3A] focus:border-[#7C6CFF] rounded-xl pl-9 pr-3 py-1.5 text-xs text-white outline-none placeholder-[#6F7787]"
           />
         </div>
       </div>
@@ -202,7 +202,7 @@ export const HistoryList: React.FC<HistoryListProps> = ({
           </div>
           <div>
             <h3 className="text-white font-bold text-sm">ยังไม่มีประวัติในหมวดหมู่นี้</h3>
-            <p className="text-[#6B7280] text-xs mt-1 max-w-md mx-auto leading-relaxed">
+            <p className="text-[#909AAB] text-xs mt-1 max-w-md mx-auto leading-relaxed">
               ระบบมีกลไก <strong>Auto-Analysis ทุก 1 ชั่วโมง</strong> ที่สรุปปัจจัยที่มีผลต่อราคาลงประวัตินี้โดยอัตโนมัติ
               รวมถึงการวิเคราะห์โครงการก่อสร้างและขยายบริษัทเพื่อการลงทุนระยะยาว
             </p>
@@ -327,13 +327,13 @@ export const HistoryList: React.FC<HistoryListProps> = ({
                   </div>
 
                   <div className="flex items-center space-x-2">
-                    <span className="text-[10px] text-[#6B7280]">
+                    <span className="text-[10px] text-[#909AAB]">
                       {formatDate(item.timestamp)}
                     </span>
                     <button
                       type="button"
                       onClick={() => onDeleteEntry(item.id)}
-                      className="text-[#6B7280] hover:text-[#f9df7b] p-1 transition-colors rounded-lg"
+                      className="text-[#909AAB] hover:text-[#f9df7b] p-1 transition-colors rounded-lg"
                       title="ลบรายการนี้"
                     >
                       <Trash2 className="w-3.5 h-3.5" />

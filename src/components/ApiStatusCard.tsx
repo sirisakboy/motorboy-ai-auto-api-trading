@@ -167,7 +167,7 @@ export const ApiStatusCard: React.FC<ApiStatusCardProps> = ({ status, onRefresh 
                     <span className="text-white text-xs font-semibold block truncate">
                       {svc.label}
                     </span>
-                    <span className="text-[#6B7280] text-[10px] block font-mono truncate">
+                    <span className="text-[#909AAB] text-[10px] block font-mono truncate">
                       {svc.type}
                     </span>
                   </div>
@@ -180,13 +180,13 @@ export const ApiStatusCard: React.FC<ApiStatusCardProps> = ({ status, onRefresh 
               {showDetails && (
                 <div className="mt-1.5 pt-1.5 border-t border-[#252A3A]/40 text-[10px] space-y-0.5">
                   <div className="text-[#9CA3AF] flex items-center justify-between">
-                    <span className="text-[#6B7280]">Endpoint:</span>
+                    <span className="text-[#909AAB]">Endpoint:</span>
                     <span className="font-mono text-[#D1D5DB] truncate max-w-[200px]">
                       {svc.source}
                     </span>
                   </div>
                   <div className="text-[#9CA3AF] flex items-center justify-between">
-                    <span className="text-[#6B7280]">Failover:</span>
+                    <span className="text-[#909AAB]">Failover:</span>
                     <span className="text-[#A5B4FC] truncate max-w-[200px]">
                       {svc.failover}
                     </span>
@@ -218,7 +218,7 @@ export const ApiStatusCard: React.FC<ApiStatusCardProps> = ({ status, onRefresh 
           )}
         </button>
 
-        <span className="text-[#6B7280] font-mono">
+        <span className="text-[#909AAB] font-mono">
           {status.lastChecked ? `อัปเดต: ${status.lastChecked}` : 'พร้อมทำงาน 100%'}
         </span>
       </div>

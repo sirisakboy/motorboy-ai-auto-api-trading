@@ -8,6 +8,35 @@
 export const THB_MULTIPLIER = 36.45;
 
 /**
+ * Live USD→THB rate.
+ *
+ * `formatPrice()` is called from ~20 leaf components that do not all receive the
+ * forex feed, so the active rate is stored here once (see
+ * `App.tsx` → `setActiveUsdThbRate`) instead of being prop-drilled everywhere.
+ * Keeping it here guarantees the ticker, the cards and the modals all convert
+ * with the same number — previously the ticker used the live rate while
+ * `formatPrice()` kept the hardcoded 36.45.
+ */
+let activeUsdThbRate: number | null = null;
+
+/** Update the active USD→THB rate. Non-finite / non-positive values are ignored. */
+export function setActiveUsdThbRate(rate?: number | null): void {
+  if (typeof rate === 'number' && isFinite(rate) && rate > 0) {
+    activeUsdThbRate = rate;
+  }
+}
+
+/** Current USD→THB rate (live when known, otherwise the static fallback). */
+export function getActiveUsdThbRate(): number {
+  return activeUsdThbRate ?? THB_MULTIPLIER;
+}
+
+/** Test helper: forget any live rate and fall back to THB_MULTIPLIER. */
+export function resetActiveUsdThbRate(): void {
+  activeUsdThbRate = null;
+}
+
+/**
  * Resolve the live USD→THB rate from polled forex pairs.
  * Falls back to THB_MULTIPLIER when offline so UI never breaks.
  */
@@ -41,8 +70,11 @@ export function getCurrencyPrefix(mode: CurrencyMode): string {
 }
 
 /** Return the numeric multiplier to convert to the active display currency. */
-export function getMultiplier(mode: CurrencyMode): number {
-  return mode === 'THB' ? THB_MULTIPLIER : 1;
+export function getMultiplier(mode: CurrencyMode, usdThbRate?: number): number {
+  if (mode !== 'THB') return 1;
+  return usdThbRate && isFinite(usdThbRate) && usdThbRate > 0
+    ? usdThbRate
+    : getActiveUsdThbRate();
 }
 
 export interface FormatPriceOptions {
@@ -54,6 +86,8 @@ export interface FormatPriceOptions {
   isForex?: boolean;
   /** Show trailing quote suffix e.g. " USDT" (mainly for forex display). */
   quoteSuffix?: string;
+  /** Explicit USD→THB rate; defaults to the app-wide live rate. */
+  usdThbRate?: number;
 }
 
 /**
@@ -69,8 +103,9 @@ export function formatPrice({
   mode = 'USD',
   isForex = false,
   quoteSuffix = '',
+  usdThbRate,
 }: FormatPriceOptions): string {
-  const multiplier = getMultiplier(mode);
+  const multiplier = getMultiplier(mode, usdThbRate);
   const prefix = getCurrencyPrefix(mode);
   const decimals = getDecimals(price, isForex);
 
@@ -92,9 +127,10 @@ export function formatPrice({
  */
 export function formatPriceSimple(
   price: number,
-  mode: CurrencyMode = 'USD'
+  mode: CurrencyMode = 'USD',
+  usdThbRate?: number
 ): string {
-  const multiplier = getMultiplier(mode);
+  const multiplier = getMultiplier(mode, usdThbRate);
   const prefix = getCurrencyPrefix(mode);
   const value = price * multiplier;
   return `${prefix}${value.toLocaleString(undefined, {

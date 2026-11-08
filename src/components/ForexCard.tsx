@@ -80,7 +80,7 @@ export const ForexCard: React.FC<ForexCardProps> = ({
                 {forex.isLive === false ? '○ STALE' : '● LIVE'}
               </span>
             </div>
-            <p className="text-[#6B7280] text-[11px] leading-tight mt-0.5 truncate">
+            <p className="text-[#909AAB] text-[11px] leading-tight mt-0.5 truncate">
               {currentSignal?.sources?.join(' • ') || 'open.er-api • Frankfurter • Bloomberg'}
             </p>
           </div>
@@ -93,7 +93,7 @@ export const ForexCard: React.FC<ForexCardProps> = ({
               e.stopPropagation();
               onToggleWatchlist(forex.pair);
             }}
-            className="p-2 text-[#6B7280] hover:text-[#7C6CFF] transition-colors rounded-full"
+            className="p-2 text-[#909AAB] hover:text-[#7C6CFF] transition-colors rounded-full"
             aria-label="Toggle Watchlist"
             data-testid={`watchlist_btn_${forex.pair}`}
           >
@@ -101,7 +101,7 @@ export const ForexCard: React.FC<ForexCardProps> = ({
               className={`w-5 h-5 ${
                 isWatchlisted
                   ? 'fill-[#7C6CFF] text-[#7C6CFF]'
-                  : 'text-[#6B7280]'
+                  : 'text-[#909AAB]'
               }`}
             />
           </button>

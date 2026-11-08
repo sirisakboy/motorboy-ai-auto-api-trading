@@ -25,6 +25,7 @@ import {
   fetchMarketSentimentScore,
 } from '../services/geminiService';
 import { t } from '../i18n';
+import { useModalA11y } from '../hooks/useModalA11y';
 
 interface SignalDetailModalProps {
   signal: TradingSignal | null;
@@ -55,6 +56,8 @@ export const SignalDetailModal: React.FC<SignalDetailModalProps> = ({
   // Market Sentiment Score state
   const [sentiment, setSentiment] = useState<MarketSentimentScore | null>(null);
   const [isFetchingSentiment, setIsFetchingSentiment] = useState(false);
+
+  const dialogRef = useModalA11y({ onClose: onDismiss, enabled: !!signal });
 
   if (!signal) return null;
 
@@ -163,6 +166,10 @@ export const SignalDetailModal: React.FC<SignalDetailModalProps> = ({
 
   return (
     <div
+      ref={dialogRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label="รายละเอียดสัญญาณเทรด"
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/75 backdrop-blur-xs p-0 sm:p-4 overflow-y-auto"
       onClick={onDismiss}
       data-testid="signal_detail_sheet"
@@ -338,7 +345,7 @@ export const SignalDetailModal: React.FC<SignalDetailModalProps> = ({
                   <span className="text-2xl sm:text-3xl font-black text-white tracking-tight">
                     {sentiment.score}
                   </span>
-                  <span className="text-xs text-[#6B7280]">/ 100</span>
+                  <span className="text-xs text-[#909AAB]">/ 100</span>
                   <span className="text-[11px] text-[#A5B4FC] font-semibold ml-1">
                     [{sentiment.sentimentLabel.replace('_', ' ')}]
                   </span>
@@ -389,7 +396,7 @@ export const SignalDetailModal: React.FC<SignalDetailModalProps> = ({
               </div>
 
               {/* Scale Labels */}
-              <div className="flex justify-between text-[9px] text-[#6B7280] font-mono">
+              <div className="flex justify-between text-[9px] text-[#909AAB] font-mono">
                 <span>0 (Extreme Fear)</span>
                 <span>50 (Neutral)</span>
                 <span>100 (Extreme Greed)</span>
@@ -532,7 +539,7 @@ export const SignalDetailModal: React.FC<SignalDetailModalProps> = ({
                       </span>
                     </div>
 
-                    <span className="text-[10px] text-[#6B7280]">
+                    <span className="text-[10px] text-[#909AAB]">
                       {aiResult.source === 'GEMINI_AI' ? 'Gemini AI' : 'Technical Engine'}
                     </span>
                   </div>
@@ -545,7 +552,7 @@ export const SignalDetailModal: React.FC<SignalDetailModalProps> = ({
                   {/* Support & Resistance AI Derived */}
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <div className="bg-[#1A1D29] p-2.5 rounded-xl border border-[#252A3A]">
-                      <span className="text-[#6B7280] text-[10px] block">
+                      <span className="text-[#909AAB] text-[10px] block">
                         {t('signal_detail.ai_analysis.ai_support')}
                       </span>
                       <span className="text-[#4ADE80] font-bold font-mono">
@@ -553,7 +560,7 @@ export const SignalDetailModal: React.FC<SignalDetailModalProps> = ({
                       </span>
                     </div>
                     <div className="bg-[#1A1D29] p-2.5 rounded-xl border border-[#252A3A]">
-                      <span className="text-[#6B7280] text-[10px] block">
+                      <span className="text-[#909AAB] text-[10px] block">
                         {t('signal_detail.ai_analysis.ai_resistance')}
                       </span>
                       <span className="text-[#f9df7b] font-bold font-mono">
@@ -586,7 +593,7 @@ export const SignalDetailModal: React.FC<SignalDetailModalProps> = ({
             <div className="space-y-2.5">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div className="bg-[#0F1117] border border-[#252A3A] rounded-xl p-3">
-                  <span className="text-[#6B7280] text-[10px] block">สถานะสัญญาณ</span>
+                  <span className="text-[#909AAB] text-[10px] block">สถานะสัญญาณ</span>
                   <p className="text-white text-xs font-bold mt-0.5">{signal.statusText}</p>
                   <p className="text-[#9CA3AF] text-[10px] mt-0.5 leading-snug">
                     {signal.reason}
@@ -594,7 +601,7 @@ export const SignalDetailModal: React.FC<SignalDetailModalProps> = ({
                 </div>
 
                 <div className="bg-[#0F1117] border border-[#252A3A] rounded-xl p-3">
-                  <span className="text-[#6B7280] text-[10px] block">EMA & Momentum</span>
+                  <span className="text-[#909AAB] text-[10px] block">EMA & Momentum</span>
                   <p
                     className={`text-xs font-bold mt-0.5 ${
                       signal.change >= 0 ? 'text-[#4ADE80]' : 'text-[#f9df7b]'
@@ -621,7 +628,7 @@ export const SignalDetailModal: React.FC<SignalDetailModalProps> = ({
                     <span className="text-white font-mono font-bold">
                       {displaySupport}
                     </span>
-                    <span className="text-[#6B7280] text-[9px] block">
+                    <span className="text-[#909AAB] text-[9px] block">
                       กรอบราคาต่ำสุด 90 วัน / Swing Low
                     </span>
                   </div>
@@ -632,7 +639,7 @@ export const SignalDetailModal: React.FC<SignalDetailModalProps> = ({
                     <span className="text-white font-mono font-bold">
                       {displayResistance}
                     </span>
-                    <span className="text-[#6B7280] text-[9px] block">
+                    <span className="text-[#909AAB] text-[9px] block">
                       กรอบราคาสูงสุด 90 วัน / Swing High
                     </span>
                   </div>
@@ -640,7 +647,7 @@ export const SignalDetailModal: React.FC<SignalDetailModalProps> = ({
               </div>
 
               <div className="bg-[#0F1117] border border-[#252A3A] rounded-xl p-3">
-                <span className="text-[#6B7280] text-[10px] block">
+                <span className="text-[#909AAB] text-[10px] block">
                   สภาพคล่องและโฟลว์การซื้อขาย ({isForex ? 'Forex Liquidity' : 'Crypto ETF Flow'})
                 </span>
                 <p className="text-white text-xs font-bold mt-0.5">
@@ -670,7 +677,7 @@ export const SignalDetailModal: React.FC<SignalDetailModalProps> = ({
                   <span className="text-white font-mono font-bold text-sm block mt-0.5">
                     {displaySl}
                   </span>
-                  <span className="text-[#6B7280] text-[10px] block mt-0.5">
+                  <span className="text-[#909AAB] text-[10px] block mt-0.5">
                     -{slPercent}% จากจุดเข้า (ใต้แนวรับ {displaySupport})
                   </span>
                 </div>
@@ -682,7 +689,7 @@ export const SignalDetailModal: React.FC<SignalDetailModalProps> = ({
                   <span className="text-white font-mono font-bold text-sm block mt-0.5">
                     {displayTp}
                   </span>
-                  <span className="text-[#6B7280] text-[10px] block mt-0.5">
+                  <span className="text-[#909AAB] text-[10px] block mt-0.5">
                     +{tpPercent}% เป้ากำไร (ใกล้แนวต้าน {displayResistance})
                   </span>
                 </div>
@@ -710,7 +717,7 @@ export const SignalDetailModal: React.FC<SignalDetailModalProps> = ({
                   <h4 className="text-white text-xs font-bold">
                     Momentum Score (โมเมนตัมเทคนิคัล)
                   </h4>
-                  <p className="text-[#6B7280] text-[11px] mt-0.5">
+                  <p className="text-[#909AAB] text-[11px] mt-0.5">
                     {isForex
                       ? 'ประเมินจากขนาดการเปลี่ยนแปลงราคา 24 ชม. และแนวโน้มทิศทางของคู่เงิน (โดยประมาณ ไม่ใช่ผลลัพธ์ AI)'
                       : 'ประเมินจากขนาดการเปลี่ยนแปลงราคา 24 ชม. และแรงซื้อขายแต่ละเหรียญ (โดยประมาณ ไม่ใช่ผลลัพธ์ AI)'}
@@ -729,7 +736,7 @@ export const SignalDetailModal: React.FC<SignalDetailModalProps> = ({
                 ))}
               </div>
 
-              <p className="text-[#6B7280] text-[10px]">
+              <p className="text-[#909AAB] text-[10px]">
                 Tags: {signal.tags.join(' • ')} • วิเคราะห์อิงระดับแนวรับ {displaySupport} / แนวต้าน {displayResistance}
               </p>
             </div>

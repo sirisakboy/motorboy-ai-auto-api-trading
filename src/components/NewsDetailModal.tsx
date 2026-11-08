@@ -32,6 +32,7 @@ import {
   analyzeNewsWithGemini,
   analyzeLongTermProjectWithGemini,
 } from '../services/geminiService';
+import { useModalA11y } from '../hooks/useModalA11y';
 
 interface NewsDetailModalProps {
   article: NewsArticle | null;
@@ -110,6 +111,7 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
     }
   };
 
+  const dialogRef = useModalA11y({ onClose, enabled: !!article });
   if (!article) return null;
 
   const handleCopySummary = () => {
@@ -197,6 +199,10 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
 
   return (
     <div
+      ref={dialogRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label="วิเคราะห์ข่าวและผลกระทบตลาด"
       id="news-analysis-modal-backdrop"
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/75 backdrop-blur-sm overflow-y-auto"
       onClick={(e) => {
@@ -249,6 +255,8 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
           </div>
           <button
             id="close-news-modal-btn"
+            type="button"
+            aria-label="ปิดหน้าต่างวิเคราะห์ข่าว"
             onClick={onClose}
             className="text-[#94A3B8] hover:text-white p-1.5 rounded-lg hover:bg-[#2A2E39] transition-colors shrink-0"
           >

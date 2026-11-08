@@ -4,6 +4,7 @@ import { ChatMessage, CryptoCoin, ForexPair, ThaiStock, ForeignStock, StockIndex
 import { GLOBAL_ROOM_ID, subscribeRoomMessages, sendRoomMessage } from '../services/chatRoomService';
 import { STICKERS, STICKER_MAP, parseStickerCode, stickerCode } from './ChatStickers';
 import { generateAiChatReply, getAiEngineStatus } from '../services/aiChatService';
+import { useModalA11y } from '../hooks/useModalA11y';
 
 interface ChatUser {
   uid: string;
@@ -187,12 +188,19 @@ export const ChatModal: React.FC<ChatModalProps> = ({
     }
   };
 
+  const dialogRef = useModalA11y({ onClose, enabled: isOpen });
   if (!isOpen) return null;
 
   const myUid = user?.uid || 'guest-trader';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-6 bg-black/75 backdrop-blur-xs overflow-y-auto">
+    <div
+      ref={dialogRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label="แชทวิเคราะห์ตลาด AI"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-6 bg-black/75 backdrop-blur-xs overflow-y-auto"
+    >
       <div className={`w-full sm:max-w-xl rounded-t-2xl sm:rounded-2xl flex flex-col overflow-hidden border-t sm:border max-h-[92vh] sm:my-8 shadow-2xl ${isDark ? 'bg-[#0F1117] text-white border-[#252A3A]' : 'bg-white text-slate-900 border-slate-200'}`}>
         
         {/* Header: Short title & 100% AI badge */}
@@ -230,7 +238,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                 <span className="hidden sm:inline">ATS Matrix</span>
               </button>
             )}
-            <button onClick={onClose} className="text-[#6B7280] hover:text-white p-1 rounded-lg transition-colors cursor-pointer" aria-label="ปิดแชท">
+            <button onClick={onClose} className="text-[#909AAB] hover:text-white p-1 rounded-lg transition-colors cursor-pointer" aria-label="ปิดแชท">
               <X className="w-5 h-5" />
             </button>
           </div>
@@ -312,7 +320,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                         <span className="text-[11px] font-bold text-[#00FF66] font-mono">{m.name}</span>
                         <span className="text-[9px] px-1 rounded bg-[#00FF66]/20 text-[#00FF66] font-mono font-bold">VERIFIED</span>
                       </div>
-                      <div className="flex items-center gap-1.5 text-[10px] text-[#6B7280]">
+                      <div className="flex items-center gap-1.5 text-[10px] text-[#909AAB]">
                         <span>{formatTime(m.createdAt)}</span>
                         <button
                           type="button"
@@ -383,7 +391,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
         {/* Sticker picker */}
         {showStickers && (
           <div className="mx-3 mb-2 rounded-xl border border-[#252A3A] bg-[#1A1D29] p-2">
-            <p className="px-1 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-[#6B7280]">
+            <p className="px-1 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-[#909AAB]">
               สติ๊กเกอร์เทรด • แตะเพื่อส่งให้ AI วิเคราะห์
             </p>
             <div className="grid grid-cols-6 gap-1 max-h-[160px] overflow-y-auto">
@@ -481,7 +489,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
             placeholder="พิมพ์คำถามหรือสินทรัพย์ให้ AI วิเคราะห์... (เช่น BTC, AOT, NVDA, EUR/USD)"
             disabled={isSending || isAiThinking}
             maxLength={500}
-            className="flex-1 bg-[#0F1117] border border-[#252A3A] rounded-xl px-3 py-2 text-xs sm:text-sm outline-none focus:border-[#00FF66] placeholder-[#6B7280] text-white disabled:opacity-60"
+            className="flex-1 bg-[#0F1117] border border-[#252A3A] rounded-xl px-3 py-2 text-xs sm:text-sm outline-none focus:border-[#00FF66] placeholder-[#6F7787] text-white disabled:opacity-60"
           />
           <button
             onClick={() => handleSend()}
