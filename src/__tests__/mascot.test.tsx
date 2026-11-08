@@ -11,8 +11,21 @@ import {
   MASCOT_AI_COOLDOWN_MS,
 } from '../services/mascotAiService';
 import { CRYPTO_INITIAL, generateRealSignals } from '../services/apiClient';
+import { loadJournal, saveMascotSettings } from '../mascot/journal';
+import { clearEndingsCache } from '../mascot/endings';
 
 const DEFAULT_MESSAGE = 'สวัสดีครับ ผมมอเตอร์บอย พร้อมเป็น Co-Pilot ให้คุณแล้ว!';
+
+/** Minimal Binance-shaped kline payload: a climb that ends on a volume spike. */
+function bullKlines(): unknown[] {
+  const rows: unknown[] = [];
+  for (let i = 0; i < 43; i += 1) {
+    const open = 100 + 0.5 * i;
+    rows.push([0, String(open), String(open + 0.7), String(open - 0.2), String(open + 0.5), '100', 0]);
+  }
+  rows.push([0, '121.5', '124.2', '121.3', '124', '300', 0]);
+  return rows;
+}
 
 function setMascotState(state: MascotState, message?: string) {
   useMascotStore.getState().setMascotState(state, message);
@@ -21,11 +34,19 @@ function setMascotState(state: MascotState, message?: string) {
 beforeEach(() => {
   resetMascotAiCooldown();
   useMascotStore.setState({ state: 'IDLE', message: DEFAULT_MESSAGE });
+  localStorage.clear();
+  clearEndingsCache(); // the 60s feed cache would leak candles between tests
+  // Offline by default: the overlay's candle feed must never hit the real network
+  // from a unit test. Individual tests stub `fetch` on top of this.
+  vi.stubGlobal('fetch', vi.fn(async () => {
+    throw new Error('offline');
+  }));
 });
 
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 
 describe('MascotOverlay — never blocks the UI', () => {
@@ -68,7 +89,7 @@ describe('MascotOverlay — state driven by the shared mascot store', () => {
 
     const status = screen.getByRole('status');
     expect(status.textContent).toContain('หยุดเทรดชั่วคราว');
-    expect(status.className).toContain('border-red-500/80');
+    expect(status.className).toMatch(/border-\[#FF5252\]/); // skin-defined bear/danger ring
   });
 
   it('shows the GOD SPEED flourish while executing', () => {
@@ -102,7 +123,11 @@ describe('MascotOverlay — real Gemini speech', () => {
       expect(screen.getByRole('status').textContent).toContain('BTC กำลังยืดตัวแรง')
     );
 
-    const body = JSON.parse((vi.mocked(fetch).mock.calls[0][1] as RequestInit).body as string);
+    const post = vi
+      .mocked(fetch)
+      .mock.calls.find(([, init]) => (init as RequestInit | undefined)?.method === 'POST');
+    expect(post).toBeTruthy();
+    const body = JSON.parse((post![1] as RequestInit).body as string);
     expect(body.state).toBe('IDLE');
     expect(body.marketBrief).toContain('BTC');
   });
@@ -129,6 +154,78 @@ describe('MascotOverlay — real Gemini speech', () => {
     fireEvent.click(screen.getByRole('button', { name: /น้องมอเตอร์บอย/ }));
 
     await waitFor(() => expect(screen.getByRole('status').textContent).toContain(DEFAULT_MESSAGE));
+  });
+});
+
+describe('MascotOverlay — AI endings (V4.1 brain)', () => {
+  function stubEndingsFeed(klines: unknown[], line = 'ประโยคเดียวจาก AI ครับ') {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (_url: string, init?: RequestInit) =>
+        (init as RequestInit | undefined)?.method === 'POST'
+          ? { ok: true, json: async () => ({ line }) }
+          : { ok: true, json: async () => klines }
+      )
+    );
+  }
+
+  it('shows the ending badge and journals it automatically', async () => {
+    stubEndingsFeed(bullKlines());
+    render(<MascotOverlay />);
+    fireEvent.click(screen.getByRole('button', { name: /น้องมอเตอร์บอย/ }));
+
+    await waitFor(() => expect(screen.getByRole('status').textContent).toContain('BULL END'));
+
+    const status = screen.getByRole('status');
+    expect(status.textContent).toMatch(/BULL END/);
+    expect(status.textContent).toContain('%');
+    expect(status.textContent).toContain('เป้า');
+
+    // auto journal (§6.8) — the trader never has to remember what was said
+    await waitFor(() => expect(loadJournal()[0]?.type).toBe('BULL_END'));
+  });
+
+  it('stays quiet when the candle feed is unavailable (no invented ending)', async () => {
+    render(<MascotOverlay />); // default stub throws → offline
+    fireEvent.click(screen.getByRole('button', { name: /น้องมอเตอร์บอย/ }));
+    await waitFor(() => expect(screen.getByRole('status').textContent).toContain(DEFAULT_MESSAGE));
+    expect(screen.getByRole('status').textContent).not.toContain('BULL END');
+    expect(loadJournal()).toHaveLength(0);
+  });
+
+  it('quiet mode keeps the AI running but renders only the numbers', async () => {
+    saveMascotSettings({ quietMode: true });
+    stubEndingsFeed(bullKlines());
+
+    render(<MascotOverlay />);
+
+    expect(screen.queryByRole('status')).toBeNull();
+    const toggle = screen.getByRole('button', { name: /โหมดเงียบ/ });
+    expect(toggle.textContent).toBeTruthy();
+
+    // numbers still update in the background
+    await waitFor(() => expect(toggle.textContent).toMatch(/BULL END \d+%/));
+  });
+
+  it('onboarding outlines a real control instead of covering it (rule 7)', () => {
+    render(<MascotOverlay />);
+    act(() => setMascotState('ONBOARDING'));
+
+    const realButton = document.createElement('button');
+    realButton.textContent = 'ซื้อ';
+    document.body.appendChild(realButton);
+
+    fireEvent.click(screen.getByRole('button', { name: 'ชี้จุดเริ่มให้หน่อย' }));
+
+    expect(realButton.style.outline).toContain('solid');
+    realButton.remove();
+  });
+
+  it('carries the L1 face id on its root so the one-face guard can see it', () => {
+    render(<MascotOverlay />);
+    const layer = screen.getByTestId('mascot-overlay');
+    expect(layer.getAttribute('data-motorboy-root')).toBe('');
+    expect(layer.getAttribute('data-motorboy-face')).toBe('MB-33-MASTER-001');
   });
 });
 

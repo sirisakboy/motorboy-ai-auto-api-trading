@@ -1,48 +1,69 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Sparkles, ChevronDown, RefreshCw, ShieldAlert, Zap } from 'lucide-react';
+import {
+  Sparkles,
+  ChevronDown,
+  RefreshCw,
+  ShieldAlert,
+  Volume2,
+  VolumeX,
+  TrendingUp,
+  TrendingDown,
+  Activity,
+} from 'lucide-react';
 import { useMascotStore, type MascotState } from '../services/mascotService';
 import { fetchMascotLine } from '../services/mascotAiService';
 import type { CryptoCoin, TradingSignal } from '../types';
-import mascotHero from '../assets/images/nong_motorboy_hero_1794000288918.jpg';
+import type { EndingResult, EndingType, Ohlcv, PoseId } from '../mascot/types';
+import { FACE_ID, MASCOT_FACE_ATTR, MASCOT_ROOT_ATTR, countMountedFaces } from '../mascot/core';
+import { resolveMascot } from '../mascot/adapter';
+import { poseVisual, TRADING_SKIN } from '../mascot/skins';
+import { analyzeEndings, fetchEndingsCandles } from '../mascot/endings';
+import { loadEndingsModel } from '../mascot/endingsModel';
+import {
+  loadMascotSettings,
+  recordEnding,
+  saveMascotSettings,
+  type MascotSettings,
+} from '../mascot/journal';
+import {
+  AUTO_HIDE_AFTER_SPEAK_MS,
+  AVOID_DISTANCE_PX,
+  NEVER_BLOCK_SELECTOR,
+  distanceToRect,
+  knock,
+  onboardingTarget,
+  resolvePose,
+  shouldKnock,
+  shouldMinimize,
+} from '../mascot/guard';
 
 /**
- * Floating "Nong MotorBoy" mascot.
+ * MOTORBOY CENTRAL V4.1 — floating “ending guard”.
  *
- * Adapted from the drop-in HTML/CSS/JS snippet to this codebase:
- *  - React component (no global <div>/script injection, no `window.zenitsuUI`)
- *  - driven by the existing Zustand `useMascotStore` states instead of a private
- *    state machine, so every mascot trigger already wired in App/modals works
- *  - speech bubble text can come from a real Gemini call (`/api/gemini/mascot-line`),
- *    falling back silently to the canned Thai line from the store
+ * The drop-in snippet from the spec, rebuilt inside this app's architecture:
+ *   · identity / assets come from L1 `mascot/core.ts` + L2 `mascot/adapter.ts`
+ *   · every colour comes from L3 `mascot/skins.ts` (no hex literals here)
+ *   · the pose follows real behaviour (spec §4), not just the store state
+ *   · the brain (`mascot/endings.ts`) speaks ONE Thai sentence about where the
+ *     current move ends — bull / bear / sideways / breakout
+ *   · manners (`mascot/guard.ts`) keep it off the chart: click-through layer,
+ *     100px avoidance, ghost opacity, 2-minute minimize, auto-hide after
+ *     speaking, quiet mode, knock alert (§6.1–6.10)
  *
- * Layout contract (this is the important part):
- *  - the fixed wrapper is `pointer-events-none`, so clicks go straight through to
- *    the chart and the BUY/SELL buttons — nothing is ever blocked
- *  - only the small bubble/card itself is `pointer-events-auto`
- *  - while the pointer hovers any interactive element or the chart, the mascot
- *    fades to 30% and shrinks so it never sits on top of a price or a control
- *  - it collapses back to a 56px chip after a few seconds and can be hidden
- *  - z-40: below every modal (z-50), above page content
+ * It must never block the chart or a button. If in doubt, it gets smaller.
  */
 
-const AUTO_COLLAPSE_MS = 7000;
-const INTERACTIVE_SELECTOR =
-  'button, a[href], input, select, textarea, canvas, [role="button"], [data-mascot-avoid]';
-
-const STATE_META: Record<
-  MascotState,
-  { accent: string; ring: string; label: string; emoji: string }
-> = {
-  IDLE: { accent: 'text-[#FF2D55]', ring: 'border-[#252A3A]', label: 'พร้อมช่วยครับ', emoji: '🏍️' },
-  SCANNING: { accent: 'text-sky-400', ring: 'border-sky-500/60', label: 'กำลังสแกนตลาด', emoji: '🧐' },
-  CONFIRM_TRADE: { accent: 'text-amber-300', ring: 'border-amber-400/60', label: 'รอยืนยันแผน', emoji: '🤔' },
-  READY_TO_EXECUTE: { accent: 'text-[#00F0FF]', ring: 'border-[#00F0FF]/70', label: 'GOD SPEED ⚡', emoji: '🚀' },
-  TP_CELEBRATE: { accent: 'text-emerald-400', ring: 'border-emerald-500/70', label: 'ถึงเป้า TP แล้ว', emoji: '🥳' },
-  SL_RESPECTED: { accent: 'text-orange-400', ring: 'border-orange-500/60', label: 'คัต SL ตามวินัย', emoji: '😢' },
-  RISK_REJECT: { accent: 'text-orange-400', ring: 'border-orange-500/70', label: 'เสี่ยงเกินกำหนด', emoji: '😠' },
-  KILL_SWITCH_ACTIVE: { accent: 'text-red-400', ring: 'border-red-500/80', label: 'หยุดเทรดชั่วคราว', emoji: '🛑' },
-  SIDEWAYS: { accent: 'text-slate-300', ring: 'border-slate-600/70', label: 'ตลาดนิ่ง พักก่อน', emoji: '😴' },
-  ONBOARDING: { accent: 'text-[#A855F7]', ring: 'border-[#A855F7]/60', label: 'ยินดีต้อนรับ', emoji: '👋' },
+const STATE_LABEL_TH: Record<string, string> = {
+  IDLE: 'พร้อมช่วยครับ',
+  SCANNING: 'กำลังสแกนตลาด',
+  CONFIRM_TRADE: 'รอยืนยันแผน',
+  READY_TO_EXECUTE: 'GOD SPEED ⚡',
+  TP_CELEBRATE: 'ถึงเป้า TP แล้ว',
+  SL_RESPECTED: 'คัต SL ตามวินัย',
+  RISK_REJECT: 'เสี่ยงเกินกำหนด',
+  KILL_SWITCH_ACTIVE: 'หยุดเทรดชั่วคราว',
+  SIDEWAYS: 'ตลาดนิ่ง พักก่อน',
+  ONBOARDING: 'ยินดีต้อนรับ',
 };
 
 const ACTIVE_STATES: MascotState[] = [
@@ -56,12 +77,23 @@ const ACTIVE_STATES: MascotState[] = [
   'ONBOARDING',
 ];
 
+const ENDING_LABEL: Record<EndingType, { short: string; icon: React.ReactNode }> = {
+  BULL_END: { short: 'BULL END', icon: <TrendingUp className="w-3 h-3" aria-hidden="true" /> },
+  BEAR_END: { short: 'BEAR END', icon: <TrendingDown className="w-3 h-3" aria-hidden="true" /> },
+  SIDEWAY_END: { short: 'SIDEWAY', icon: <Activity className="w-3 h-3" aria-hidden="true" /> },
+  BREAKOUT_END: { short: 'BREAKOUT', icon: <Sparkles className="w-3 h-3" aria-hidden="true" /> },
+};
+
 export interface MascotOverlayProps {
   cryptoList?: CryptoCoin[];
   signals?: TradingSignal[];
   useThb?: boolean;
   usdThbRate?: number;
   geminiApiKey?: string;
+  /** Market analysed for endings (Binance symbol). Defaults to the first tile. */
+  endingSymbol?: string;
+  /** Disable the candle feed (tests / offline demo). */
+  disableEndingsFeed?: boolean;
 }
 
 export const MascotOverlay: React.FC<MascotOverlayProps> = ({
@@ -70,34 +102,90 @@ export const MascotOverlay: React.FC<MascotOverlayProps> = ({
   useThb = false,
   usdThbRate = 36.45,
   geminiApiKey = '',
+  endingSymbol,
+  disableEndingsFeed = false,
 }) => {
   const { state, message } = useMascotStore();
+  const skin = TRADING_SKIN;
+  const palette = skin.palette;
+  const mascot = resolveMascot();
+  const symbol = endingSymbol || cryptoList[0]?.binanceSymbol || 'BTCUSDT';
+
   const [expanded, setExpanded] = useState(false);
+  const [settings, setSettings] = useState<MascotSettings>(() => loadMascotSettings());
   const [dismissed, setDismissed] = useState(false);
   const [nearInteractive, setNearInteractive] = useState(false);
   const [aiLine, setAiLine] = useState<string | null>(null);
   const [isLoadingLine, setIsLoadingLine] = useState(false);
+  const [ending, setEnding] = useState<EndingResult | null>(null);
+  const [candles, setCandles] = useState<Ohlcv[] | null>(null);
+  const [lastActivityAt, setLastActivityAt] = useState(() => Date.now());
+  const [now, setNow] = useState(() => Date.now());
+  const [knockedAt, setKnockedAt] = useState<number | null>(null);
 
-  // Context changes every market tick; keep it in a ref so `requestLine` stays
-  // stable and the bubble text does not flicker back to the canned line.
+  const isActive = ACTIVE_STATES.includes(state);
+  const isCritical =
+    state === 'KILL_SWITCH_ACTIVE' || state === 'RISK_REJECT' || ending?.type === 'BEAR_END';
+
+  /* --------------------------------------- live market context kept in a ref */
   const ctxRef = useRef({ cryptoList, signals, useThb, usdThbRate, geminiApiKey });
   ctxRef.current = { cryptoList, signals, useThb, usdThbRate, geminiApiKey };
   const stateRef = useRef(state);
   stateRef.current = state;
 
-  const isActive = ACTIVE_STATES.includes(state);
-  const meta = STATE_META[state] ?? STATE_META.IDLE;
-  const isCritical = state === 'KILL_SWITCH_ACTIVE' || state === 'RISK_REJECT';
+  /* ------------------------------------------------------- L1/L2 mount guard */
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const mounted = countMountedFaces(document);
+    // 1 = this component. Anything above means a second face exists (legacy
+    // script, double mount, hot reload) — the core contract forbids it.
+    if (mounted > 1) {
+      console.warn(`[Mascot] one-face rule violated: ${mounted} roots found`);
+    }
+  }, []);
 
-  /* ---------------------------------------------------------------- Gemini */
+  /* ---------------------------------------------------------------- timers */
+  useEffect(() => {
+    const tick = window.setInterval(() => setNow(Date.now()), 15_000);
+    return () => window.clearInterval(tick);
+  }, []);
+
+  const idleMs = Math.max(0, now - lastActivityAt);
+  const minimized = shouldMinimize(lastActivityAt, now) && !isActive;
+
+  /* --------------------------------------------------- endings brain (§5) */
+  useEffect(() => {
+    if (disableEndingsFeed) return;
+    let cancelled = false;
+
+    const run = async () => {
+      const feed = await fetchEndingsCandles(symbol, '1h', 120);
+      if (cancelled || !feed) return;
+      setCandles(feed);
+      const result = analyzeEndings(feed, { model: loadEndingsModel(), symbol });
+      setEnding(result);
+      if (result) {
+        recordEnding(result, { symbol });
+        if (shouldKnock(result, settings, minimized || settings.quietMode)) {
+          await knock();
+          if (!cancelled) setKnockedAt(Date.now());
+        }
+      }
+    };
+
+    run();
+    const timer = window.setInterval(run, 60_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [symbol, disableEndingsFeed, settings.quietMode, settings.knockAlert, minimized]);
+
+  /* -------------------------------------------------------- Gemini speech */
   const requestLine = useCallback(async (force: boolean) => {
     setIsLoadingLine(true);
     try {
-      const line = await fetchMascotLine({
-        state: stateRef.current,
-        force,
-        ...ctxRef.current,
-      });
+      const line = await fetchMascotLine({ state: stateRef.current, force, ...ctxRef.current });
       if (line) setAiLine(line);
       return line;
     } finally {
@@ -105,15 +193,11 @@ export const MascotOverlay: React.FC<MascotOverlayProps> = ({
     }
   }, []);
 
-  // A new mascot state invalidates the previous AI sentence…
   useEffect(() => {
     setAiLine(null);
   }, [state]);
 
-  // …and triggers exactly one attempt (the service throttles to 1/min).
-  // Failure is silent: the bubble keeps the canned line from the store.
   useEffect(() => {
-    if (!isActive && state !== 'IDLE') return;
     let cancelled = false;
     (async () => {
       const line = await requestLine(false);
@@ -122,17 +206,19 @@ export const MascotOverlay: React.FC<MascotOverlayProps> = ({
     return () => {
       cancelled = true;
     };
-  }, [state, isActive, requestLine]);
+  }, [state, requestLine]);
 
-  /* ------------------------------------------------- expand / auto-collapse */
+  /* ------------------------------------------------ expand / auto-collapse */
   useEffect(() => {
     if (!isActive) return;
     setExpanded(true);
-    const timer = window.setTimeout(() => setExpanded(false), AUTO_COLLAPSE_MS);
+    setLastActivityAt(Date.now());
+    // Rule 5: disappear shortly after speaking instead of lingering on screen.
+    const timer = window.setTimeout(() => setExpanded(false), AUTO_HIDE_AFTER_SPEAK_MS + 4000);
     return () => window.clearTimeout(timer);
   }, [state, message, isActive]);
 
-  /* ------------------------------------------------------- don't block the UI */
+  /* ------------------------------------------ never block — rules 1, 2, 3 */
   useEffect(() => {
     let frame = 0;
     let last = false;
@@ -141,8 +227,16 @@ export const MascotOverlay: React.FC<MascotOverlayProps> = ({
       if (frame) return;
       frame = window.requestAnimationFrame(() => {
         frame = 0;
-        const target = document.elementFromPoint(event.clientX, event.clientY);
-        const hit = !!(target && target.closest(INTERACTIVE_SELECTOR));
+        const el = document.elementFromPoint(event.clientX, event.clientY);
+        const protectedEl = (el as HTMLElement | null)?.closest?.(
+          NEVER_BLOCK_SELECTOR
+        ) as HTMLElement | null;
+        let hit = false;
+        if (protectedEl && typeof protectedEl.getBoundingClientRect === 'function') {
+          hit =
+            distanceToRect({ x: event.clientX, y: event.clientY }, protectedEl.getBoundingClientRect()) <=
+            AVOID_DISTANCE_PX;
+        }
         if (hit !== last) {
           last = hit;
           setNearInteractive(hit);
@@ -157,7 +251,6 @@ export const MascotOverlay: React.FC<MascotOverlayProps> = ({
     };
   }, []);
 
-  // Escape collapses the bubble without closing anything else.
   useEffect(() => {
     if (!expanded) return;
     const onKeyDown = (event: KeyboardEvent) => {
@@ -167,56 +260,149 @@ export const MascotOverlay: React.FC<MascotOverlayProps> = ({
     return () => document.removeEventListener('keydown', onKeyDown);
   }, [expanded]);
 
-  const bubbleText = useMemo(() => aiLine || message, [aiLine, message]);
+  /* ------------------------------------------------------------ derived UI */
+  const pose: PoseId = useMemo(
+    () => resolvePose({ mascotState: state, ending, idleMs }),
+    [state, ending, idleMs]
+  );
+  const visual = poseVisual(pose, skin);
+  const stateLabel = STATE_LABEL_TH[state] ?? visual.caption;
+  const bubbleText = aiLine || ending?.oneLineTH || message;
+  const endingLabel = ending ? ENDING_LABEL[ending.type] : null;
+  const endingColor = ending
+    ? ending.type === 'BULL_END'
+      ? palette.bull
+      : ending.type === 'BEAR_END'
+        ? palette.bear
+        : ending.type === 'BREAKOUT_END'
+          ? palette.signal
+          : palette.signal
+    : palette.signal;
 
-  if (dismissed) return null;
+  const updateSettings = (patch: Partial<MascotSettings>) => setSettings(saveMascotSettings(patch));
+
+  /**
+   * Rule 7 — onboarding points at the real buttons. We outline the actual
+   * control for 2.5s instead of drawing a coach-mark overlay, so the mascot can
+   * never become the thing that blocks the first click.
+   */
+  const pointAtFirstControl = () => {
+    if (typeof document === 'undefined') return;
+    for (let i = 0; i < 3; i += 1) {
+      // Never point at ourselves: the mascot's own buttons are `button` too.
+      const el =
+        Array.from(document.querySelectorAll<HTMLElement>(onboardingTarget(i))).find(
+          (candidate) => !candidate.closest(`[${MASCOT_ROOT_ATTR}]`)
+        ) ?? null;
+      if (!el) continue;
+      const previous = { outline: el.style.outline, offset: el.style.outlineOffset };
+      el.style.outline = `2px solid ${palette.signal}`;
+      el.style.outlineOffset = '4px';
+      el.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
+      window.setTimeout(() => {
+        el.style.outline = previous.outline;
+        el.style.outlineOffset = previous.offset;
+      }, 2500);
+      return;
+    }
+  };
+
+  const anchorStyle: React.CSSProperties = {
+    right: 'calc(0.75rem + env(safe-area-inset-right, 0px))',
+    bottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))',
+  };
+  const rootAttrs = { [MASCOT_ROOT_ATTR]: '', [MASCOT_FACE_ATTR]: FACE_ID };
+
+  if (dismissed || settings.hidden) return null;
+
+  /* --------------------------------------------------- quiet mode (§6.6) */
+  if (settings.quietMode) {
+    return (
+      <div
+        className="fixed z-40 pointer-events-none select-none"
+        style={anchorStyle}
+        data-testid="mascot-overlay"
+        {...rootAttrs}
+      >
+        <button
+          type="button"
+          onClick={() => updateSettings({ quietMode: false })}
+          aria-label="โหมดเงียบ — AI ยังทำงานอยู่ กดเพื่อเปิดมาสคอต"
+          className="pointer-events-auto px-2.5 py-1 rounded-full border bg-black/70 backdrop-blur-md text-[10px] font-mono font-bold"
+          style={{
+            color: ending ? endingColor : '#94A3B8',
+            borderColor: ending ? `${endingColor}66` : palette.border,
+          }}
+        >
+          {ending && endingLabel ? `${endingLabel.short} ${ending.prob}%` : 'AI · เงียบ'}
+        </button>
+      </div>
+    );
+  }
 
   const showCard = expanded || isActive;
 
   return (
     <div
       className="fixed z-40 pointer-events-none select-none"
-      style={{
-        right: 'calc(0.75rem + env(safe-area-inset-right, 0px))',
-        bottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))',
-      }}
+      style={anchorStyle}
       data-testid="mascot-overlay"
+      {...rootAttrs}
     >
       <div
         className={`flex flex-col items-end transition-all duration-300 ${
-          nearInteractive ? 'opacity-30 scale-90' : 'opacity-100 scale-100'
+          nearInteractive ? 'opacity-50 scale-90' : 'opacity-100 scale-100'
         }`}
       >
         {showCard ? (
           <div
             role="status"
             aria-live="polite"
-            className={`pointer-events-auto w-[248px] sm:w-[264px] rounded-2xl border bg-[#141721]/95 backdrop-blur-md shadow-[0_10px_30px_rgba(0,0,0,0.45)] p-3 ${meta.ring} ${
-              isCritical ? 'shadow-[0_0_25px_rgba(239,68,68,0.35)]' : ''
-            }`}
+            className={`pointer-events-auto w-[252px] sm:w-[272px] rounded-2xl border backdrop-blur-md shadow-[0_10px_30px_rgba(0,0,0,0.45)] p-3 ${visual.ring}`}
+            style={{
+              backgroundColor: `${palette.surface}F2`,
+              boxShadow: isCritical ? `0 0 25px ${palette.bear}59` : undefined,
+            }}
           >
             <div className="flex items-start gap-2.5">
               <div className="relative shrink-0">
-                <img
-                  src={mascotHero}
-                  alt="น้องมอเตอร์บอย"
-                  className="w-12 h-12 rounded-xl object-cover border border-white/10"
-                />
+                {mascot.assets.hero ? (
+                  <img
+                    src={mascot.assets.hero}
+                    alt="น้องมอเตอร์บอย"
+                    className="w-12 h-12 rounded-xl object-cover border border-white/10"
+                  />
+                ) : (
+                  <div className="w-12 h-12 rounded-xl border border-white/10 flex items-center justify-center text-xl">
+                    {visual.emoji}
+                  </div>
+                )}
                 <span
-                  className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-[#141721] flex items-center justify-center text-[9px] ${
-                    isCritical ? 'bg-red-500 animate-pulse' : 'bg-emerald-500'
+                  className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 flex items-center justify-center text-[9px] ${
+                    isCritical ? 'animate-pulse' : ''
                   }`}
+                  style={{
+                    backgroundColor: isCritical ? palette.bear : palette.bull,
+                    borderColor: palette.surface,
+                  }}
                   aria-hidden="true"
                 >
-                  {meta.emoji}
+                  {visual.emoji}
                 </span>
               </div>
 
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-1">
-                  <span className={`text-[10px] font-black uppercase tracking-wider ${meta.accent} flex items-center gap-1`}>
-                    {isCritical ? <ShieldAlert className="w-3 h-3" aria-hidden="true" /> : <Sparkles className="w-3 h-3" aria-hidden="true" />}
-                    {meta.label}
+                  <span
+                    className="text-[10px] font-black uppercase tracking-wider flex items-center gap-1"
+                    style={{ color: isCritical ? palette.bear : palette.primary }}
+                  >
+                    {isCritical ? (
+                      <ShieldAlert className="w-3 h-3" aria-hidden="true" />
+                    ) : (
+                      <Sparkles className="w-3 h-3" aria-hidden="true" />
+                    )}
+                    {stateLabel}
                   </span>
                   <button
                     type="button"
@@ -227,9 +413,54 @@ export const MascotOverlay: React.FC<MascotOverlayProps> = ({
                     <ChevronDown className="w-3.5 h-3.5" aria-hidden="true" />
                   </button>
                 </div>
-                <p className="mt-1 text-[11px] leading-relaxed text-slate-200 break-words">{bubbleText}</p>
+                <p className="mt-1 text-[11px] leading-relaxed text-slate-200 break-words">
+                  {bubbleText}
+                </p>
               </div>
             </div>
+
+            {ending && endingLabel && (
+              <div
+                className="mt-2 rounded-xl border px-2 py-1.5"
+                style={{
+                  borderColor: `${endingColor}66`,
+                  backgroundColor: `${endingColor}1A`,
+                  color: endingColor,
+                }}
+              >
+                <div className="flex items-center justify-between text-[10px] font-mono font-bold">
+                  <span className="inline-flex items-center gap-1">
+                    {endingLabel.icon}
+                    {endingLabel.short}
+                  </span>
+                  <span>
+                    {ending.prob}% • เป้า{' '}
+                    {ending.target.toLocaleString('en-US', { maximumFractionDigits: 2 })}
+                  </span>
+                </div>
+                <div className="mt-0.5 text-[9px] text-slate-400 font-mono">
+                  รับ {ending.support.toLocaleString('en-US', { maximumFractionDigits: 2 })} · ต้าน{' '}
+                  {ending.resistance.toLocaleString('en-US', { maximumFractionDigits: 2 })}
+                </div>
+              </div>
+            )}
+
+            {!ending && candles && (
+              <div className="mt-2 text-[9px] font-mono text-slate-500">
+                ยังไม่มีจุดจบเทรนที่ชัดเจน — ขอเงียบไว้ก่อน
+              </div>
+            )}
+
+            {state === 'ONBOARDING' && (
+              <button
+                type="button"
+                onClick={pointAtFirstControl}
+                className="mt-2 w-full rounded-lg border px-2 py-1 text-[10px] font-bold"
+                style={{ borderColor: `${palette.signal}66`, color: palette.signal }}
+              >
+                ชี้จุดเริ่มให้หน่อย
+              </button>
+            )}
 
             <div className="mt-2 flex items-center justify-between gap-2">
               <button
@@ -241,31 +472,76 @@ export const MascotOverlay: React.FC<MascotOverlayProps> = ({
                 <RefreshCw className={`w-3 h-3 ${isLoadingLine ? 'animate-spin' : ''}`} aria-hidden="true" />
                 {isLoadingLine ? 'กำลังคิด...' : 'ให้ AI พูด'}
               </button>
-              <button
-                type="button"
-                onClick={() => setDismissed(true)}
-                className="text-[10px] font-bold text-slate-500 hover:text-slate-300 transition-colors"
-              >
-                ซ่อน
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => updateSettings({ quietMode: !settings.quietMode })}
+                  aria-label={settings.quietMode ? 'ปิดโหมดเงียบ' : 'เปิดโหมดเงียบ'}
+                  className="text-[10px] font-bold text-slate-500 hover:text-slate-300 inline-flex items-center gap-1"
+                >
+                  {settings.quietMode ? (
+                    <Volume2 className="w-3 h-3" aria-hidden="true" />
+                  ) : (
+                    <VolumeX className="w-3 h-3" aria-hidden="true" />
+                  )}
+                  เงียบ
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDismissed(true)}
+                  className="text-[10px] font-bold text-slate-500 hover:text-slate-300 transition-colors"
+                >
+                  ซ่อน
+                </button>
+              </div>
             </div>
+
+            {knockedAt && (
+              <div className="mt-1 text-[9px] font-mono" style={{ color: palette.bear }}>
+                🔔 แจ้งเตือน BEAR_END เมื่อ {new Date(knockedAt).toLocaleTimeString('th-TH')}
+              </div>
+            )}
           </div>
         ) : (
           <button
             type="button"
-            onClick={() => setExpanded(true)}
-            aria-label={`น้องมอเตอร์บอย — ${meta.label}. เปิดกล่องข้อความ`}
-            className={`pointer-events-auto w-14 h-14 rounded-full border bg-[#141721]/95 backdrop-blur-md shadow-lg flex items-center justify-center overflow-hidden relative ${meta.ring} hover:scale-105 transition-transform`}
+            onClick={() => {
+              setExpanded(true);
+              setLastActivityAt(Date.now());
+            }}
+            aria-label={`น้องมอเตอร์บอย — ${stateLabel}. เปิดกล่องข้อความ`}
+            className={`pointer-events-auto rounded-full border backdrop-blur-md shadow-lg flex items-center justify-center overflow-hidden relative hover:scale-105 transition-transform ${
+              minimized ? 'w-10 h-10' : 'w-14 h-14'
+            } ${visual.ring}`}
+            style={{ backgroundColor: `${palette.surface}F2` }}
+            title={`${visual.emoji} ${visual.caption}`}
           >
-            <img src={mascotHero} alt="" className="w-full h-full object-cover" aria-hidden="true" />
+            {mascot.assets.hero ? (
+              <img src={mascot.assets.hero} alt="" className="w-full h-full object-cover" aria-hidden="true" />
+            ) : (
+              <span className="text-lg" aria-hidden="true">
+                {visual.emoji}
+              </span>
+            )}
             <span
-              className={`absolute bottom-0.5 right-0.5 w-3 h-3 rounded-full border-2 border-[#141721] ${
-                isCritical ? 'bg-red-500' : state === 'READY_TO_EXECUTE' ? 'bg-[#00F0FF]' : 'bg-emerald-500'
-              }`}
+              className="absolute bottom-0.5 right-0.5 w-3 h-3 rounded-full border-2"
+              style={{
+                backgroundColor: isCritical
+                  ? palette.bear
+                  : ending?.type === 'BULL_END'
+                    ? palette.bull
+                    : palette.primary,
+                borderColor: palette.surface,
+              }}
               aria-hidden="true"
             />
-            {state === 'READY_TO_EXECUTE' && (
-              <Zap className="absolute top-1 left-1 w-3 h-3 text-[#00F0FF]" aria-hidden="true" />
+            {minimized && (
+              <span
+                className="absolute bottom-0 inset-x-0 text-center text-[8px] font-mono text-slate-300"
+                aria-hidden="true"
+              >
+                {visual.emoji}
+              </span>
             )}
           </button>
         )}

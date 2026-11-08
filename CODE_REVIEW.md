@@ -26,7 +26,7 @@
 | Check | Command | Result |
 |---|---|---|
 | Typecheck | `npx tsc --noEmit` | ✅ pass (0 errors) |
-| Tests (added 2026-11-04) | `npx vitest run` | ✅ 68/68 pass in 8 files (dialog a11y + mascot overlay render tests) |
+| Tests (added 2026-11-04) | `npx vitest run` | ✅ 117/117 pass in 10 files (dialog a11y + mascot overlay + V4.1 core/endings) |
 | Production build | `npx vite build` | ✅ builds, ⚠️ single 1.78 MB chunk (440 kB gzip) |
 | Prod boot | `NODE_ENV=production node server.ts` | ❌ **crash** — `PathError: Missing parameter name at index 1: *` |
 | Dev boot | `npx tsx server.ts` | ✅ listens, `GET /` → 200 |
@@ -403,6 +403,62 @@ Also discovered while writing expectations: `getDecimals(0.0000245)` (SHIB) retu
 - The route needs `GEMINI_API_KEY` in `.env`; without it the mascot still works on canned lines (the smoke test returns `400 missing_gemini_key`).
 - `/api/gemini/mascot-line` is unauthenticated like the other 9 routes — see **P1-1**; it caps `state` at 40 chars and `marketBrief` at 600 chars, but it still needs the rate limiter.
 - Two mascot surfaces now coexist: the sidebar `MascotCoPilotCard` (detailed) and this floating chip (always-on, non-blocking). If that feels redundant, the card is the one to drop.
+
+---
+
+## MOTORBOY CENTRAL V4.1 — endings brain + three-layer mascot (2026-11-04)
+
+The V4.1 spec arrived as a drop-in snippet again (`index.html` + vanilla JS). It was rebuilt as real modules under `src/mascot/` and wired into the overlay that already ships in `App.tsx`. Nothing in the snippet is pasted.
+
+| Layer | File | What it owns | Change policy |
+|---|---|---|---|
+| **L1 CORE (BIOS)** | `src/mascot/core.ts` | `FACE_ID = MB-33-MASTER-001`, the five face features, `REALISM_PCT = 60`, an FNV-1a checksum of that contract, `verifyFaceLock()`, and the one-face checker (`countMountedFaces` / `canMountFace` / `findFaceMismatches`) | **read-only** — `Object.freeze` + a hash test. Edit it and `npm test` fails before three projects drift apart |
+| **L2 ADAPTER (kernel)** | `src/mascot/adapter.ts` | `MOTORBOY.PROJECT.{TRADING,GARMENT,RACING,TEMPLE}`, per-project asset sets, `decideMount()` (the "หน้าเบิ้ล" guard), `bridgeLegacyState()` (V3.1 `NORMAL/SCAN/GOD/MINI/HIDDEN` → V4.1 poses) | per project, no art borrowing: only TRADING resolves a hero image, the rest resolve `''` on purpose |
+| **L3 SKIN (editable)** | `src/mascot/skins.ts` | palette + the nine pose visuals (emoji, caption, ring colour) | freely editable; the overlay reads *only* from here (no hex literals in the component) |
+| brain | `src/mascot/endings.ts` + `endingsModel.ts` | the four endings, ATR/volume maths, the Binance feed, the tunable model | deterministic, no RNG, clock injectable |
+| manners | `src/mascot/guard.ts` + `journal.ts` | the ten anti-block rules, the auto journal, quiet/knock settings | pure functions, unit-tested |
+
+**The palette (L3, per spec):** master black `#000000` + master red `#FF0033`; TRADING bull `#00E676`, bear `#FF5252`, signal `#00E5FF`; surface `#141721`. The rest of the app's chrome still uses the older `#FF2D55` brand pink — unifying that is a one-line change in `App.tsx`/`index.css`, deliberately left out of this diff.
+
+**The endings brain (`analyzeEndings(candles, { support, resistance, model, now })`).** Input is OHLCV + distance to S/R; output is `{ type, prob, target, support, resistance, oneLineTH, reasons, at }`, or `null` when there is nothing worth saying (silence beats noise). Priority order is deliberate — a `BREAKOUT_END` is a *stronger* claim than the `BULL_END` it technically also satisfies:
+
+| Ending | Condition (all measured, none random) | Prob band |
+|---|---|---|
+| `BREAKOUT_END` | box compressed over `compressionBars` + box volume dried up + last bar ≥ `volumeSpike`× the 20-bar average | 66–88 |
+| `BULL_END` | close > prior 20-bar high + volume spike | 70–92 |
+| `BEAR_END` | close < prior 20-bar low + volume spike | 70–92 |
+| `SIDEWAY_END` | compressed box, no decision yet | 55–72 |
+| *(none)* | anything else, or fewer than `minCandles` = 40 | — |
+
+Thresholds live in `DEFAULT_ENDINGS_MODEL` and can be overridden without a build via `localStorage['motorboy.endings.model.v1']` — that is the "fill `endings.model.json` with ~100 trades" step from the rollout plan. The one-line output is Thai and short by construction, e.g. `จบ Sideway รอเบรก 45,200 ค่อยเข้า (กรอบ 44,800–45,300)`.
+
+**The ten guard rules, and where each one is enforced:**
+
+| # | Rule | Enforced in |
+|---|---|---|
+| 1 | never block `.buy-btn .sell-btn .price-label .tp-input` | `NEVER_BLOCK_SELECTOR` (+ every real control, `canvas`, `[data-mascot-avoid]`) |
+| 2 | 100 px smart avoidance | `distanceToRect` / `AVOID_DISTANCE_PX` on a rAF-throttled `pointermove` |
+| 3 | ghost at 50 % | `ghostOpacity` → `opacity-50 scale-90` on the mascot only |
+| 4 | minimize after 2 min idle | `shouldMinimize` → 40 px head, no card |
+| 5 | auto-hide after speaking | `AUTO_HIDE_AFTER_SPEAK_MS` (3 s) + existing 7 s collapse |
+| 6 | quiet mode (AI keeps running, numbers only) | `MascotSettings.quietMode` → the overlay renders a single `BULL END 74%` pill |
+| 7 | onboarding points at *real* buttons | `onboardingTarget()` + `pointAtFirstControl()` outlines the actual control for 2.5 s (no coach-mark overlay that could swallow the click) |
+| 8 | auto journal | `recordEnding()` on every ending, 200-entry cap, 5-minute de-dupe per symbol+type |
+| 9 | one line only | the brain returns a single `oneLineTH`; `reasons[]` is for the journal, never rendered |
+| 10 | knock alert on `BEAR_END` while away | `shouldKnock()` + `knock()` (vibrate pattern + the existing drawdown chime) |
+
+**Bugs / gaps found while building it:**
+- The overlay's first ending test passed for the wrong reason: `fetchEndingsCandles` caches for 60 s, so a later test read the previous test's candles. `clearEndingsCache()` is now part of test setup — and, more importantly, this proves a failed re-fetch falls back to the last known-good candles instead of blanking the readout.
+- `mapBinanceKlines` first returned `(Ohlcv | null)[]`; the type predicate did not narrow because `time` was optional. Rewritten as an explicit builder (this is exactly the class of bug that would have shipped as a runtime `undefined` in the analysis).
+- Rule 7 originally used `document.querySelector('button')` — which happily returned *the mascot's own* button. It now skips anything inside `[data-motorboy-root]`.
+- **Spec discrepancy:** the section titled "8 POSES TRADING" lists **nine** poses (`IDLE, WALK_CHART, CLIMB_CANDLE, FALL_BREAK, WORK_ANALYZE, HAPPY_TP, SAD_SL, DRAG_FIBO, SLEEP_WAIT`). All nine are implemented; tell me if one was meant to be dropped.
+
+**Verified:** `npx tsc --noEmit` clean, `npx vitest run` **117/117 in 10 files** (28 new core/adapter/skin/guard/journal tests, 15 new endings tests, 5 new overlay tests), `npx vite build` still emits the hashed mascot asset and no `/src/assets/images` string, dev server serves `/` and `/src/mascot/*` with 200.
+
+**Rollout status vs the spec's own plan:**
+- **today** — CORE + ADAPTER + TRADING skin + endings brain + guard: shipped.
+- **next** — fill `endings.model.json` (i.e. write the override key) from ~100 real trades; the engine is already deterministic so results are comparable run to run.
+- **after** — knock sound is wired to the existing drawdown chime; a Telegram ending alert needs a server route and is *not* built yet.
 
 ---
 
