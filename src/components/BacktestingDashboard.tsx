@@ -174,7 +174,7 @@ export const BacktestingDashboard: React.FC<BacktestingDashboardProps> = ({
               <h3 className="font-mono font-bold text-sm sm:text-base text-white tracking-tight">
                 ATS Backtesting Engine &amp; Strategy Lab
               </h3>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-sm bg-[#FF2D55]/15 border border-[#FF2D55]/40 text-[#FF2D55] font-bold">
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-sm bg-[#FF0033]/15 border border-[#FF0033]/40 text-[#FF0033] font-bold">
                 HISTORICAL SIMULATION
               </span>
             </div>
@@ -202,7 +202,7 @@ export const BacktestingDashboard: React.FC<BacktestingDashboardProps> = ({
             <button
               type="button"
               onClick={handleSendToAiChat}
-              className="px-3 py-1.5 rounded-xl bg-[#FF2D55]/20 hover:bg-[#FF2D55]/30 border border-[#FF2D55]/50 text-xs font-mono font-bold text-[#FF2D55] flex items-center gap-1.5 transition-all cursor-pointer shadow-[0_0_12px_rgba(255,45,85,0.2)]"
+              className="px-3 py-1.5 rounded-xl bg-[#FF0033]/20 hover:bg-[#FF0033]/30 border border-[#FF0033]/50 text-xs font-mono font-bold text-[#FF0033] flex items-center gap-1.5 transition-all cursor-pointer shadow-[0_0_12px_rgba(255,0,51,0.2)]"
               title="ส่งผลทดสอบเข้าห้อง AI Deep Analyze เพื่อขอคำแนะนำปรับพอร์ต"
             >
               {sentToChat ? <Check className="w-3.5 h-3.5" /> : <Send className="w-3.5 h-3.5" />}
@@ -245,7 +245,7 @@ export const BacktestingDashboard: React.FC<BacktestingDashboardProps> = ({
               value={selectedAssetSymbol}
               onChange={(e) => setSelectedAssetSymbol(e.target.value)}
               disabled={isRunning}
-              className="w-full bg-[#0A0D14] border border-slate-700 rounded-lg px-3 py-2 text-white font-mono text-xs outline-none focus:border-[#FF2D55] transition-colors cursor-pointer"
+              className="w-full bg-[#0A0D14] border border-slate-700 rounded-lg px-3 py-2 text-white font-mono text-xs outline-none focus:border-[#FF0033] transition-colors cursor-pointer"
             >
               {AVAILABLE_ASSETS.map((a) => (
                 <option key={a.symbol} value={a.symbol} className="bg-[#10141E]">
@@ -346,7 +346,7 @@ export const BacktestingDashboard: React.FC<BacktestingDashboardProps> = ({
             className={`px-5 py-2 rounded-xl text-xs font-mono font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shrink-0 shadow-lg ${
               isRunning
                 ? 'bg-slate-700 text-slate-400 cursor-not-allowed'
-                : 'bg-gradient-to-r from-[#FF2D55] to-[#A855F7] hover:opacity-90 text-white font-extrabold shadow-[0_0_20px_rgba(255,45,85,0.3)] hover:scale-[1.02]'
+                : 'bg-gradient-to-r from-[#FF0033] to-[#8A2BE2] hover:opacity-90 text-white font-extrabold shadow-[0_0_20px_rgba(255,0,51,0.3)] hover:scale-[1.02]'
             }`}
           >
             {isRunning ? (
@@ -366,7 +366,7 @@ export const BacktestingDashboard: React.FC<BacktestingDashboardProps> = ({
 
       {/* LIVE STATUS TICKER (Real-Time Progress, Currently Tested Asset, Projected Completion Time) */}
       {(isRunning || progressTicker) && (
-        <div className="rounded-xl border border-[#FF2D55]/40 bg-[#0A0E18] p-4 space-y-3 relative overflow-hidden shadow-[0_0_20px_rgba(255,45,85,0.1)]">
+        <div className="rounded-xl border border-[#FF0033]/40 bg-[#0A0E18] p-4 space-y-3 relative overflow-hidden shadow-[0_0_20px_rgba(255,0,51,0.1)]">
           {/* Top Ticker Status Row */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-mono">
             <div className="flex items-center gap-2">
@@ -472,14 +472,14 @@ export const BacktestingDashboard: React.FC<BacktestingDashboardProps> = ({
             </div>
 
             {/* Metric 2: SHARPE RATIO */}
-            <div className="p-4 rounded-xl bg-[#10141E] border border-slate-800 relative overflow-hidden group hover:border-[#FF2D55]/50 transition-all">
-              <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#FF2D55] to-transparent opacity-80" />
+            <div className="p-4 rounded-xl bg-[#10141E] border border-slate-800 relative overflow-hidden group hover:border-[#FF0033]/50 transition-all">
+              <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#FF0033] to-transparent opacity-80" />
               <div className="flex items-center justify-between text-slate-400 text-xs font-mono mb-1">
                 <span className="flex items-center gap-1">
-                  <Sparkles className="w-3.5 h-3.5 text-[#FF2D55]" />
+                  <Sparkles className="w-3.5 h-3.5 text-[#FF0033]" />
                   SHARPE RATIO
                 </span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded-sm bg-[#FF2D55]/10 border border-[#FF2D55]/30 text-[#FF2D55] font-bold">
+                <span className="text-[10px] px-1.5 py-0.5 rounded-sm bg-[#FF0033]/10 border border-[#FF0033]/30 text-[#FF0033] font-bold">
                   RISK-ADJUSTED
                 </span>
               </div>

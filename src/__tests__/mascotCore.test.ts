@@ -318,7 +318,7 @@ describe('L3 SKIN — editable, per project, never touches core', () => {
     expect(palette.masterBlack).toBe('#000000');
     // The mascot adapts to this product: same accent as App.tsx / index.css,
     // not a second red borrowed from the master brand.
-    expect(palette.primary).toBe('#FF2D55');
+    expect(palette.primary).toBe('#FF0033');
     expect(palette.bull).toBe('#00E676');
     expect(palette.bear).toBe('#FF5252');
     expect(palette.signal).toBe('#00E5FF');

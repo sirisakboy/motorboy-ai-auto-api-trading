@@ -56,13 +56,13 @@ export const CryptoCard: React.FC<CryptoCardProps> = ({
   return (
     <div
       onClick={onSelect}
-      className={`w-full rounded-[18px] ${flashBg} border border-[#252A3A] p-4 transition-colors duration-400 cursor-pointer hover:border-[#7C6CFF]/50 active:scale-[0.99]`}
+      className={`w-full rounded-[18px] ${flashBg} border border-[#2A2E45] p-4 transition-colors duration-400 cursor-pointer hover:border-[#7C6CFF]/50 active:scale-[0.99]`}
       data-testid={`signal_card_${signal.symbol.toLowerCase()}`}
     >
       {/* Header Row */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2.5 min-w-0">
-          <div className="w-9 h-9 rounded-full bg-[#0F1117] border border-[#252A3A] flex items-center justify-center text-xs font-bold text-[#A5B4FC]">
+          <div className="w-9 h-9 rounded-full bg-[#0F1117] border border-[#2A2E45] flex items-center justify-center text-xs font-bold text-[#A5B4FC]">
             {signal.symbol.slice(0, 3)}
           </div>
           <div className="min-w-0">
@@ -135,7 +135,7 @@ export const CryptoCard: React.FC<CryptoCardProps> = ({
 
       {/* Status & Reason Pill */}
       <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-        <div className="bg-[#0F1117] border border-[#252A3A] rounded-lg px-2 py-1 text-[11px] text-[#9CA3AF]">
+        <div className="bg-[#0F1117] border border-[#2A2E45] rounded-lg px-2 py-1 text-[11px] text-[#9CA3AF]">
           {signal.statusText}
         </div>
         <div className="bg-[#6366F1]/15 border border-[#6366F1]/30 rounded-lg px-2 py-1 text-[11px] text-[#A5B4FC]">
@@ -159,12 +159,12 @@ export const CryptoCard: React.FC<CryptoCardProps> = ({
       </div>
 
       {/* Tags & AI Similarity */}
-      <div className="mt-2 pt-2 border-t border-[#252A3A]/50 flex items-center justify-between text-[11px]">
+      <div className="mt-2 pt-2 border-t border-[#2A2E45]/50 flex items-center justify-between text-[11px]">
         <div className="flex items-center space-x-1">
           {signal.tags.map((tag) => (
             <span
               key={tag}
-              className="bg-[#252A3A] text-[#9CA3AF] rounded px-1.5 py-0.5 text-[10px]"
+              className="bg-[#2A2E45] text-[#9CA3AF] rounded px-1.5 py-0.5 text-[10px]"
             >
               {tag}
             </span>

@@ -69,7 +69,7 @@ export const HistoryList: React.FC<HistoryListProps> = ({
   return (
     <div className="space-y-4">
       {/* Header bar */}
-      <div className="rounded-2xl bg-[#1A1D29] border border-[#252A3A] p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="rounded-2xl bg-[#1A1D29] border border-[#2A2E45] p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 rounded-xl bg-[#7C6CFF]/20 border border-[#7C6CFF]/40 flex items-center justify-center text-[#A5B4FC]">
             <History className="w-5 h-5" />
@@ -120,7 +120,7 @@ export const HistoryList: React.FC<HistoryListProps> = ({
                 <button
                   type="button"
                   onClick={() => setConfirmClear(false)}
-                  className="text-xs bg-[#252A3A] hover:bg-[#32384D] text-[#9CA3AF] px-2.5 py-1 rounded-lg transition-colors"
+                  className="text-xs bg-[#2A2E45] hover:bg-[#32384D] text-[#9CA3AF] px-2.5 py-1 rounded-lg transition-colors"
                 >
                   ยกเลิก
                 </button>
@@ -132,7 +132,7 @@ export const HistoryList: React.FC<HistoryListProps> = ({
 
       {/* Filter and Search */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-        <div className="flex items-center space-x-1 bg-[#1A1D29] p-1 rounded-2xl border border-[#252A3A] overflow-x-auto text-xs">
+        <div className="flex items-center space-x-1 bg-[#1A1D29] p-1 rounded-2xl border border-[#2A2E45] overflow-x-auto text-xs">
           {[
             { id: 'ALL', label: 'ทั้งหมด', count: entries.length },
             {
@@ -189,15 +189,15 @@ export const HistoryList: React.FC<HistoryListProps> = ({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="ค้นหาในประวัติ..."
-            className="w-full sm:w-56 bg-[#1A1D29] border border-[#252A3A] focus:border-[#7C6CFF] rounded-xl pl-9 pr-3 py-1.5 text-xs text-white outline-none placeholder-[#6F7787]"
+            className="w-full sm:w-56 bg-[#1A1D29] border border-[#2A2E45] focus:border-[#7C6CFF] rounded-xl pl-9 pr-3 py-1.5 text-xs text-white outline-none placeholder-[#6F7787]"
           />
         </div>
       </div>
 
       {/* List */}
       {filteredEntries.length === 0 ? (
-        <div className="rounded-2xl bg-[#1A1D29] border border-[#252A3A] p-10 text-center space-y-3">
-          <div className="mx-auto w-12 h-12 rounded-2xl bg-[#252A3A] flex items-center justify-center text-[#9CA3AF]">
+        <div className="rounded-2xl bg-[#1A1D29] border border-[#2A2E45] p-10 text-center space-y-3">
+          <div className="mx-auto w-12 h-12 rounded-2xl bg-[#2A2E45] flex items-center justify-center text-[#9CA3AF]">
             <History className="w-6 h-6" />
           </div>
           <div>
@@ -224,7 +224,7 @@ export const HistoryList: React.FC<HistoryListProps> = ({
                     ? 'bg-[#1A1D29] border-[#0284C7]/40 hover:border-[#38BDF8]'
                     : isProject
                     ? 'bg-[#1A1D29] border-[#F59E0B]/40 hover:border-[#FBBF24]'
-                    : 'bg-[#1A1D29] border-[#252A3A] hover:border-[#7C6CFF]/40'
+                    : 'bg-[#1A1D29] border-[#2A2E45] hover:border-[#7C6CFF]/40'
                 }`}
               >
                 <div className="flex items-start justify-between">
@@ -291,7 +291,7 @@ export const HistoryList: React.FC<HistoryListProps> = ({
                               ? 'bg-amber-500/20 border-amber-500/40 text-amber-300'
                               : item.type === 'NEWS_ANALYSIS'
                               ? 'bg-sky-500/20 border-sky-500/40 text-sky-300'
-                              : 'bg-[#0F1117] border-[#252A3A] text-[#9CA3AF]'
+                              : 'bg-[#0F1117] border-[#2A2E45] text-[#9CA3AF]'
                           }`}
                         >
                           {isAuto
@@ -343,7 +343,7 @@ export const HistoryList: React.FC<HistoryListProps> = ({
 
                 {/* AI Summary Text */}
                 {item.aiSummary && (
-                  <div className="bg-[#0F1117] rounded-xl p-3 border border-[#252A3A] text-xs text-[#D1D5DB] leading-relaxed whitespace-pre-line">
+                  <div className="bg-[#0F1117] rounded-xl p-3 border border-[#2A2E45] text-xs text-[#D1D5DB] leading-relaxed whitespace-pre-line">
                     {item.aiSummary}
                   </div>
                 )}

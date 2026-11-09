@@ -12,7 +12,7 @@ export const TickerBar: React.FC<TickerBarProps> = ({ coins, useThb, usdThbRate 
   const multiplier = useThb ? usdThbRate : 1;
 
   return (
-    <div className="w-full bg-[#141721]/95 border-b border-[#252A3A] select-none">
+    <div className="w-full bg-[#0F1117]/95 border-b border-[#2A2E45] select-none">
       <div className="max-w-7xl mx-auto px-4 h-9 flex items-center overflow-x-auto [no-scrollbar::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] gap-4 sm:gap-6 text-xs">
         {coins.slice(0, 6).map((coin, index) => {
           const displayPrice = (coin.price * multiplier).toLocaleString(undefined, {

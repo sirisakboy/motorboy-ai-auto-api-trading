@@ -1,41 +1,156 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* ============================================================================
+   MOTORBOY CENTRAL v4.4 — "Rust x Modern" design tokens
+   Source: MASCOT + UI DESIGN SYSTEM (Book 3, v4.4). This :root block is the
+   single source of truth for colour / radius / spacing in the app.
+   Rules: หน้าเดิม (Face ID) ห้ามเปลี่ยน · โลหะ 70 + สนิม 20 + นีออน 10 ·
+   1 หน้าจอ ใช้ 1 สไตล์ ห้ามปน 2 แทร็ก
+   ============================================================================ */
 :root {
-  /* MotorBoy Studio AI-TH Brand Tokens */
-  --mb-color-primary: #FF2D55;        /* Neon Crimson Red */
-  --mb-color-secondary: #A855F7;      /* Cyber Purple */
-  --mb-color-accent: #3B82F6;         /* Electric Cyan Blue */
-  --mb-color-success: #10B981;        /* Profit Green */
+  /* --- v4.4 palette ------------------------------------------------------ */
+  --mb-brand-red: #FF0033;            /* โลโก้ M, ปุ่มหลัก, เส้นขอบ */
+  --mb-brand-red-fill: #E0002D;       /* filled variant: white text = 4.99:1 (AA) */
+  --mb-violet: #8A2BE2;               /* แอ็กเซนต์, AI, ไล่สี */
+  --mb-neon-blue: #00E5FF;            /* ไอคอน ECU/AI/ลิงก์, ขอบปุ่ม AI */
+  --mb-neon-green: #39FF14;           /* สถานะดี, สำเร็จ */
+  --mb-rust: #C97B2A;                 /* สนิม (ขอบมุมการ์ด) */
+  --mb-rust-dark: #8A4B2A;            /* สนิมเข้ม (พื้นหลังอู่) */
+  --mb-metal: #9AA0A8;                /* โลหะเทา */
+  --mb-metal-dark: #2A2E45;           /* โลหะเข้ม — เส้นขอบการ์ด 2px */
+  --mb-paper: #F7F5F0;                /* เล่ม 1 หาเงิน (light) */
+  --mb-midnight: #0F1117;             /* เล่ม 2 ใช้เงิน (dark) */
+  --mb-texture: metal-gloss 70% + rust 20% + neon 10%;
+  --mb-face-id: MB-33-MASTER-001;     /* NEVER CHANGE */
+
+  /* --- v4.4 layout ------------------------------------------------------- */
+  --mb-radius: 12px;                  /* การ์ดมุม 12px */
+  --mb-topbar: 64px;                  /* TopBar 64px */
+  --mb-grid: 8px;                     /* grid 8px */
+  --mb-btn-primary: 48px;             /* ปุ่มหลัก 48px */
+  --mb-btn-secondary: 40px;           /* ปุ่มรอง 40px */
+
+  /* --- semantic (trading) — functional, not brand ------------------------ */
+  --mb-color-success: #10B981;        /* Profit Green (P/L ต้องอ่านง่าย) */
   --mb-color-warning: #F59E0B;        /* Caution Amber */
-  --mb-color-danger: #EF4444;         /* Risk / Kill Switch Red */
-  --mb-bg-deep: #0A0A0A;              /* Cyber Black Background */
-  --mb-bg-card: #141417;              /* Tactical Dark Surface */
-  --mb-border-circuit: #262626;
+  --mb-color-danger: #EF4444;         /* Risk / Kill Switch */
+  --mb-bg-deep: var(--mb-midnight);
+  --mb-bg-card: #141721;              /* surface ที่เข้มกว่า midnight 1 ขั้น */
+  --mb-border-circuit: var(--mb-metal-dark);
 
-  /* Neon Glow Gradients */
-  --mb-gradient-brand: linear-gradient(135deg, #FF2D55 0%, #A855F7 50%, #3B82F6 100%);
-  --mb-gradient-surface: linear-gradient(180deg, rgba(255, 45, 85, 0.05) 0%, rgba(10, 10, 10, 0.95) 100%);
+  /* --- legacy aliases (existing markup keeps working) -------------------- */
+  --mb-color-primary: var(--mb-brand-red);
+  --mb-color-secondary: var(--mb-violet);
+  --mb-color-accent: var(--mb-neon-blue);
 
-  /* Neon Box Shadows / Bloom */
-  --mb-neon-glow-red: 0 0 15px rgba(255, 45, 85, 0.45);
-  --mb-neon-glow-purple: 0 0 15px rgba(168, 85, 247, 0.45);
-  --mb-neon-glow-blue: 0 0 15px rgba(59, 130, 246, 0.45);
+  /* --- glows ------------------------------------------------------------- */
+  --mb-gradient-brand: linear-gradient(135deg, #FF0033 0%, #8A2BE2 50%, #00E5FF 100%);
+  --mb-gradient-surface: linear-gradient(180deg, rgba(255, 0, 51, 0.06) 0%, rgba(15, 17, 23, 0.96) 100%);
+  --mb-neon-glow-red: 0 0 12px rgba(255, 0, 51, 0.45);   /* ปุ่มหลัก เงาแดง 12px */
+  --mb-neon-glow-purple: 0 0 15px rgba(138, 43, 226, 0.45);
+  --mb-neon-glow-blue: 0 0 15px rgba(0, 229, 255, 0.45);
+}
+
+/* Tailwind v4 theme: makes the tokens usable as utilities (bg-mb-red,
+   text-mb-neon, rounded-mb, font-sans…) without repeating hex values. */
+@theme {
+  --color-mb-red: var(--mb-brand-red);
+  --color-mb-red-fill: var(--mb-brand-red-fill);
+  --color-mb-violet: var(--mb-violet);
+  --color-mb-neon: var(--mb-neon-blue);
+  --color-mb-green: var(--mb-neon-green);
+  --color-mb-rust: var(--mb-rust);
+  --color-mb-rust-dark: var(--mb-rust-dark);
+  --color-mb-metal: var(--mb-metal);
+  --color-mb-metal-dark: var(--mb-metal-dark);
+  --color-mb-paper: var(--mb-paper);
+  --color-mb-midnight: var(--mb-midnight);
+
+  --radius-mb: var(--mb-radius);
+  /* v4.4: การ์ดทุกใบมุม 12px (แทน 16px ของ Tailwind default) */
+  --radius-2xl: var(--mb-radius);
+
+  --font-sans: 'Inter', 'Noto Sans Thai', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
 }
 
 .bg-motorboy-gradient {
-  background: linear-gradient(135deg, #FF2D55 0%, #A855F7 50%, #3B82F6 100%);
+  background: var(--mb-gradient-brand);
 }
 
 .text-motorboy-gradient {
-  background: linear-gradient(135deg, #FF2D55 0%, #A855F7 50%, #3B82F6 100%);
+  background: var(--mb-gradient-brand);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
 .border-motorboy-circuit {
-  border-color: #262626;
+  border-color: var(--mb-metal-dark);
+}
+
+/* ---------------------------------------------------------------------------
+   v4.4 component layer
+   ------------------------------------------------------------------------- */
+@layer components {
+  /* การ์ด: โลหะเข้ม 2px + มุมสนิม 1px + radius 12 */
+  .mb-card {
+    position: relative;
+    background-color: var(--mb-bg-card);
+    border: 2px solid var(--mb-metal-dark);
+    border-radius: var(--mb-radius);
+  }
+
+  .mb-card::after {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: inherit;
+    border-top: 1px solid var(--mb-rust);
+    border-left: 1px solid var(--mb-rust);
+    pointer-events: none;
+  }
+
+  /* ปุ่มหลัก: 48px + เงาแดง 12px (ใช้ --mb-brand-red-fill เพื่อ AA) */
+  .mb-btn-primary {
+    min-height: var(--mb-btn-primary);
+    border-radius: var(--mb-radius);
+    background-color: var(--mb-brand-red-fill);
+    color: #fff;
+    font-weight: 700;
+    box-shadow: var(--mb-neon-glow-red);
+    transition: background-color 200ms ease, transform 200ms ease;
+  }
+
+  .mb-btn-primary:hover:not(:disabled) {
+    background-color: var(--mb-brand-red);
+  }
+
+  .mb-btn-primary:disabled {
+    opacity: 0.5;
+    box-shadow: none;
+  }
+
+  /* ปุ่มรอง: 40px + ขอบโลหะ */
+  .mb-btn-secondary {
+    min-height: var(--mb-btn-secondary);
+    border-radius: var(--mb-radius);
+    border: 1px solid var(--mb-metal-dark);
+    font-weight: 600;
+  }
+
+  /* ปุ่ม AI: เส้นนีออน 1px */
+  .mb-neon-edge {
+    border: 1px solid var(--mb-neon-blue);
+    border-radius: var(--mb-radius);
+  }
+
+  /* ตัวเลขการเงิน: tabular-nums ตามสเปค */
+  .mb-num {
+    font-variant-numeric: tabular-nums;
+  }
 }
 
 @layer base {
@@ -45,7 +160,9 @@
   }
 
   body {
-    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    font-family: 'Inter', 'Noto Sans Thai', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    /* v4.4: ไทย line-height 1.7 */
+    line-height: 1.7;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     transition: background-color 0.5s ease-in-out, color 0.5s ease-in-out;
@@ -53,6 +170,17 @@
 
   code, pre {
     font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* v4.4 brand red is tuned for the midnight (Book 2) surface. On the light
+     Book 1 theme #FF0033 text lands at 3.96:1, so text/icons drop to the darker
+     variant while filled buttons keep the brand red (white on #E0002D = 4.99:1). */
+  :where(html:not(.dark)) .text-\[\#FF0033\] {
+    color: #C2002A;
+  }
+
+  :where(html:not(.dark)) .border-\[\#FF0033\] {
+    border-color: #E0002D;
   }
 
   /* Calm 200ms default for interactive elements.
@@ -126,11 +254,11 @@ button, a {
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #FF2D55;
+  background: #FF0033;
 }
 
 ::selection {
-  background: rgba(255, 45, 85, 0.35);
+  background: rgba(255, 0, 51, 0.35);
   color: #fff;
 }
 

@@ -7,7 +7,7 @@ interface MarketHoursCardProps {
 
 export const MarketHoursCard: React.FC<MarketHoursCardProps> = ({ marketHours }) => {
   return (
-    <div className="w-full rounded-[18px] bg-[#1A1D29] border border-[#252A3A] p-4">
+    <div className="w-full rounded-[18px] bg-[#1A1D29] border border-[#2A2E45] p-4">
       <h3 className="text-white font-bold text-sm">
         สถานะตลาด • Market Hours Engine
       </h3>
@@ -35,7 +35,7 @@ export const MarketHoursCard: React.FC<MarketHoursCardProps> = ({ marketHours })
         />
       </div>
 
-      <div className="mt-3 flex items-center justify-between text-xs pt-1 border-t border-[#252A3A]/40">
+      <div className="mt-3 flex items-center justify-between text-xs pt-1 border-t border-[#2A2E45]/40">
         <span className="text-[#A5B4FC] font-medium text-[11px]">
           {marketHours.countdown}
         </span>
@@ -55,7 +55,7 @@ interface MarketRowProps {
 
 const MarketRow: React.FC<MarketRowProps> = ({ title, subtitle, isOpen }) => {
   return (
-    <div className="w-full rounded-xl bg-[#0F1117] border border-[#252A3A] px-3 py-2 flex items-center justify-between">
+    <div className="w-full rounded-xl bg-[#0F1117] border border-[#2A2E45] px-3 py-2 flex items-center justify-between">
       <div>
         <h4 className="text-white text-xs font-semibold">{title}</h4>
         <p className="text-[#909AAB] text-[10px] mt-0.5">{subtitle}</p>
@@ -65,7 +65,7 @@ const MarketRow: React.FC<MarketRowProps> = ({ title, subtitle, isOpen }) => {
         className={`px-2 py-0.5 rounded-xl text-[10px] font-bold border ${
           isOpen
             ? 'bg-[#22C55E]/15 border-[#22C55E]/40 text-[#4ADE80]'
-            : 'bg-[#252A3A] border-[#252A3A] text-[#9CA3AF]'
+            : 'bg-[#2A2E45] border-[#2A2E45] text-[#9CA3AF]'
         }`}
       >
         {isOpen ? '● OPEN' : '○ CLOSED'}

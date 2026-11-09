@@ -94,9 +94,9 @@ export const ApiStatusCard: React.FC<ApiStatusCardProps> = ({ status, onRefresh 
   const totalCount = allStates.length;
 
   return (
-    <div className="w-full rounded-[20px] bg-[#1A1D29] border border-[#252A3A] p-4 shadow-xl relative overflow-hidden">
+    <div className="w-full rounded-[20px] bg-[#1A1D29] border border-[#2A2E45] p-4 shadow-xl relative overflow-hidden">
       {/* Top Header */}
-      <div className="flex items-center justify-between pb-3 border-b border-[#252A3A]/70">
+      <div className="flex items-center justify-between pb-3 border-b border-[#2A2E45]/70">
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 rounded-lg bg-[#7C6CFF]/15 border border-[#7C6CFF]/30 flex items-center justify-center text-[#A5B4FC]">
             <Activity className="w-4 h-4 text-[#7C6CFF]" />
@@ -141,7 +141,7 @@ export const ApiStatusCard: React.FC<ApiStatusCardProps> = ({ status, onRefresh 
               onClick={onRefresh}
               disabled={status.isChecking}
               title="ทดสอบและรีเฟรชการเชื่อมต่อ API ทั้งหมดทันที"
-              className="p-1.5 rounded-lg bg-[#252A3A]/60 hover:bg-[#252A3A] border border-[#343B4E] text-[#9CA3AF] hover:text-white transition-all disabled:opacity-50"
+              className="p-1.5 rounded-lg bg-[#2A2E45]/60 hover:bg-[#2A2E45] border border-[#343B4E] text-[#9CA3AF] hover:text-white transition-all disabled:opacity-50"
             >
               <RefreshCw
                 className={`w-3.5 h-3.5 ${status.isChecking ? 'animate-spin text-[#7C6CFF]' : ''}`}
@@ -158,7 +158,7 @@ export const ApiStatusCard: React.FC<ApiStatusCardProps> = ({ status, onRefresh 
           return (
             <div
               key={svc.key}
-              className="group p-2 rounded-xl bg-[#131622]/60 hover:bg-[#131622] border border-[#252A3A]/40 transition-all"
+              className="group p-2 rounded-xl bg-[#131622]/60 hover:bg-[#131622] border border-[#2A2E45]/40 transition-all"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 min-w-0">
@@ -178,7 +178,7 @@ export const ApiStatusCard: React.FC<ApiStatusCardProps> = ({ status, onRefresh 
 
               {/* Expandable or sub detail line */}
               {showDetails && (
-                <div className="mt-1.5 pt-1.5 border-t border-[#252A3A]/40 text-[10px] space-y-0.5">
+                <div className="mt-1.5 pt-1.5 border-t border-[#2A2E45]/40 text-[10px] space-y-0.5">
                   <div className="text-[#9CA3AF] flex items-center justify-between">
                     <span className="text-[#909AAB]">Endpoint:</span>
                     <span className="font-mono text-[#D1D5DB] truncate max-w-[200px]">
@@ -199,7 +199,7 @@ export const ApiStatusCard: React.FC<ApiStatusCardProps> = ({ status, onRefresh 
       </div>
 
       {/* Toggle Details & Last Checked Time */}
-      <div className="mt-3 pt-2.5 border-t border-[#252A3A]/60 flex items-center justify-between text-[10px]">
+      <div className="mt-3 pt-2.5 border-t border-[#2A2E45]/60 flex items-center justify-between text-[10px]">
         <button
           type="button"
           onClick={() => setShowDetails(!showDetails)}
@@ -225,8 +225,8 @@ export const ApiStatusCard: React.FC<ApiStatusCardProps> = ({ status, onRefresh 
 
       {/* Fault Tolerance Architecture Summary (When Expanded) */}
       {showDetails && (
-        <div className="mt-3 p-2.5 rounded-xl bg-[#0D1017] border border-[#252A3A] text-[11px] space-y-2">
-          <div className="flex items-center gap-1.5 text-white font-bold text-xs pb-1 border-b border-[#252A3A]">
+        <div className="mt-3 p-2.5 rounded-xl bg-[#0D1017] border border-[#2A2E45] text-[11px] space-y-2">
+          <div className="flex items-center gap-1.5 text-white font-bold text-xs pb-1 border-b border-[#2A2E45]">
             <ShieldCheck className="w-3.5 h-3.5 text-[#10B981]" />
             <span>กลยุทธ์รับมือข้อผิดพลาด (Fault-Tolerance)</span>
           </div>

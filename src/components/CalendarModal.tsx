@@ -130,7 +130,7 @@ export const CalendarModal: React.FC<CalendarModalProps> = ({ isOpen, onClose, i
       key={id}
       onClick={() => setTab(id)}
       className={`flex-1 min-w-0 py-2 px-2 text-[11px] sm:text-xs font-semibold rounded-xl transition-all inline-flex items-center justify-center gap-1 ${
-        tab === id ? 'bg-[#FF2D55] text-white shadow' : 'text-[#94A3B8] hover:text-white'
+        tab === id ? 'bg-[#FF0033] text-white shadow' : 'text-[#94A3B8] hover:text-white'
       }`}
     >
       {icon}
@@ -146,9 +146,9 @@ export const CalendarModal: React.FC<CalendarModalProps> = ({ isOpen, onClose, i
       aria-label="ปฏิทินกิจกรรม Google Calendar"
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-6 bg-black/75 backdrop-blur-xs overflow-y-auto"
     >
-      <div className={`w-full sm:max-w-2xl rounded-t-2xl sm:rounded-2xl flex flex-col overflow-hidden border-t sm:border max-h-[92vh] sm:my-8 ${isDark ? 'bg-[#0F1117] text-white border-[#252A3A]' : 'bg-white text-slate-900 border-slate-200'}`}>
+      <div className={`w-full sm:max-w-2xl rounded-t-2xl sm:rounded-2xl flex flex-col overflow-hidden border-t sm:border max-h-[92vh] sm:my-8 ${isDark ? 'bg-[#0F1117] text-white border-[#2A2E45]' : 'bg-white text-slate-900 border-slate-200'}`}>
         {/* Header + connection status */}
-        <div className="flex justify-between items-center px-5 py-4 border-b border-[#252A3A]/60">
+        <div className="flex justify-between items-center px-5 py-4 border-b border-[#2A2E45]/60">
           <h2 className="font-bold flex items-center gap-2">
             <CalendarIcon className="w-5 h-5 text-[#38BDF8]" />
             Google Calendar
@@ -163,7 +163,7 @@ export const CalendarModal: React.FC<CalendarModalProps> = ({ isOpen, onClose, i
         )}
 
         {/* Tabs */}
-        <div className="flex items-center gap-1.5 bg-[#0F1117] p-1.5 mx-4 mt-3 rounded-xl border border-[#252A3A]">
+        <div className="flex items-center gap-1.5 bg-[#0F1117] p-1.5 mx-4 mt-3 rounded-xl border border-[#2A2E45]">
           {tabBtn('events', 'กิจกรรม', <CalendarIcon className="w-3.5 h-3.5 shrink-0" />)}
           {tabBtn('create', 'สร้างใหม่', <Plus className="w-3.5 h-3.5 shrink-0" />)}
           {tabBtn('guide', 'คู่มือ & ปลอดภัย', <BookOpen className="w-3.5 h-3.5 shrink-0" />)}
@@ -196,14 +196,14 @@ export const CalendarModal: React.FC<CalendarModalProps> = ({ isOpen, onClose, i
                       key={d}
                       onClick={() => handleRangeChange(d)}
                       className={`px-2.5 py-1 rounded-lg text-xs font-semibold border transition-colors ${
-                        rangeDays === d ? 'bg-[#38BDF8]/20 border-[#38BDF8]/50 text-[#38BDF8]' : 'border-[#252A3A] text-[#9CA3AF] hover:text-white'
+                        rangeDays === d ? 'bg-[#38BDF8]/20 border-[#38BDF8]/50 text-[#38BDF8]' : 'border-[#2A2E45] text-[#9CA3AF] hover:text-white'
                       }`}
                     >
                       {d} วัน
                     </button>
                   ))}
                 </div>
-                <button onClick={() => loadEvents()} disabled={isLoading} className="px-3 py-1.5 bg-[#FF2D55] hover:bg-[#FF2D55]/90 disabled:opacity-50 rounded-lg text-white text-xs font-semibold inline-flex items-center gap-1.5">
+                <button onClick={() => loadEvents()} disabled={isLoading} className="px-3 py-1.5 bg-[#FF0033] hover:bg-[#FF0033]/90 disabled:opacity-50 rounded-lg text-white text-xs font-semibold inline-flex items-center gap-1.5">
                   <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
                   <span>{isLoading ? 'กำลังโหลด...' : 'รีเฟรช'}</span>
                 </button>
@@ -224,7 +224,7 @@ export const CalendarModal: React.FC<CalendarModalProps> = ({ isOpen, onClose, i
                   {list.map((e) => {
                     const expanded = expandedId === e.id;
                     return (
-                      <div key={e.id} className="p-3 bg-[#1A1D29] rounded-xl border border-[#252A3A] hover:border-[#38BDF8]/50 transition-colors">
+                      <div key={e.id} className="p-3 bg-[#1A1D29] rounded-xl border border-[#2A2E45] hover:border-[#38BDF8]/50 transition-colors">
                         <button onClick={() => setExpandedId(expanded ? null : e.id ?? null)} className="w-full text-left flex items-start justify-between gap-2">
                           <div className="min-w-0">
                             <p className="font-bold text-sm truncate">{e.summary || '(ไม่มีชื่อ)'}</p>
@@ -235,7 +235,7 @@ export const CalendarModal: React.FC<CalendarModalProps> = ({ isOpen, onClose, i
                           <ChevronDown className={`w-4 h-4 shrink-0 text-[#909AAB] transition-transform ${expanded ? 'rotate-180' : ''}`} />
                         </button>
                         {expanded && (
-                          <div className="mt-2 pt-2 border-t border-[#252A3A]/60 space-y-1.5 text-xs text-[#CBD5E1]">
+                          <div className="mt-2 pt-2 border-t border-[#2A2E45]/60 space-y-1.5 text-xs text-[#CBD5E1]">
                             {e.location && (
                               <p className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-[#FBBF24]" />{e.location}</p>
                             )}
@@ -268,36 +268,36 @@ export const CalendarModal: React.FC<CalendarModalProps> = ({ isOpen, onClose, i
               <div>
                 <label className="block text-xs text-[#9CA3AF] mb-1">ชื่องาน *</label>
                 <input value={form.summary} onChange={(e) => setForm({ ...form, summary: e.target.value })} placeholder="เช่น ประชุมกลยุทธ์เทรด BTC" maxLength={120}
-                  className="w-full bg-[#1A1D29] border border-[#252A3A] rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#7C6CFF]" />
+                  className="w-full bg-[#1A1D29] border border-[#2A2E45] rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#7C6CFF]" />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs text-[#9CA3AF] mb-1">เริ่ม *</label>
                   <input type="datetime-local" value={form.startLocal} onChange={(e) => setForm({ ...form, startLocal: e.target.value })}
-                    className="w-full bg-[#1A1D29] border border-[#252A3A] rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#7C6CFF]" />
+                    className="w-full bg-[#1A1D29] border border-[#2A2E45] rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#7C6CFF]" />
                 </div>
                 <div>
                   <label className="block text-xs text-[#9CA3AF] mb-1">สิ้นสุด *</label>
                   <input type="datetime-local" value={form.endLocal} onChange={(e) => setForm({ ...form, endLocal: e.target.value })}
-                    className="w-full bg-[#1A1D29] border border-[#252A3A] rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#7C6CFF]" />
+                    className="w-full bg-[#1A1D29] border border-[#2A2E45] rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#7C6CFF]" />
                 </div>
               </div>
               <div>
                 <label className="block text-xs text-[#9CA3AF] mb-1">สถานที่ (ถ้ามี)</label>
                 <input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} placeholder="ห้องประชุม / ลิงก์ Meet" maxLength={200}
-                  className="w-full bg-[#1A1D29] border border-[#252A3A] rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#7C6CFF]" />
+                  className="w-full bg-[#1A1D29] border border-[#2A2E45] rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#7C6CFF]" />
               </div>
               <div>
                 <label className="block text-xs text-[#9CA3AF] mb-1">รายละเอียด</label>
                 <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} maxLength={1000} placeholder="วาระ เตรียมกราฟ/สัญญาณที่ต้องดู..."
-                  className="w-full bg-[#1A1D29] border border-[#252A3A] rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#7C6CFF] resize-none" />
+                  className="w-full bg-[#1A1D29] border border-[#2A2E45] rounded-xl px-3 py-2.5 text-sm outline-none focus:border-[#7C6CFF] resize-none" />
               </div>
               {createMsg && (
                 <div className={`rounded-lg px-3 py-2 text-xs border ${createMsg.ok ? 'text-[#4ADE80] bg-[#22C55E]/10 border-[#22C55E]/30' : 'text-[#f9df7b] bg-[#f9df7b]/10 border-[#f9df7b]/30'}`}>
                   {createMsg.text}
                 </div>
               )}
-              <button onClick={handleCreate} disabled={isCreating || !form.summary.trim()} className="w-full py-2.5 bg-[#FF2D55] hover:bg-[#FF2D55]/90 disabled:opacity-50 rounded-xl text-white text-sm font-bold inline-flex items-center justify-center gap-2">
+              <button onClick={handleCreate} disabled={isCreating || !form.summary.trim()} className="w-full py-2.5 bg-[#FF0033] hover:bg-[#FF0033]/90 disabled:opacity-50 rounded-xl text-white text-sm font-bold inline-flex items-center justify-center gap-2">
                 <Plus className="w-4 h-4" />
                 <span>{isCreating ? 'กำลังสร้าง...' : 'สร้างกิจกรรมในปฏิทินหลัก'}</span>
               </button>
@@ -320,7 +320,7 @@ export const CalendarModal: React.FC<CalendarModalProps> = ({ isOpen, onClose, i
                 </div>
               </div>
 
-              <div className="rounded-xl bg-[#1A1D29] border border-[#252A3A] p-3">
+              <div className="rounded-xl bg-[#1A1D29] border border-[#2A2E45] p-3">
                 <p className="font-bold text-white mb-1.5">วิธีเชื่อมต่อ (ครั้งแรก)</p>
                 <ol className="list-decimal list-inside space-y-1 text-[#CBD5E1]">
                   <li>กดปุ่ม <strong>รีเฟรช</strong> ในแท็บกิจกรรม — ถ้าโทเค็นหมดอายุจะมีหน้าต่าง Google เด้งให้กดยินยอม</li>
@@ -329,7 +329,7 @@ export const CalendarModal: React.FC<CalendarModalProps> = ({ isOpen, onClose, i
                 </ol>
               </div>
 
-              <div className="rounded-xl bg-[#1A1D29] border border-[#252A3A] p-3">
+              <div className="rounded-xl bg-[#1A1D29] border border-[#2A2E45] p-3">
                 <p className="font-bold text-white mb-1.5">ถอนสิทธิ์เมื่อไหร่ก็ได้</p>
                 <ul className="list-disc list-inside space-y-1 text-[#CBD5E1]">
                   <li>ในแอป: กด <strong>ตัดการเชื่อมต่อ</strong> ด้านล่าง — โทเค็นในหน่วยความจำถูกลบทันที</li>
@@ -337,7 +337,7 @@ export const CalendarModal: React.FC<CalendarModalProps> = ({ isOpen, onClose, i
                 </ul>
               </div>
 
-              <div className="rounded-xl bg-[#1A1D29] border border-[#252A3A] p-3">
+              <div className="rounded-xl bg-[#1A1D29] border border-[#2A2E45] p-3">
                 <p className="font-bold text-white mb-1.5">แก้ปัญหาเบื้องต้น</p>
                 <ul className="list-disc list-inside space-y-1 text-[#CBD5E1]">
                   <li><strong>401 / ให้เชื่อมต่อใหม่:</strong> โทเค็นหมดอายุ — กดรีเฟรชแล้วยินยอมใหม่</li>

@@ -26,12 +26,12 @@ export const MASTER_BRAND = { black: '#000000', red: RUST_MODERN_COLORS.brandRed
 
 const TRADING_PALETTE: Palette = {
   masterBlack: MASTER_BRAND.black,
-  primary: '#FF2D55', // ← the app's existing brand accent (App.tsx / index.css)
+  primary: '#FF0033', // ← the app's existing brand accent (App.tsx / index.css)
   bull: '#00E676',
   bear: '#FF5252',
   signal: '#00E5FF',
-  surface: '#141721',
-  border: '#252A3A',
+  surface: '#0F1117',
+  border: '#2A2E45',
   label: 'Nong MotorBoy · Trader',
 };
 
@@ -72,7 +72,7 @@ export const TRADING_SKIN: MascotSkin = {
       case 'DRAG_FIBO':
         return 'border-[#00E5FF]/70 shadow-[0_0_18px_rgba(0,229,255,0.3)]';
       default:
-        return 'border-[#252A3A]';
+        return 'border-[#2A2E45]';
     }
   }),
   onboardingLine: 'ยินดีต้อนรับครับ! ผมจะคอยบอก “จุดจบเทรน” ให้ฟังประโยคเดียว ไม่รกจอครับ',

@@ -120,27 +120,27 @@ export const AtsMatrixDashboard: React.FC<AtsMatrixDashboardProps> = ({
     <div
       className={`rounded-2xl border transition-all duration-300 font-sans ${
         isDark
-          ? 'bg-[#0A0A0A] border-[#FF2D55]/30 text-slate-100 shadow-[0_0_40px_rgba(255,45,85,0.1)]'
-          : 'bg-slate-900 border-[#FF2D55]/40 text-slate-100 shadow-2xl'
+          ? 'bg-[#0F1117] border-[#FF0033]/30 text-slate-100 shadow-[0_0_40px_rgba(255,0,51,0.1)]'
+          : 'bg-slate-900 border-[#FF0033]/40 text-slate-100 shadow-2xl'
       } ${isModal ? 'max-h-[92vh] flex flex-col overflow-hidden' : 'p-4 sm:p-6 my-4'}`}
     >
       {/* Top Banner / MotorBoy Cockpit Bar */}
-      <div className="p-4 sm:p-5 border-b border-[#FF2D55]/20 bg-gradient-to-r from-[#FF2D55]/10 via-[#0A0A0A] to-[#A855F7]/10 flex flex-wrap items-center justify-between gap-3">
+      <div className="p-4 sm:p-5 border-b border-[#FF0033]/20 bg-gradient-to-r from-[#FF0033]/10 via-[#0F1117] to-[#8A2BE2]/10 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FF2D55] via-[#A855F7] to-[#3B82F6] p-[1.5px] shadow-[0_0_15px_rgba(255,45,85,0.4)]">
-            <div className="w-full h-full bg-[#0A0A0A] rounded-[9.5px] flex items-center justify-center text-sm">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FF0033] via-[#8A2BE2] to-[#00E5FF] p-[1.5px] shadow-[0_0_15px_rgba(255,0,51,0.4)]">
+            <div className="w-full h-full bg-[#0F1117] rounded-[9.5px] flex items-center justify-center text-sm">
               <Radio className="w-5 h-5 text-white animate-pulse" />
             </div>
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-mono text-sm sm:text-base font-black tracking-widest bg-gradient-to-r from-[#FF2D55] to-[#A855F7] text-transparent bg-clip-text uppercase">
+              <span className="font-mono text-sm sm:text-base font-black tracking-widest bg-gradient-to-r from-[#FF0033] to-[#8A2BE2] text-transparent bg-clip-text uppercase">
                 MOTORBOY ATS COCKPIT
               </span>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#FF2D55]/20 border border-[#FF2D55]/40 text-[#FF2D55] font-bold">
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#FF0033]/20 border border-[#FF0033]/40 text-[#FF0033] font-bold">
                 ● LIVE FEED
               </span>
-              <span className="hidden sm:inline-block text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#FF2D55]/15 border border-[#FF2D55]/30 text-[#FF2D55] font-semibold">
+              <span className="hidden sm:inline-block text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#FF0033]/15 border border-[#FF0033]/30 text-[#FF0033] font-semibold">
                 HYBRID PRO ENGINE
               </span>
             </div>
@@ -149,7 +149,7 @@ export const AtsMatrixDashboard: React.FC<AtsMatrixDashboardProps> = ({
               <span>•</span>
               <span>TORUS ORDER BOOK</span>
               <span>•</span>
-              <span className="text-[#FF2D55]">MotorBoy Studio AI-TH</span>
+              <span className="text-[#FF0033]">MotorBoy Studio AI-TH</span>
             </p>
           </div>
         </div>
@@ -181,7 +181,7 @@ export const AtsMatrixDashboard: React.FC<AtsMatrixDashboardProps> = ({
             <button
               type="button"
               onClick={handleSendReportToChat}
-              className="px-3 py-1.5 rounded-xl bg-[#FF2D55]/20 hover:bg-[#FF2D55]/30 border border-[#FF2D55]/50 text-xs font-mono font-bold text-[#FF2D55] flex items-center gap-1.5 transition-all cursor-pointer"
+              className="px-3 py-1.5 rounded-xl bg-[#FF0033]/20 hover:bg-[#FF0033]/30 border border-[#FF0033]/50 text-xs font-mono font-bold text-[#FF0033] flex items-center gap-1.5 transition-all cursor-pointer"
               title="ส่งรายงาน ATS เข้าห้อง AI Deep Analyze"
             >
               {sentToChat ? <Check className="w-3.5 h-3.5" /> : <Send className="w-3.5 h-3.5" />}
@@ -221,13 +221,13 @@ export const AtsMatrixDashboard: React.FC<AtsMatrixDashboardProps> = ({
           onClick={() => setActiveTab('BACKTEST')}
           className={`pb-2.5 px-3 font-mono text-xs font-bold border-b-2 flex items-center gap-1.5 transition-all cursor-pointer ${
             activeTab === 'BACKTEST'
-              ? 'border-[#FF2D55] text-[#FF2D55]'
+              ? 'border-[#FF0033] text-[#FF0033]'
               : 'border-transparent text-slate-400 hover:text-white'
           }`}
         >
           <Cpu className="w-3.5 h-3.5" />
           <span>Backtesting Dashboard (Strategy Lab &amp; Live Ticker)</span>
-          <span className="text-[9px] px-1.5 py-0.2 rounded-sm bg-[#FF2D55]/20 text-[#FF2D55] border border-[#FF2D55]/40 font-black">
+          <span className="text-[9px] px-1.5 py-0.2 rounded-sm bg-[#FF0033]/20 text-[#FF0033] border border-[#FF0033]/40 font-black">
             LIVE TICKER
           </span>
         </button>
@@ -295,7 +295,7 @@ export const AtsMatrixDashboard: React.FC<AtsMatrixDashboardProps> = ({
                   <Gauge className="w-3.5 h-3.5 text-[#00F0FF]" />
                   MODEL EDGE
                 </span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded-sm bg-[#FF2D55]/15 border border-[#FF2D55]/30 text-[#FF2D55] font-bold">
+                <span className="text-[10px] px-1.5 py-0.5 rounded-sm bg-[#FF0033]/15 border border-[#FF0033]/30 text-[#FF0033] font-bold">
                   +EV ARBITRAGE
                 </span>
               </div>
@@ -411,10 +411,10 @@ export const AtsMatrixDashboard: React.FC<AtsMatrixDashboardProps> = ({
                     <circle cx="255" cy="90" r="4" fill="#00FF66" opacity="0.9" />
                     <circle cx="65" cy="90" r="4" fill="#00F0FF" opacity="0.9" />
                     <circle cx="160" cy="46" r="3" fill="#F59E0B" opacity="0.8" />
-                    <circle cx="160" cy="134" r="3" fill="#A855F7" opacity="0.8" />
+                    <circle cx="160" cy="134" r="3" fill="#8A2BE2" opacity="0.8" />
                   </g>
                   {/* Inner Torus Hole / Liquidity Singularity */}
-                  <ellipse cx="160" cy="90" rx="45" ry="20" fill="#0A0D14" stroke="#252A3A" strokeWidth="2" />
+                  <ellipse cx="160" cy="90" rx="45" ry="20" fill="#0A0D14" stroke="#2A2E45" strokeWidth="2" />
                   <text
                     x="160"
                     y="88"
@@ -545,7 +545,7 @@ export const AtsMatrixDashboard: React.FC<AtsMatrixDashboardProps> = ({
                       </div>
                     </div>
                   </div>
-                  <div className="text-xl font-mono font-black text-[#FF2D55]">
+                  <div className="text-xl font-mono font-black text-[#FF0033]">
                     +{analysis.inefficiency.spreadInefficiencyPct}%
                   </div>
                 </div>

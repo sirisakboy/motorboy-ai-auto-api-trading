@@ -220,12 +220,12 @@ export const NewsCard: React.FC<NewsCardProps> = ({
   return (
     <div
       id="market-news-container"
-      className="w-full rounded-[18px] bg-[#1A1D29] border border-[#252A3A] p-4 shadow-lg flex flex-col space-y-3.5"
+      className="w-full rounded-[18px] bg-[#1A1D29] border border-[#2A2E45] p-4 shadow-lg flex flex-col space-y-3.5"
     >
       {/* Header with MSN Money & Auto-Analysis Status */}
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-2">
-          <div className="w-2.5 h-2.5 rounded-full bg-[#FF2D55] animate-pulse shadow-[0_0_8px_rgba(255,45,85,0.6)]" />
+          <div className="w-2.5 h-2.5 rounded-full bg-[#FF0033] animate-pulse shadow-[0_0_8px_rgba(255,0,51,0.6)]" />
           <h3 className="text-white font-black text-sm tracking-tight">
             MotorBoy News & Analysis Hub
           </h3>
@@ -260,7 +260,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
       </div>
 
       {/* Market Impact Overview Bar (Glanceable & Calm for Busy Office Workers) */}
-      <div className="flex items-center justify-between px-3.5 py-2 rounded-xl bg-[#0F1117] border border-[#252A3A] text-xs text-slate-300 gap-2 flex-wrap shadow-inner">
+      <div className="flex items-center justify-between px-3.5 py-2 rounded-xl bg-[#0F1117] border border-[#2A2E45] text-xs text-slate-300 gap-2 flex-wrap shadow-inner">
         <div className="flex items-center gap-1.5 font-semibold text-white">
           <Flame className="w-3.5 h-3.5 text-[#f9df7b]" />
           <span>ระดับผลกระทบต่อตลาด (Market Impact):</span>
@@ -333,7 +333,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
               className={`text-[10px] font-semibold px-2 py-1 rounded-lg border transition-colors ${
                 isAutoEnabled
                   ? 'border-[#22C55E]/40 text-[#4ADE80] bg-[#22C55E]/10'
-                  : 'border-[#909AAB]/40 text-[#94A3B8] bg-[#252A3A]/40'
+                  : 'border-[#909AAB]/40 text-[#94A3B8] bg-[#2A2E45]/40'
               }`}
               title={isAutoEnabled ? 'หยุดชั่วคราว' : 'เปิดใช้งานอัตโนมัติ'}
             >
@@ -351,7 +351,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
 
         {/* Expandable Latest Auto Synthesis Snapshot */}
         {latestAutoResult && (
-          <div className="pt-1 border-t border-[#252A3A]/60">
+          <div className="pt-1 border-t border-[#2A2E45]/60">
             <button
               onClick={() => setShowAutoDrawer(!showAutoDrawer)}
               className="w-full flex items-center justify-between text-[11px] text-[#A5B4FC] hover:text-white py-1 transition-colors"
@@ -368,7 +368,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
             </button>
 
             {showAutoDrawer && (
-              <div className="mt-2 p-3 rounded-lg bg-[#0F1117] border border-[#252A3A] space-y-2 text-xs">
+              <div className="mt-2 p-3 rounded-lg bg-[#0F1117] border border-[#2A2E45] space-y-2 text-xs">
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-white text-xs">
                     {latestAutoResult.headline}
@@ -412,7 +412,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
                   </ul>
                 </div>
 
-                <div className="flex items-center justify-between pt-2 border-t border-[#252A3A] text-[10px] text-[#94A3B8]">
+                <div className="flex items-center justify-between pt-2 border-t border-[#2A2E45] text-[10px] text-[#94A3B8]">
                   <span>
                     สินทรัพย์เป้าหมาย:{' '}
                     <strong className="text-white">
@@ -436,7 +436,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
       </div>
 
       {/* Category Tabs: All / MSN / Project Expansion / Crypto */}
-      <div className="flex items-center gap-1.5 bg-[#0F1117] p-1 rounded-xl border border-[#252A3A] overflow-x-auto text-xs">
+      <div className="flex items-center gap-1.5 bg-[#0F1117] p-1 rounded-xl border border-[#2A2E45] overflow-x-auto text-xs">
         <button
           id="news-tab-all"
           onClick={() => setSelectedCategory('ALL')}
@@ -562,7 +562,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
                       ? 'border-[#F59E0B]/30 bg-[#F59E0B]/[0.02]'
                       : isMsn
                       ? 'border-[#0284C7]/30 bg-[#0284C7]/[0.03]'
-                      : 'border-[#252A3A]'
+                      : 'border-[#2A2E45]'
                   }`}
               >
                 {/* Meta row */}
@@ -636,7 +636,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
                 )}
 
                 {item.projectDetails && (
-                  <div className="flex items-center gap-3 text-[10px] text-[#CBD5E1] bg-[#1A1D29] px-2 py-1 rounded-md border border-[#252A3A]">
+                  <div className="flex items-center gap-3 text-[10px] text-[#CBD5E1] bg-[#1A1D29] px-2 py-1 rounded-md border border-[#2A2E45]">
                     <span>
                       งบลงทุน:{' '}
                       <strong className="text-[#FBBF24]">
@@ -651,7 +651,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
                 )}
 
                 {/* Bottom Action buttons */}
-                <div className="flex items-center justify-between pt-1 border-t border-[#252A3A]/60">
+                <div className="flex items-center justify-between pt-1 border-t border-[#2A2E45]/60">
                   <button
                     id={`btn-ai-analyze-${item.id}`}
                     onClick={() => setSelectedArticle(item)}

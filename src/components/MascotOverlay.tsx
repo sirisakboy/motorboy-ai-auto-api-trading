@@ -437,7 +437,7 @@ export const MascotOverlay: React.FC<MascotOverlayProps> = ({
                   color: endingColor,
                 }}
               >
-                <div className="flex items-center justify-between text-[10px] font-mono font-bold">
+                <div className="mb-num flex items-center justify-between text-[10px] font-mono font-bold">
                   <span className="inline-flex items-center gap-1">
                     {endingLabel.icon}
                     {endingLabel.short}
@@ -446,7 +446,7 @@ export const MascotOverlay: React.FC<MascotOverlayProps> = ({
                     {ending.prob}% • เป้า {money(ending.target)}
                   </span>
                 </div>
-                <div className="mt-0.5 text-[9px] text-slate-400 font-mono">
+                <div className="mb-num mt-0.5 text-[9px] text-slate-400 font-mono">
                   รับ {money(ending.support)} · ต้าน {money(ending.resistance)}
                 </div>
               </div>

@@ -220,11 +220,11 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
     >
       <div
         className={`w-full max-w-5xl rounded-2xl flex flex-col overflow-hidden border shadow-2xl max-h-[94vh] my-auto ${
-          isDark ? 'bg-[#0F1117] text-white border-[#252A3A]' : 'bg-white text-slate-900 border-slate-200'
+          isDark ? 'bg-[#0F1117] text-white border-[#2A2E45]' : 'bg-white text-slate-900 border-slate-200'
         }`}
       >
         {/* Header */}
-        <div className="px-4 sm:px-6 py-3.5 border-b border-[#252A3A]/70 flex items-center justify-between bg-gradient-to-r from-[#141824] via-[#0F1117] to-[#141824]">
+        <div className="px-4 sm:px-6 py-3.5 border-b border-[#2A2E45]/70 flex items-center justify-between bg-gradient-to-r from-[#141824] via-[#0F1117] to-[#141824]">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl bg-[#f9df7b]/15 border border-[#f9df7b]/40 flex items-center justify-center text-[#f9df7b] shadow-[0_0_15px_rgba(239,68,68,0.2)]">
               <TrendingDown className="w-5 h-5" />
@@ -232,12 +232,12 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="font-bold text-base sm:text-lg tracking-tight">
-                  <span className="bg-gradient-to-r from-[#FF2D55] via-[#A855F7] to-[#3B82F6] text-transparent bg-clip-text font-black">
+                  <span className="bg-gradient-to-r from-[#FF0033] via-[#8A2BE2] to-[#00E5FF] text-transparent bg-clip-text font-black">
                     MotorBoy
                   </span>{' '}
                   Kill Switch & Risk Guard
                 </h2>
-                <span className="text-[10px] font-bold font-mono px-1.5 py-0.5 rounded bg-[#FF2D55]/20 text-[#FF2D55] border border-[#FF2D55]/40">
+                <span className="text-[10px] font-bold font-mono px-1.5 py-0.5 rounded bg-[#FF0033]/20 text-[#FF0033] border border-[#FF0033]/40">
                   DRAWDOWN STOP 5%
                 </span>
                 {stressTestDropPct !== 0 && (
@@ -247,7 +247,7 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
                 )}
               </div>
               <p className="text-xs text-slate-400 flex items-center gap-1">
-                <span className="text-[#FF2D55] font-bold font-mono">🛑 เบรกก่อนจิ!</span>
+                <span className="text-[#FF0033] font-bold font-mono">🛑 เบรกก่อนจิ!</span>
                 <span>— คุมความเสี่ยงสูงสุดไม่เกิน 2% ต่อไม้ และหยุดเทรดทันทีเมื่อ Drawdown เกิน 5%</span>
               </p>
             </div>
@@ -260,7 +260,7 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
               className={`p-2 rounded-xl border text-xs font-mono font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
                 showSettings
                   ? 'bg-[#f9df7b]/20 border-[#f9df7b]/60 text-[#f9df7b]'
-                  : 'bg-[#1A1D29] border-[#252A3A] text-slate-400 hover:text-white'
+                  : 'bg-[#1A1D29] border-[#2A2E45] text-slate-400 hover:text-white'
               }`}
               title="ตั้งค่าเกณฑ์แจ้งเตือน"
             >
@@ -285,7 +285,7 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
           {/* Threshold Settings Panel (Collapsible) */}
           {showSettings && (
             <div className="p-4 rounded-xl border border-[#f9df7b]/30 bg-[#f9df7b]/20 backdrop-blur-xs space-y-3 animate-in fade-in duration-200">
-              <div className="flex items-center justify-between pb-2 border-b border-[#252A3A]">
+              <div className="flex items-center justify-between pb-2 border-b border-[#2A2E45]">
                 <div className="flex items-center gap-2">
                   <Sliders className="w-4 h-4 text-[#f9df7b]" />
                   <span className="font-bold text-xs sm:text-sm text-[#f9df7b]">
@@ -390,7 +390,7 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
           {/* KPI Dashboard Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3">
             {/* 1. Avg Portfolio Drawdown */}
-            <div className="p-3.5 rounded-xl border border-[#252A3A] bg-[#141824] space-y-1">
+            <div className="p-3.5 rounded-xl border border-[#2A2E45] bg-[#141824] space-y-1">
               <span className="text-[11px] font-mono uppercase text-slate-400 flex items-center gap-1">
                 <Activity className="w-3.5 h-3.5 text-[#38BDF8]" />
                 ย่อตัวเฉลี่ยพอร์ต (Avg DD)
@@ -432,7 +432,7 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
             </div>
 
             {/* 3. Breached Assets Count */}
-            <div className="p-3.5 rounded-xl border border-[#252A3A] bg-[#141824] space-y-1">
+            <div className="p-3.5 rounded-xl border border-[#2A2E45] bg-[#141824] space-y-1">
               <span className="text-[11px] font-mono uppercase text-slate-400 flex items-center gap-1">
                 <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
                 หลุดเกณฑ์เตือน (Breached)
@@ -455,7 +455,7 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
             </div>
 
             {/* 4. Portfolio Risk Status */}
-            <div className="p-3.5 rounded-xl border border-[#252A3A] bg-[#141824] space-y-1">
+            <div className="p-3.5 rounded-xl border border-[#2A2E45] bg-[#141824] space-y-1">
               <span className="text-[11px] font-mono uppercase text-slate-400 flex items-center gap-1">
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
                 ระดับความเสี่ยงพอร์ต
@@ -466,7 +466,7 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
           </div>
 
           {/* Actionable Strategy Advice Banner */}
-          <div className="p-3.5 rounded-xl bg-gradient-to-r from-[#141824] to-[#1A1D29] border border-[#252A3A] flex items-start gap-3">
+          <div className="p-3.5 rounded-xl bg-gradient-to-r from-[#141824] to-[#1A1D29] border border-[#2A2E45] flex items-start gap-3">
             <div className="p-1.5 rounded-lg bg-[#7C6CFF]/20 text-[#A5B4FC] shrink-0 mt-0.5">
               <Sparkles className="w-4 h-4" />
             </div>
@@ -495,7 +495,7 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
                   className={`px-3 py-1.5 rounded-lg transition-colors shrink-0 cursor-pointer ${
                     selectedCategory === tab.id
                       ? 'bg-[#f9df7b]/20 border border-[#f9df7b]/50 text-[#f9df7b] font-bold'
-                      : 'bg-[#141824] border border-[#252A3A] text-slate-400 hover:text-white'
+                      : 'bg-[#141824] border border-[#2A2E45] text-slate-400 hover:text-white'
                   }`}
                 >
                   {tab.label}
@@ -506,7 +506,7 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
             {/* Stress Test & Search */}
             <div className="flex items-center gap-2">
               {/* Stress Test Dropdown */}
-              <div className="flex items-center gap-1.5 bg-[#141824] border border-[#252A3A] rounded-xl px-2.5 py-1 text-xs">
+              <div className="flex items-center gap-1.5 bg-[#141824] border border-[#2A2E45] rounded-xl px-2.5 py-1 text-xs">
                 <span className="text-slate-400 text-[10px] font-mono shrink-0 hidden sm:inline">
                   Stress Test:
                 </span>
@@ -551,7 +551,7 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="ค้นหาสินทรัพย์..."
-                  className="w-full bg-[#141824] border border-[#252A3A] rounded-xl pl-8 pr-3 py-1.5 text-xs text-white placeholder-slate-500 outline-none focus:border-[#f9df7b]"
+                  className="w-full bg-[#141824] border border-[#2A2E45] rounded-xl pl-8 pr-3 py-1.5 text-xs text-white placeholder-slate-500 outline-none focus:border-[#f9df7b]"
                 />
               </div>
             </div>
@@ -560,7 +560,7 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
           {/* Asset List Grid */}
           <div className="space-y-2.5">
             {filteredAssets.length === 0 ? (
-              <div className="p-8 text-center text-slate-400 border border-[#252A3A] rounded-xl bg-[#141824]">
+              <div className="p-8 text-center text-slate-400 border border-[#2A2E45] rounded-xl bg-[#141824]">
                 ไม่พบสินทรัพย์ที่ตรงตามเงื่อนไขที่เลือก
               </div>
             ) : (
@@ -578,10 +578,10 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
                         ? 'bg-rose-950/15 border-rose-500/40 shadow-[0_0_10px_rgba(244,63,94,0.08)]'
                         : asset.status === 'WARNING'
                         ? 'bg-amber-950/10 border-amber-500/35'
-                        : 'bg-[#141824] border-[#252A3A] hover:border-slate-600'
+                        : 'bg-[#141824] border-[#2A2E45] hover:border-slate-600'
                     }`}
                   >
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2.5 border-b border-[#252A3A]/60">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2.5 border-b border-[#2A2E45]/60">
                       {/* Left: Symbol & Status */}
                       <div className="flex items-center gap-2.5">
                         <div
@@ -679,7 +679,7 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
                           <span>ระยะย่อตัวจากจุดพีค</span>
                           <span>ลดลง -${asset.declineAmount.toLocaleString()}</span>
                         </div>
-                        <div className="h-2 w-full bg-[#1A1D29] rounded-full overflow-hidden relative border border-[#252A3A]">
+                        <div className="h-2 w-full bg-[#1A1D29] rounded-full overflow-hidden relative border border-[#2A2E45]">
                           {/* Fill Bar */}
                           <div
                             className={`h-full transition-all duration-500 rounded-full ${
@@ -698,7 +698,7 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
 
                       {/* Mini Underwater Curve SVG (Col 6-8) */}
                       <div className="md:col-span-4 flex items-center gap-2">
-                        <div className="w-full h-8 bg-[#0F1117] rounded-lg border border-[#252A3A]/70 px-1 py-0.5 flex items-center">
+                        <div className="w-full h-8 bg-[#0F1117] rounded-lg border border-[#2A2E45]/70 px-1 py-0.5 flex items-center">
                           <svg className="w-full h-full overflow-visible" viewBox="0 0 140 30" preserveAspectRatio="none">
                             {/* 0% baseline */}
                             <line x1="0" y1="2" x2="140" y2="2" stroke="#475569" strokeWidth="0.8" strokeDasharray="2,2" />
@@ -747,7 +747,7 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
         </div>
 
         {/* Modal Footer with Actions */}
-        <div className="px-4 sm:px-6 py-3 border-t border-[#252A3A]/70 flex items-center justify-between bg-[#141824] flex-wrap gap-2">
+        <div className="px-4 sm:px-6 py-3 border-t border-[#2A2E45]/70 flex items-center justify-between bg-[#141824] flex-wrap gap-2">
           <div className="text-xs text-slate-400 font-mono flex items-center gap-1.5">
             <span>เกณฑ์เตือนปัจจุบัน:</span>
             <span className="text-amber-400 font-bold">Warning {thresholds.warning}%</span>

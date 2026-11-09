@@ -102,7 +102,7 @@ export const StockDetailModal: React.FC<StockDetailModalProps> = ({
                 {isThaiStock ? <Building2 className="w-3.5 h-3.5" /> : <Globe className="w-3.5 h-3.5" />}
                 {isThaiStock ? 'หุ้นไทย SET50' : 'หุ้นต่างประเทศ'}
               </span>
-              {sector && <span className="text-[10px] text-[#94A3B8] bg-[#252A3A] px-2 py-0.5 rounded-full">{sector}</span>}
+              {sector && <span className="text-[10px] text-[#94A3B8] bg-[#2A2E45] px-2 py-0.5 rounded-full">{sector}</span>}
             </div>
             <h2 className="text-white text-base sm:text-lg font-bold leading-snug">{symbol} &bull; {name}</h2>
             <div className="flex items-center gap-3 mt-1">

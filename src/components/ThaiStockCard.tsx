@@ -29,7 +29,7 @@ export const ThaiStockCard: React.FC<ThaiStockCardProps> = ({
   return (
     <div
       onClick={onSelect}
-      className="w-full rounded-[18px] bg-[#1A1D29] border border-[#252A3A] p-4 transition-all duration-150 active:scale-[0.99] hover:border-[#F59E0B]/50 cursor-pointer"
+      className="w-full rounded-[18px] bg-[#1A1D29] border border-[#2A2E45] p-4 transition-all duration-150 active:scale-[0.99] hover:border-[#F59E0B]/50 cursor-pointer"
     >
       <div className="flex flex-wrap sm:flex-nowrap items-start sm:items-center justify-between gap-2">
         {/* Left: Symbol + Name */}
@@ -124,7 +124,7 @@ export const ThaiStockCard: React.FC<ThaiStockCardProps> = ({
 
       {/* Signal Badge */}
       {signal && (
-        <div className="flex items-center justify-between flex-wrap gap-2 mt-3 pt-3 border-t border-[#252A3A]/60">
+        <div className="flex items-center justify-between flex-wrap gap-2 mt-3 pt-3 border-t border-[#2A2E45]/60">
           <div className="flex items-center gap-2">
             <span
               className={`text-[10px] font-bold px-2 py-0.5 rounded ${

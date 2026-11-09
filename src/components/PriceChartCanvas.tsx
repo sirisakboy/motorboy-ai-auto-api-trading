@@ -84,7 +84,7 @@ export const PriceChartCanvas: React.FC<PriceChartCanvasProps> = ({
     const range = maxP - minP > 0 ? maxP - minP : 1.0;
 
     // 1. Grid lines
-    ctx.strokeStyle = '#252A3A';
+    ctx.strokeStyle = '#2A2E45';
     ctx.lineWidth = 1;
     for (let i = 0; i <= 4; i++) {
       const y = (h * i) / 4;
@@ -220,7 +220,7 @@ export const PriceChartCanvas: React.FC<PriceChartCanvasProps> = ({
       </div>
 
       {chartData && (chartData.support || chartData.resistance) && (
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 bg-[#0F1117] border border-[#252A3A] rounded-xl px-3 py-2 text-xs">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 bg-[#0F1117] border border-[#2A2E45] rounded-xl px-3 py-2 text-xs">
           <div className="flex items-center space-x-2">
             <span className="text-[#9CA3AF] text-[11px]">การวิเคราะห์กรอบราคา 1000 วัน ({currencySymbol}):</span>
           </div>
@@ -247,7 +247,7 @@ export const PriceChartCanvas: React.FC<PriceChartCanvasProps> = ({
         </div>
       )}
 
-      <div className="w-full h-[210px] bg-[#131620] rounded-[14px] border border-[#252A3A] p-2 relative flex items-center justify-center overflow-hidden">
+      <div className="w-full h-[210px] bg-[#131620] rounded-[14px] border border-[#2A2E45] p-2 relative flex items-center justify-center overflow-hidden">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center space-y-2">
             <div className="w-8 h-8 border-2 border-[#7C6CFF] border-t-transparent rounded-full animate-spin" />

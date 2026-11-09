@@ -35,7 +35,7 @@ export const ForeignStockCard: React.FC<ForeignStockCardProps> = ({
   return (
     <div
       onClick={onSelect}
-      className="w-full rounded-[18px] bg-[#1A1D29] border border-[#252A3A] p-4 transition-all duration-150 active:scale-[0.99] hover:border-[#6366F1]/50 cursor-pointer"
+      className="w-full rounded-[18px] bg-[#1A1D29] border border-[#2A2E45] p-4 transition-all duration-150 active:scale-[0.99] hover:border-[#6366F1]/50 cursor-pointer"
     >
       <div className="flex flex-wrap sm:flex-nowrap items-start sm:items-center justify-between gap-2">
         {/* Left: Symbol + Name */}
@@ -126,7 +126,7 @@ export const ForeignStockCard: React.FC<ForeignStockCardProps> = ({
       </div>
 
       {/* 52-Week Range Bar */}
-      <div className="mt-3 pt-3 border-t border-[#252A3A]/60">
+      <div className="mt-3 pt-3 border-t border-[#2A2E45]/60">
         <div className="flex items-center justify-between text-[10px] text-[#94A3B8] mb-1">
           <span>52W Low: {currencyPrefix}{(stock.low52w * multiplier).toLocaleString()}</span>
           <span>52W High: {currencyPrefix}{(stock.high52w * multiplier).toLocaleString()}</span>
@@ -143,7 +143,7 @@ export const ForeignStockCard: React.FC<ForeignStockCardProps> = ({
 
       {/* Signal Badge */}
       {signal && (
-        <div className="flex items-center justify-between flex-wrap gap-2 mt-3 pt-3 border-t border-[#252A3A]/60">
+        <div className="flex items-center justify-between flex-wrap gap-2 mt-3 pt-3 border-t border-[#2A2E45]/60">
           <div className="flex items-center gap-2">
             <span
               className={`text-[10px] font-bold px-2 py-0.5 rounded ${

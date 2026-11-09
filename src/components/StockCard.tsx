@@ -26,10 +26,10 @@ export const StockCard: React.FC<StockCardProps> = ({
   });
 
   return (
-    <div className="w-full rounded-[18px] bg-[#1A1D29] border border-[#252A3A] p-4 transition-transform duration-150 active:scale-[0.99]">
+    <div className="w-full rounded-[18px] bg-[#1A1D29] border border-[#2A2E45] p-4 transition-transform duration-150 active:scale-[0.99]">
       <div className="flex flex-wrap sm:flex-nowrap items-start sm:items-center justify-between gap-2">
         <div className="flex items-center space-x-2.5 min-w-0">
-          <div className="w-9 h-9 shrink-0 rounded-full bg-[#0F1117] border border-[#252A3A] flex items-center justify-center text-sm font-bold text-[#A5B4FC]">
+          <div className="w-9 h-9 shrink-0 rounded-full bg-[#0F1117] border border-[#2A2E45] flex items-center justify-center text-sm font-bold text-[#A5B4FC]">
             {stock.symbol.charAt(0)}
           </div>
           <div className="min-w-0">
@@ -69,7 +69,7 @@ export const StockCard: React.FC<StockCardProps> = ({
       </div>
 
       {stock.symbol === 'SET' && (
-        <div className="mt-3 w-full h-[54px] bg-[#0F1117] rounded-xl border border-[#252A3A] px-3 py-1.5 flex items-center justify-between">
+        <div className="mt-3 w-full h-[54px] bg-[#0F1117] rounded-xl border border-[#2A2E45] px-3 py-1.5 flex items-center justify-between">
           <svg className="w-[140px] h-9 overflow-visible" viewBox="0 0 140 36">
             <path
               d="M 5,25 Q 42,4 70,14 Q 105,22 135,9"
