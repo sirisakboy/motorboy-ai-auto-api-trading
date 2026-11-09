@@ -1,4 +1,5 @@
 import express from 'express';
+import http from 'http';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { GoogleGenAI } from '@google/genai';
@@ -812,12 +813,22 @@ app.post('/api/gemini/chat-stream', async (req, res) => {
 // ============================================================================
 
 async function startServer() {
+  // One HTTP server for both Express and Vite. In middleware mode Vite would
+  // otherwise open a *second* listener on port 24678 for HMR, which the preview
+  // proxy does not forward — the page still loaded but HMR websockets failed.
+  // Sharing the server keeps everything on PORT.
+  const httpServer = http.createServer(app);
+
   if (process.env.NODE_ENV !== 'production') {
     const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
-      server: { middlewareMode: true, host: '0.0.0.0', port: Number(PORT) },
+      server: { middlewareMode: true, hmr: { server: httpServer } },
       appType: 'spa',
     });
+    // Unknown API paths must stay JSON in dev too — Vite's SPA fallback would
+    // otherwise answer /api/* with index.html and clients would try to parse
+    // HTML as JSON (the same failure the production branch guards against).
+    app.use('/api', (_req, res) => res.status(404).json({ error: 'Not found' }));
     app.use(vite.middlewares);
   } else {
     app.use(express.static(path.join(__dirname, 'dist')));
@@ -831,7 +842,7 @@ async function startServer() {
     });
   }
 
-  app.listen(Number(PORT), '0.0.0.0', () => {
+  httpServer.listen(Number(PORT), '0.0.0.0', () => {
     console.log(`Server listening on http://0.0.0.0:${PORT}`);
   });
 }
