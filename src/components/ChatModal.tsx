@@ -104,6 +104,10 @@ export const ChatModal: React.FC<ChatModalProps> = ({
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const atBottomRef = useRef(true);
+  // setState is async: two fast clicks used to fire two AI requests before
+  // `isSending` flipped. A ref is the actual lock.
+  const sendingRef = useRef(false);
+  const copyTimerRef = useRef<number | null>(null);
 
   const chatContext = useMemo(
     () => ({
@@ -145,6 +149,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
     () => () => {
       abortRef.current?.abort();
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+      if (copyTimerRef.current !== null) window.clearTimeout(copyTimerRef.current);
     },
     []
   );
@@ -191,6 +196,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
     async (query: string) => {
       const controller = new AbortController();
       abortRef.current = controller;
+      sendingRef.current = true;
       setIsSending(true);
       setError(null);
       setStreamingText('');
@@ -241,6 +247,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
         setError({ message, query });
       } finally {
         abortRef.current = null;
+        sendingRef.current = false;
         setIsSending(false);
         setStreamingText(null);
         streamTextRef.current = '';
@@ -253,7 +260,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
   const sendQuery = useCallback(
     async (rawQuery: string) => {
       const query = rawQuery.trim();
-      if (!query || isSending) return;
+      if (!query || isSending || sendingRef.current) return;
 
       setDraft('');
       setError(null);
@@ -285,6 +292,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
   const handleStop = useCallback(() => {
     abortRef.current?.abort();
     abortRef.current = null;
+    sendingRef.current = false;
     if (rafRef.current !== null) {
       cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
@@ -296,19 +304,26 @@ export const ChatModal: React.FC<ChatModalProps> = ({
   }, []);
 
   const handleRegenerate = useCallback(() => {
+    if (isSending || sendingRef.current) return;
     const lastUser = [...messages].reverse().find((m) => m.uid !== AI_UID && !m.name.includes('AI'));
     if (lastUser) void runAiTurn(lastUser.text);
-  }, [messages, runAiTurn]);
+  }, [isSending, messages, runAiTurn]);
 
   const handleCopy = useCallback((id: string, text: string) => {
-    void navigator.clipboard?.writeText(text);
+    void navigator.clipboard?.writeText(text).catch(() => {
+      /* clipboard permission denied on http:// origins — nothing to do */
+    });
     setCopiedId(id);
-    window.setTimeout(() => setCopiedId((current) => (current === id ? null : current)), 1800);
+    if (copyTimerRef.current !== null) window.clearTimeout(copyTimerRef.current);
+    copyTimerRef.current = window.setTimeout(() => {
+      copyTimerRef.current = null;
+      setCopiedId((current) => (current === id ? null : current));
+    }, 1800);
   }, []);
 
   const handleSendSticker = useCallback(
     async (id: string) => {
-      if (isSending) return;
+      if (isSending || sendingRef.current) return;
       const senderUid = user?.uid || 'guest-trader';
       const senderName = user?.displayName || user?.email || 'Trader (Guest)';
 

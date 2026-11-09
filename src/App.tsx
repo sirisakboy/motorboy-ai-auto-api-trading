@@ -394,6 +394,8 @@ export const App: React.FC = () => {
   foreignRef.current = foreignStocks;
   const indexRef = useRef<StockIndex[]>(stockIndices);
   indexRef.current = stockIndices;
+  const newsRef = useRef<NewsArticle[]>(newsList);
+  newsRef.current = newsList;
 
   // 1. Memoized API Update Functions with Error Handling & Failover
   const updateCryptoPrices = useCallback(async () => {
@@ -609,35 +611,50 @@ export const App: React.FC = () => {
   useEffect(() => {
     const updateSignals = () => setSignals(generateRealSignals(cryptoListRef.current));
     updateSignals();
-    const interval = setInterval(updateSignals, 15000);
+    const interval = setInterval(() => {
+      if (document.hidden) return; // ไม่ต้องคำนวณใหม่ตอนแท็บถูกซ่อน
+      updateSignals();
+    }, 15000);
     return () => clearInterval(interval);
   }, []);
 
   // 3. Crypto REST Fallback Polling (immediate mount + every 30s)
   useEffect(() => {
     updateCryptoPrices();
-    const interval = setInterval(updateCryptoPrices, 30000);
+    const interval = setInterval(() => {
+      if (document.hidden) return;
+      updateCryptoPrices();
+    }, 30000);
     return () => clearInterval(interval);
   }, [updateCryptoPrices]);
 
   // 4. Forex Periodic Polling (immediate mount + every 15s)
   useEffect(() => {
     updateForex();
-    const interval = setInterval(updateForex, 15000);
+    const interval = setInterval(() => {
+      if (document.hidden) return;
+      updateForex();
+    }, 15000);
     return () => clearInterval(interval);
   }, [updateForex]);
 
   // 5. Thai & Foreign Stock + Index Polling (immediate mount + every 60s)
   useEffect(() => {
     updateStocks();
-    const interval = setInterval(updateStocks, 60000);
+    const interval = setInterval(() => {
+      if (document.hidden) return;
+      updateStocks();
+    }, 60000);
     return () => clearInterval(interval);
   }, [updateStocks]);
 
   // 6. News Periodic Polling (immediate mount + every 300s)
   useEffect(() => {
     updateNews();
-    const interval = setInterval(updateNews, 300000);
+    const interval = setInterval(() => {
+      if (document.hidden) return;
+      updateNews();
+    }, 300000);
     return () => clearInterval(interval);
   }, [updateNews]);
 
@@ -648,7 +665,11 @@ export const App: React.FC = () => {
 
     const runHeadlineCategorization = async () => {
       try {
-        const categorized = await categorizeHeadlinesWithGemini(newsList, geminiApiKey);
+        // read the freshest headlines: the effect only re-subscribes when the
+        // *length* changes, so a captured `newsList` would re-send stale titles
+        const currentNews = newsRef.current;
+        if (currentNews.length === 0) return;
+        const categorized = await categorizeHeadlinesWithGemini(currentNews, geminiApiKey);
         if (isMounted && Array.isArray(categorized) && categorized.length > 0) {
           setNewsList(categorized);
         }
@@ -658,7 +679,10 @@ export const App: React.FC = () => {
     };
 
     runHeadlineCategorization();
-    const interval = setInterval(runHeadlineCategorization, 180000); // Categorize headlines every 3 mins
+    const interval = setInterval(() => {
+      if (document.hidden) return;
+      void runHeadlineCategorization();
+    }, 180000); // Categorize headlines every 3 mins
     return () => {
       isMounted = false;
       clearInterval(interval);
@@ -668,6 +692,7 @@ export const App: React.FC = () => {
   // 7. Clock tick every 30s for Bangkok ICT Market Hours (ultra-low CPU)
   useEffect(() => {
     const interval = setInterval(() => {
+      if (document.hidden) return;
       setMarketHours(computeMarketHours());
     }, 30000);
     return () => clearInterval(interval);
@@ -698,24 +723,32 @@ export const App: React.FC = () => {
   );
 
   // 7. Load Chart Data for Selected Asset
+  // `isForexChart` is a primitive on purpose: depending on the Set itself made
+  // the chart refetch every time forex rates ticked (every 15s).
+  const isForexChart = forexPairSet.has(selectedChartAsset);
   useEffect(() => {
     let isCancelled = false;
     setChartLoading(true);
 
-    fetchPriceHistory(
-      selectedChartAsset,
-      forexPairSet.has(selectedChartAsset)
-    ).then((data) => {
-      if (!isCancelled) {
-        setChartData(data);
-        setChartLoading(false);
-      }
-    });
+    fetchPriceHistory(selectedChartAsset, isForexChart)
+      .then((data) => {
+        if (!isCancelled) setChartData(data);
+      })
+      .catch((err: unknown) => {
+        // A failed candle request used to leave the spinner running forever and
+        // surface as an unhandled promise rejection.
+        if (isCancelled) return;
+        console.warn('Chart data request failed:', err);
+        setChartData(null);
+      })
+      .finally(() => {
+        if (!isCancelled) setChartLoading(false);
+      });
 
     return () => {
       isCancelled = true;
     };
-  }, [selectedChartAsset, forexPairSet]);
+  }, [selectedChartAsset, isForexChart]);
 
   // Helper: show toast, auto-clear after 5s, and remove the triggered alert.
   // Memoised so the price-alert effect dependency is stable.

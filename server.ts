@@ -2,7 +2,9 @@ import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { GoogleGenAI } from '@google/genai';
-import { ChatTone, buildChatPrompt, isChatTone } from './src/services/chatStreamCore';
+import { buildChatPrompt, isChatTone } from './src/services/chatStreamCore';
+import { createRateLimiter } from './src/server/rateLimit';
+import type { ChatTone } from './src/services/chatStreamCore';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -10,7 +12,20 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(express.json({ limit: '10mb' }));
+// Behind Cloud Run / a tunnel the client IP arrives in X-Forwarded-For.
+app.set('trust proxy', 1);
+
+/**
+ * JSON bodies are small in this app (market snapshots, article batches).
+ * 10 MB was an invitation to memory pressure and cost amplification on routes
+ * that proxy a paid model, so the ceiling is now 1 MB.
+ */
+app.use(express.json({ limit: '1mb' }));
+
+// จำกัดจำนวนคำขอต่อ IP สำหรับ route ที่ไปเรียกโมเดลคิดเงิน
+// (ตัว implement + เทสต์อยู่ที่ src/server/rateLimit.ts)
+const apiRateLimiter = createRateLimiter({ windowMs: 60_000, max: 60 });
+app.use('/api', apiRateLimiter);
 
 /** Shared Gemini model identifier */
 const GEMINI_MODEL = 'gemini-3.1-flash-lite';
@@ -801,8 +816,13 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     app.use(express.static(path.join(__dirname, 'dist')));
-    app.use((_req, res) => {
-      res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+    app.use((req, res) => {
+      // Unknown API paths must stay JSON — sending index.html made clients parse
+      // an HTML page as JSON and report a confusing SyntaxError.
+      if (req.path.startsWith('/api/')) {
+        return res.status(404).json({ error: 'Not found' });
+      }
+      return res.sendFile(path.join(__dirname, 'dist', 'index.html'));
     });
   }
 

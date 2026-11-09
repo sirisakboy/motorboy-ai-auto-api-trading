@@ -38,7 +38,31 @@ interface NewsCardProps {
 
 type NewsCategoryFilter = 'ALL' | 'MSN_MONEY' | 'MITRADE' | 'PROJECT_EXPANSION' | 'CRYPTO';
 
-const ONE_HOUR_SECONDS = 3600;
+const AUTO_INTERVAL_MS = 60 * 60 * 1000;
+const LAST_RUN_KEY = 'last_auto_analysis_time';
+const ENABLED_KEY = 'auto_news_analysis_enabled';
+
+/** อ่านเวลาที่ตรวจล่าสุดแบบปลอดภัย (ค่าเสีย/NaN ต้องไม่ทำให้ UI พัง) */
+function readLastRun(): number | null {
+  try {
+    const raw = localStorage.getItem(LAST_RUN_KEY);
+    if (!raw) return null;
+    const parsed = Number.parseInt(raw, 10);
+    if (!Number.isFinite(parsed) || parsed <= 0) return null;
+    // เวลาในอนาคต (นาฬิกาเครื่องเพี้ยน/ถูกแก้) ไม่ควรทำให้ timer ค้าง
+    return parsed > Date.now() ? Date.now() : parsed;
+  } catch {
+    return null;
+  }
+}
+
+function formatClock(ms: number): string {
+  try {
+    return new Date(ms).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+  } catch {
+    return '--:--';
+  }
+}
 
 export const NewsCard: React.FC<NewsCardProps> = ({
   articles,
@@ -55,16 +79,15 @@ export const NewsCard: React.FC<NewsCardProps> = ({
 
   // Auto-Analysis state (every 1 hour)
   const [isAutoEnabled, setIsAutoEnabled] = useState<boolean>(() => {
-    const saved = localStorage.getItem('auto_news_analysis_enabled');
-    return saved !== null ? saved === 'true' : true;
+    try {
+      const saved = localStorage.getItem(ENABLED_KEY);
+      return saved !== null ? saved === 'true' : true;
+    } catch {
+      return true;
+    }
   });
-  const [secondsRemaining, setSecondsRemaining] = useState<number>(() => {
-    const lastRun = localStorage.getItem('last_auto_analysis_time');
-    if (!lastRun) return ONE_HOUR_SECONDS;
-    const elapsed = Math.floor((Date.now() - parseInt(lastRun, 10)) / 1000);
-    const rem = ONE_HOUR_SECONDS - elapsed;
-    return rem > 0 ? rem : ONE_HOUR_SECONDS;
-  });
+  /** เวลาที่ตรวจล่าสุด (ms) — ใช้แสดงนาฬิกา ไม่ใช่การนับถอยหลังรายวินาที */
+  const [lastRunAt, setLastRunAt] = useState<number | null>(() => readLastRun());
   const [isAnalyzingAuto, setIsAnalyzingAuto] = useState<boolean>(false);
   const [latestAutoResult, setLatestAutoResult] =
     useState<AutoMarketSynthesisResult | null>(null);
@@ -77,7 +100,11 @@ export const NewsCard: React.FC<NewsCardProps> = ({
   const handleToggleAuto = () => {
     const next = !isAutoEnabled;
     setIsAutoEnabled(next);
-    localStorage.setItem('auto_news_analysis_enabled', String(next));
+    try {
+      localStorage.setItem(ENABLED_KEY, String(next));
+    } catch {
+      /* storage may be blocked (private mode) — toggle still works this session */
+    }
   };
 
   // Trigger synthesis function
@@ -94,8 +121,13 @@ export const NewsCard: React.FC<NewsCardProps> = ({
         signals
       );
       setLatestAutoResult(result);
-      localStorage.setItem('last_auto_analysis_time', String(Date.now()));
-      setSecondsRemaining(ONE_HOUR_SECONDS);
+      const finishedAt = Date.now();
+      try {
+        localStorage.setItem(LAST_RUN_KEY, String(finishedAt));
+      } catch {
+        /* ignore storage failures */
+      }
+      setLastRunAt(finishedAt);
 
       // Save to History (Firestore Cloud Sync)
       if (onSaveToHistory) {
@@ -126,42 +158,27 @@ export const NewsCard: React.FC<NewsCardProps> = ({
     }
   };
 
-  // Countdown timer & hourly trigger
+  /**
+   * One scheduled run per hour instead of a 1-second countdown.
+   * The old implementation called setState 86,400 times a day (re-rendering the
+   * whole news list) and fired the analysis from inside a state updater, which
+   * double-runs under StrictMode. A single timeout keyed to the last run is
+   * calmer for the CPU and matches the Brand Book rule "ไม่มีนับถอยหลังที่เดินวินาที".
+   */
+  const runAutoAnalysisRef = useRef(runAutoAnalysis);
   useEffect(() => {
-    if (!isAutoEnabled) return;
+    runAutoAnalysisRef.current = runAutoAnalysis;
+  });
 
-    const timer = setInterval(() => {
-      setSecondsRemaining((prev) => {
-        if (prev <= 1) {
-          // Trigger hourly auto-analysis
-          runAutoAnalysis();
-          return ONE_HOUR_SECONDS;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [isAutoEnabled, articles, signals, geminiApiKey]);
-
-  // Initial trigger if never run before
   useEffect(() => {
-    const lastRun = localStorage.getItem('last_auto_analysis_time');
-    if (!lastRun && articles.length > 0 && isAutoEnabled) {
-      // Run once 3 seconds after mount
-      const timeout = setTimeout(() => {
-        runAutoAnalysis();
-      }, 3000);
-      return () => clearTimeout(timeout);
-    }
-  }, [articles.length, isAutoEnabled]);
-
-  // Format countdown mm:ss
-  const formatCountdown = (secs: number) => {
-    const m = Math.floor(secs / 60);
-    const s = secs % 60;
-    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-  };
+    if (!isAutoEnabled || articles.length === 0) return;
+    const due = (lastRunAt ?? Date.now()) + AUTO_INTERVAL_MS;
+    const delay = Math.min(Math.max(due - Date.now(), 3_000), AUTO_INTERVAL_MS);
+    const timeout = window.setTimeout(() => {
+      void runAutoAnalysisRef.current();
+    }, delay);
+    return () => window.clearTimeout(timeout);
+  }, [isAutoEnabled, articles.length, lastRunAt]);
 
   const filteredArticles = articles.filter((item) => {
     if (selectedCategory === 'ALL') return true;
@@ -311,7 +328,11 @@ export const NewsCard: React.FC<NewsCardProps> = ({
             {isAutoEnabled && (
               <div className="flex items-center gap-1 text-[11px] font-mono text-[#4CC9F0] bg-[#4CC9F0]/15 px-2 py-0.5 rounded-lg border border-[#4CC9F0]/30">
                 <Clock className="w-3 h-3" />
-                <span>รอบถัดไป: {formatCountdown(secondsRemaining)}</span>
+                <span>
+                  {lastRunAt
+                    ? `ตรวจล่าสุด ${formatClock(lastRunAt)} • รอบถัดไป ${formatClock(lastRunAt + AUTO_INTERVAL_MS)}`
+                    : 'ยังไม่เคยตรวจ — จะเริ่มในอีกสักครู่'}
+                </span>
               </div>
             )}
 

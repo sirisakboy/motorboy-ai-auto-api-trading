@@ -4,6 +4,7 @@ import { cleanup, fireEvent, render, screen, within } from '@testing-library/rea
 import { ChatMessageItem } from '../components/chat/ChatMessageItem';
 import { MarkdownLite } from '../components/chat/MarkdownLite';
 import { ChatModal } from '../components/ChatModal';
+import { streamChatReply } from '../services/chatStreamClient';
 import type { ChatMessage } from '../types';
 
 vi.mock('../services/chatStreamClient', () => ({
@@ -123,6 +124,19 @@ describe('ChatModal upgrade', () => {
     expect(ai.meta.sources).toEqual(['ราคาคริปโต 2 ตัว']);
     expect(ai.meta.reasons.length).toBeGreaterThan(0);
     expect(ai.meta.streamed).toBe(true);
+  });
+
+  it('sends only one request when a suggestion is clicked twice quickly', async () => {
+    render(<ChatModal {...baseProps} />);
+    const chip = screen.getByRole('button', { name: /BTC น่าสนใจไหม/ });
+
+    // two clicks in the same tick: setState has not flushed yet, so only the
+    // ref guard can prevent a second paid request
+    fireEvent.click(chip);
+    fireEvent.click(chip);
+
+    await screen.findByText(/ทดสอบการสตรีมครับ/);
+    expect(vi.mocked(streamChatReply)).toHaveBeenCalledTimes(1);
   });
 
   it('keeps forbidden urgency words out of the initial screen', () => {

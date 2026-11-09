@@ -71,7 +71,8 @@ export const AtsMatrixDashboard: React.FC<AtsMatrixDashboardProps> = ({
   useEffect(() => {
     let isMounted = true;
     const interval = setInterval(async () => {
-      if (!isMounted) return;
+      // Don't poll a paid data feed for a tab nobody is looking at
+      if (!isMounted || document.hidden) return;
       setTorusRotation((prev) => (prev + 3) % 360);
       try {
         const live = await fetchLiveBtcTicker();

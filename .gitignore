@@ -23,3 +23,9 @@ Thumbs.db
 
 # Connector downloads (transient)
 google_drive/
+
+
+# Local secrets — never commit
+.env
+.env.local
+.env.*.local
