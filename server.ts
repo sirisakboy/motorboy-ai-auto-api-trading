@@ -2,6 +2,7 @@ import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { GoogleGenAI } from '@google/genai';
+import { ChatTone, buildChatPrompt, isChatTone } from './src/services/chatStreamCore';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -701,6 +702,88 @@ app.post('/api/gemini/mascot-line', async (req, res) => {
     });
   } catch (error: any) {
     return res.status(502).json({ error: error?.message || 'mascot_line_failed' });
+  }
+});
+
+/** 11. Streaming chat (Server-Sent Events) — the upgrade path for the AI chat */
+app.post('/api/gemini/chat-stream', async (req, res) => {
+  const body = req.body || {};
+
+  // Every free-text field is capped: this route feeds a paid model.
+  const query = typeof body.query === 'string' ? body.query.slice(0, 800).trim() : '';
+  const marketBrief = typeof body.marketBrief === 'string' ? body.marketBrief.slice(0, 2400) : '';
+  const tone: ChatTone = isChatTone(body.tone) ? body.tone : 'friend';
+  const sources = Array.isArray(body.sources)
+    ? body.sources
+        .filter((item: unknown): item is string => typeof item === 'string')
+        .slice(0, 6)
+        .map((item: string) => item.slice(0, 80))
+    : [];
+
+  if (!query) {
+    return res.status(400).json({ error: 'Missing query' });
+  }
+
+  const ai = getGeminiClient(typeof body.geminiApiKey === 'string' ? body.geminiApiKey : undefined);
+  if (!ai) {
+    return res.status(400).json({ error: 'Missing Gemini API Key' });
+  }
+
+  res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no');
+  res.flushHeaders?.();
+
+  const send = (event: string, data: Record<string, unknown>) => {
+    if (res.writableEnded) return;
+    res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+  };
+
+  const controller = new AbortController();
+  res.on('close', () => controller.abort());
+
+  send('meta', { tone, sources });
+
+  const prompt = buildChatPrompt({ query, marketBrief, tone, sources });
+
+  const runStream = async (withSearch: boolean) => {
+    const stream = await ai.models.generateContentStream({
+      model: GEMINI_MODEL,
+      contents: prompt,
+      config: withSearch ? { tools: [{ googleSearch: {} }] } : {},
+    });
+
+    let full = '';
+    for await (const chunk of stream) {
+      if (controller.signal.aborted) return null;
+      const text = chunk?.text ?? '';
+      if (text) {
+        full += text;
+        send('delta', { text });
+      }
+    }
+    return full;
+  };
+
+  try {
+    let full: string | null;
+    try {
+      full = await runStream(true);
+    } catch (searchError: any) {
+      if (controller.signal.aborted) return res.end();
+      console.warn('Gemini search-grounded stream failed, retrying plain:', searchError?.message);
+      full = await runStream(false);
+    }
+
+    if (controller.signal.aborted) return res.end();
+    send('done', { text: full ?? '', finishReason: 'STOP' });
+    return res.end();
+  } catch (error: any) {
+    if (controller.signal.aborted) return res.end();
+    console.warn('Gemini chat stream error:', error?.message);
+    send('error', { message: error?.message || 'chat_stream_failed' });
+    return res.end();
   }
 });
 

@@ -1,4 +1,4 @@
-import { ChatMessage } from '../types';
+import { ChatMessage, ChatMessageMeta } from '../types';
 
 export const GLOBAL_ROOM_ID = 'global';
 
@@ -16,7 +16,8 @@ function getLocalMessages(roomId: string): ChatMessage[] {
 
 function saveLocalMessages(roomId: string, messages: ChatMessage[]): void {
   try {
-    localStorage.setItem(`${CHAT_STORAGE_KEY_PREFIX}${roomId}`, JSON.stringify(messages.slice(-100)));
+    // เก็บ 120 ข้อความล่าสุด: พอสำหรับเซสชันทำงาน แต่ยังเบาพอให้ localStorage ไม่เต็ม
+    localStorage.setItem(`${CHAT_STORAGE_KEY_PREFIX}${roomId}`, JSON.stringify(messages.slice(-120)));
   } catch (e) {
     console.warn('Failed to save local chat messages:', e);
   }
@@ -55,9 +56,15 @@ export function subscribeRoomMessages(
 
 export async function sendRoomMessage(
   roomId: string,
-  input: { uid: string; name: string; photoURL?: string | null; text: string }
+  input: {
+    uid: string;
+    name: string;
+    photoURL?: string | null;
+    text: string;
+    meta?: ChatMessageMeta;
+  }
 ): Promise<string> {
-  const text = input.text.trim().slice(0, 2000);
+  const text = input.text.trim().slice(0, 4000);
   if (!text) throw new Error('ข้อความว่างเปล่า');
 
   const id = `msg_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
@@ -68,6 +75,7 @@ export async function sendRoomMessage(
     photoURL: input.photoURL ?? null,
     text,
     createdAt: new Date().toISOString(),
+    ...(input.meta ? { meta: input.meta } : {}),
   };
 
   const list = getLocalMessages(roomId);

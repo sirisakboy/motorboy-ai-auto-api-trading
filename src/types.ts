@@ -298,6 +298,26 @@ export interface UserSettingsProfile {
 }
 
 /** Unified realtime chat message (Firestore `chatRooms/{roomId}/messages`). */
+/**
+ * Metadata that turns a chat bubble into a transparent AI answer
+ * (Brand Book v2.0 §09): what it looked at, why it said it, which voice it used.
+ * Optional so messages stored before this upgrade still load.
+ */
+export interface ChatMessageMeta {
+  /** โทนเสียงที่ใช้ตอบ */
+  tone?: 'friend' | 'coach' | 'expert';
+  /** "ดูจาก: …" — แหล่งข้อมูลที่ใช้จริง */
+  sources?: string[];
+  /** เหตุผล 3 ข้อ (ดึงจากคำตอบ) */
+  reasons?: string[];
+  /** llm = Gemini, quant = เครื่องคำนวณในเครื่อง */
+  depth?: 'llm' | 'quant';
+  /** ข้อความนี้สตรีมมาทีละคำหรือไม่ */
+  streamed?: boolean;
+  /** เวลาตอบ หน่วยมิลลิวินาที */
+  latencyMs?: number;
+}
+
 export interface ChatMessage {
   id: string;
   uid: string;
@@ -305,6 +325,7 @@ export interface ChatMessage {
   photoURL?: string | null;
   text: string;
   createdAt: string;
+  meta?: ChatMessageMeta;
 }
 
 /* ========================================================================
