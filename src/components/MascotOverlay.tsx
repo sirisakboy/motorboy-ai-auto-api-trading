@@ -491,7 +491,7 @@ export const MascotOverlay: React.FC<MascotOverlayProps> = ({
   }
 
   const showBubble = expanded || isActive;
-  const artHeight = minimized ? 80 : isActive ? 200 : 176;
+  const artHeight = minimized ? 88 : isActive ? 220 : 190;
   // Dragged into the left third? The bubble grows to the other side so it never
   // runs off the edge of the screen.
   const bubbleFlip = pos !== null && pos.x < 320;

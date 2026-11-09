@@ -1,9 +1,10 @@
 import { FACE_ID, canMountFace, type FaceQueryRoot } from './core';
 import { getSkin, type TradingSkinId } from './skins';
 import type { MascotAssetSet, ProjectId } from './types';
-// Transparent cut-out of the same character (no card, no background) so she can
-// float anywhere on the page — see components/MascotOverlay.tsx.
-import mascotHero from '../assets/images/nong_motorboy_hero.png';
+// Master identity (MotorBoy, male, 33–34 — matches FACE_ID MB-33-MASTER-001).
+// Transparent cut-out served from /public so the same file can be downloaded and
+// reused outside the app; see public/brand/ and docs/MASCOT-FLOATING.md.
+const mascotHero = '/brand/motorboy-mascot.png';
 
 /**
  * L2 ADAPTER — “Kernel”.

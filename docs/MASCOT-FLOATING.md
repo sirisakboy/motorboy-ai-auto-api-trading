@@ -8,24 +8,37 @@ bottom-right corner and echoed again in the dashboard sidebar). It is now a
 
 | | before | after |
 | --- | --- | --- |
-| art | `nong_motorboy_hero_*.jpg` — 646 kB, opaque circuit-board background | `nong_motorboy_hero.png` — 132 kB, alpha channel |
+| art | `nong_motorboy_hero_*.jpg` — 646 kB, opaque circuit-board background | `public/brand/motorboy-mascot.png` — 184 kB, alpha channel, master identity (male, 33) |
 | presentation | rounded card with blur, avatar thumb inside | character stands on the page, speech bubble beside her |
 | position | fixed `bottom/right` | drag anywhere, clamped to the viewport, remembered in `localStorage` |
 | input | click to open | click/tap to open · drag to move · arrow keys move (±16 px, ±48 px with Shift) |
 | surfaces | card **and** floating overlay | one surface only (the overlay) |
 
-## How the cut-out was made
+## Artwork: MotorBoy master identity (v1)
+
+The character art is the product owner's master identity sheet: male mechanic,
+33–34, black leather racing jacket with crimson M badge — which finally matches
+`FACE_ID = MB-33-MASTER-001` (the "33" is his age band). The old female render is
+still in git history if it is ever needed again.
+
+All brand files live in `public/brand/` (served at `/brand/...`, ready to
+download or upload elsewhere): `motorboy-mascot.png`, `motorboy-logo.png`,
+`motorboy-logo-dark.png`, `motorboy-mark.png` — see `public/brand/README.md` for
+sizes, palette and usage.
+
+## How the cut-outs were made
 
 `u2net` (rembg) is not reachable from this sandbox — GitHub release assets are
-blocked and the TLS chain fails — so the matte was produced with OpenCV
-GrabCut: seeds around the character box, 8 iterations, largest-connected-component
-cleanup, 9 px close / 5 px open, 1.6σ alpha feather. The result was cropped to
-the alpha bounding box and scaled to 560 px tall.
+blocked and the TLS chain fails — so both mattes are model-free:
 
-To regenerate from a new render:
+- character (render on white) → colour-distance ramp from white, then
+  un-premultiply so edges carry no white halo;
+- logo (flat art on white) → colour-to-alpha with the ink's core darkness
+  normalised out, so the wordmark stays solid.
 
 ```bash
-python3 tools/cutout_mascot.py <source.jpg> src/assets/images/nong_motorboy_hero.png
+python3 tools/cutout_mascot.py render-on-white.png public/brand/motorboy-mascot.png --bg white --height 720
+python3 tools/cutout_mascot.py logo-on-white.png   public/brand/motorboy-logo.png   --bg flat  --width 1200
 ```
 
 ## Rules kept
