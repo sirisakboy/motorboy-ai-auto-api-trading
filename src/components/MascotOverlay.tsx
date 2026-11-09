@@ -146,6 +146,15 @@ export const MascotOverlay: React.FC<MascotOverlayProps> = ({
     }
   }, []);
 
+  /* ---------------------------------------- detected risk must be seen (§6) */
+  // "ซ่อน" hides the chip for this session, but it must not swallow a risk
+  // event the detectors catch *afterwards*. KILL_SWITCH_ACTIVE / RISK_REJECT
+  // re-open the bubble so a warning can never be lost silently.
+  const riskDetected = state === 'KILL_SWITCH_ACTIVE' || state === 'RISK_REJECT';
+  useEffect(() => {
+    if (riskDetected) setDismissed(false);
+  }, [riskDetected]);
+
   /* ---------------------------------------------------------------- timers */
   useEffect(() => {
     const tick = window.setInterval(() => setNow(Date.now()), 15_000);
@@ -456,6 +465,22 @@ export const MascotOverlay: React.FC<MascotOverlayProps> = ({
               <div className="mt-2 text-[9px] font-mono text-[#8B88A0]">
                 ยังไม่มีจุดจบเทรนที่ชัดเจน — ขอเงียบไว้ก่อน
               </div>
+            )}
+
+            {riskDetected && (
+              <button
+                type="button"
+                onClick={() => {
+                  // Same acknowledgement the old dashboard card offered, but it
+                  // only exists while a risk event is actually on screen.
+                  useMascotStore.getState().resetToIdle();
+                  setExpanded(false);
+                }}
+                className="mt-2 w-full rounded-lg border px-2 py-1 text-[10px] font-bold text-[#ECEAF4] transition-colors hover:bg-white/5"
+                style={{ borderColor: palette.border }}
+              >
+                รับทราบครับ
+              </button>
             )}
 
             {state === 'ONBOARDING' && (

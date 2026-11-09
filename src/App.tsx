@@ -65,7 +65,6 @@ import { ChatModal } from './components/ChatModal';
 import { RiskCalculatorModal } from './components/RiskCalculatorModal';
 import { DrawdownAlertBanner } from './components/DrawdownAlertBanner';
 import { DrawdownMonitorModal } from './components/DrawdownMonitorModal';
-import { MascotCoPilotCard } from './components/MascotCoPilotCard';
 import { MascotOverlay } from './components/MascotOverlay';
 import { useMascotStore } from './services/mascotService';
 import {
@@ -1447,7 +1446,9 @@ export const App: React.FC = () => {
 
               {/* Right Sidebar Column: Market Hours & API Status (col-span-4) */}
               <div className="lg:col-span-4 space-y-6">
-                <MascotCoPilotCard />
+                {/* The mascot is not a dashboard card any more: it floats over the
+                    page and speaks only when the detectors actually catch
+                    something (see MascotOverlay + the auto-detect effects above). */}
                 <MarketHoursCard marketHours={marketHours} />
                 <ApiStatusCard status={apiStatus} onRefresh={handleRefreshAllApis} />
               </div>

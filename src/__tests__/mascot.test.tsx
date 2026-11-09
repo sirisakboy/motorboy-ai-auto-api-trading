@@ -82,6 +82,31 @@ describe('MascotOverlay — never blocks the UI', () => {
   });
 });
 
+describe('MascotOverlay — automatic detection replaces the dashboard card', () => {
+  it('re-appears when a risk event is detected after the trader hid it', () => {
+    render(<MascotOverlay />);
+    fireEvent.click(screen.getByRole('button', { name: /น้องมอเตอร์บอย/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'ซ่อน' }));
+    expect(screen.queryByTestId('mascot-overlay')).toBeNull();
+
+    // The drawdown / volatility detectors raise this state on their own.
+    act(() => setMascotState('KILL_SWITCH_ACTIVE'));
+
+    expect(screen.getByTestId('mascot-overlay')).toBeTruthy();
+    expect(screen.getByRole('status').textContent).toContain('หยุดเทรดชั่วคราว');
+  });
+
+  it('acknowledging a detected risk returns it to idle', () => {
+    render(<MascotOverlay />);
+    act(() => setMascotState('RISK_REJECT'));
+
+    fireEvent.click(screen.getByRole('button', { name: 'รับทราบครับ' }));
+
+    expect(useMascotStore.getState().state).toBe('IDLE');
+    expect(screen.queryByRole('status')).toBeNull();
+  });
+});
+
 describe('MascotOverlay — state driven by the shared mascot store', () => {
   it('expands automatically and shows the critical styling on KILL_SWITCH_ACTIVE', () => {
     render(<MascotOverlay />);
