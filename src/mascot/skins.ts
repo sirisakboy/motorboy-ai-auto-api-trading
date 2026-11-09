@@ -6,7 +6,7 @@ import { RUST_MODERN_COLORS } from './tokens';
  *
  * Colour psychology from the spec (one palette per project so the eye never has
  * to re-learn what “green” means):
- *   · MASTER   Black #000000 + Red #FF0033      (brand)
+ *   · MASTER   Black #000000 + Red #7C6CFF      (brand)
  *   · TRADING  Bull #00E676, Bear #FF5252, Signal #00E5FF
  *   · GARMENT  Black/Red PPE, clear glasses (not the old blue mask)
  *   · RACING   black/red racing suit + yellow caution
@@ -22,11 +22,11 @@ export type TradingSkinId = 'TRADING';
  * accent instead, so the mascot looks like it belongs here rather than dragging
  * a second red into the product.
  */
-export const MASTER_BRAND = { black: '#000000', red: RUST_MODERN_COLORS.brandRed } as const;
+export const MASTER_BRAND = { black: '#000000', red: RUST_MODERN_COLORS.dangerRed } as const;
 
 const TRADING_PALETTE: Palette = {
   masterBlack: MASTER_BRAND.black,
-  primary: '#FF0033', // ← the app's existing brand accent (App.tsx / index.css)
+  primary: '#7C6CFF', // ← the app's existing brand accent (App.tsx / index.css)
   bull: '#00E676',
   bear: '#FF5252',
   signal: '#00E5FF',

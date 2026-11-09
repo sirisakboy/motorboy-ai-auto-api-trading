@@ -459,7 +459,7 @@ export const RiskCalculatorModal: React.FC<Props> = ({
   if (!isOpen) return null;
 
   const inputCls =
-    'w-full bg-[#0F1117] border border-[#2A2E45] rounded-xl p-2.5 text-white text-sm focus:border-[#FF0033] outline-none';
+    'w-full bg-[#0F1117] border border-[#2A2E45] rounded-xl p-2.5 text-white text-sm focus:border-[#7C6CFF] outline-none';
   const labelCls = 'block text-[11px] text-[#9CA3AF] mb-1';
 
   return (
@@ -475,9 +475,9 @@ export const RiskCalculatorModal: React.FC<Props> = ({
         {/* Header */}
         <div className="flex justify-between items-center mb-4">
           <div className="flex items-center space-x-2 text-white">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#FF0033]/20 to-[#8A2BE2]/20 border border-[#FF0033]/40 flex items-center justify-center">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#7C6CFF]/20 to-[#6A58F0]/20 border border-[#7C6CFF]/40 flex items-center justify-center">
               {activeTab === 'POSITION' ? (
-                <Calculator className="w-5 h-5 text-[#FF0033]" />
+                <Calculator className="w-5 h-5 text-[#7C6CFF]" />
               ) : (
                 <Scale className="w-5 h-5 text-[#38BDF8]" />
               )}
@@ -485,7 +485,7 @@ export const RiskCalculatorModal: React.FC<Props> = ({
             <div>
               <h2 className="font-black text-lg tracking-tight flex items-center gap-2">
                 MotorBoy Risk Guard
-                <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-[#FF0033]/15 border border-[#FF0033]/40 text-[#FF0033]">
+                <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-[#7C6CFF]/15 border border-[#7C6CFF]/40 text-[#7C6CFF]">
                   {activeTab === 'POSITION' ? 'Position Sizing' : 'Portfolio Rebalance'}
                 </span>
               </h2>
@@ -507,7 +507,7 @@ export const RiskCalculatorModal: React.FC<Props> = ({
             onClick={() => setActiveTab('POSITION')}
             className={`py-2 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all ${
               activeTab === 'POSITION'
-                ? 'bg-gradient-to-r from-[#FF0033] to-[#E11D48] text-white shadow-[0_0_12px_rgba(255,0,51,0.4)]'
+                ? 'bg-[#7C6CFF] text-[#0F1117] shadow-[0_6px_18px_rgba(124,108,255,0.28)]'
                 : 'text-[#9CA3AF] hover:text-white'
             }`}
           >
@@ -537,7 +537,7 @@ export const RiskCalculatorModal: React.FC<Props> = ({
                 <select
                   value={signalId}
                   onChange={(e) => applySignal(e.target.value)}
-                  className={`${inputCls} ${signalId ? 'border-[#FF0033]/60' : ''}`}
+                  className={`${inputCls} ${signalId ? 'border-[#7C6CFF]/60' : ''}`}
                 >
                   <option value="">{t('risk_calc.labels.manual_entry')}</option>
                   {signals.map((s) => (
@@ -561,7 +561,7 @@ export const RiskCalculatorModal: React.FC<Props> = ({
                       direction === d
                         ? d === 'LONG'
                           ? 'bg-[#10B981]/20 border-[#10B981]/60 text-[#34D399]'
-                          : 'bg-[#FF0033]/20 border-[#FF0033]/60 text-[#FF0033]'
+                          : 'bg-[#7C6CFF]/20 border-[#7C6CFF]/60 text-[#7C6CFF]'
                         : 'bg-[#0F1117] border-[#2A2E45] text-[#9CA3AF] hover:text-white'
                     }`}
                   >
@@ -603,7 +603,7 @@ export const RiskCalculatorModal: React.FC<Props> = ({
                       key={v}
                       onClick={() => { setRr(v); setSavedSuccess(false); }}
                       className={`flex-1 py-2 rounded-xl text-xs font-bold border transition-colors ${
-                        rr === v ? 'bg-[#FF0033]/25 border-[#FF0033]/60 text-white' : 'bg-[#0F1117] border-[#2A2E45] text-[#9CA3AF] hover:text-white'
+                        rr === v ? 'bg-[#7C6CFF]/25 border-[#7C6CFF]/60 text-[#F7F5F0]' : 'bg-[#0F1117] border-[#2A2E45] text-[#9CA3AF] hover:text-white'
                       }`}
                     >
                       1:{v}
@@ -620,9 +620,9 @@ export const RiskCalculatorModal: React.FC<Props> = ({
             {/* Protection checklist */}
             {checklist.length > 0 && (
               <div className="rounded-2xl bg-[#0F1117] border border-[#2A2E45] p-3 space-y-2 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-16 h-16 bg-[#FF0033]/5 blur-2xl rounded-full" />
+                <div className="absolute top-0 right-0 w-16 h-16 bg-[#7C6CFF]/5 blur-2xl rounded-full" />
                 <p className="text-xs font-bold text-white flex items-center gap-1.5">
-                  <ShieldCheck className="w-4 h-4 text-[#FF0033]" />
+                  <ShieldCheck className="w-4 h-4 text-[#7C6CFF]" />
                   {t('risk_calc.checklist.header')}
                 </p>
                 {checklist.map((c) => (
@@ -642,7 +642,7 @@ export const RiskCalculatorModal: React.FC<Props> = ({
             )}
 
             {/* Results */}
-            <div className="rounded-2xl bg-gradient-to-br from-[#FF0033]/10 to-[#8A2BE2]/10 border border-[#FF0033]/20 p-4 space-y-2">
+            <div className="rounded-2xl bg-gradient-to-br from-[#7C6CFF]/10 to-[#6A58F0]/10 border border-[#7C6CFF]/20 p-4 space-y-2">
               {calc ? (
                 <>
                   <div className="flex items-center justify-between text-xs">
@@ -667,7 +667,7 @@ export const RiskCalculatorModal: React.FC<Props> = ({
                       <p className="text-white text-xs font-bold">{fmtMoney(calc.margin)}</p>
                     </div>
                   </div>
-                  <div className="flex items-center justify-between text-xs pt-1 border-t border-[#FF0033]/20">
+                  <div className="flex items-center justify-between text-xs pt-1 border-t border-[#7C6CFF]/20">
                     <span className="text-[#9CA3AF]">SL {calc.slDistPct.toFixed(2)}% • TP {fmtPrice(calc.tp)}</span>
                     <span className="text-[#6B7280]">SL {fmtPrice(calc.sl)}</span>
                   </div>
@@ -689,10 +689,10 @@ export const RiskCalculatorModal: React.FC<Props> = ({
             </div>
 
             {/* AI Review */}
-            <div className="rounded-2xl bg-gradient-to-br from-[#FF0033]/15 to-[#00E5FF]/10 border border-[#FF0033]/30 p-4 space-y-2.5">
+            <div className="rounded-2xl bg-gradient-to-br from-[#7C6CFF]/15 to-[#6A58F0]/10 border border-[#7C6CFF]/30 p-4 space-y-2.5">
               <div className="flex items-center justify-between gap-2">
                 <p className="text-xs font-bold text-white flex items-center gap-1.5">
-                  <Sparkles className="w-4 h-4 text-[#FF0033]" />
+                  <Sparkles className="w-4 h-4 text-[#7C6CFF]" />
                   {t('risk_calc.ai.header')}
                 </p>
                 {aiResult && (
@@ -729,14 +729,14 @@ export const RiskCalculatorModal: React.FC<Props> = ({
                     <p className="text-[11px] text-[#6B7280]">
                       แนวรับ {fmtPrice(aiResult.supportLevel)} • แนวต้าน {fmtPrice(aiResult.resistanceLevel)}
                     </p>
-                    <span className="text-[10px] text-[#FF0033] font-bold">นี่คือการวิเคราะห์ ไม่ใช่คำแนะนำการลงทุน</span>
+                    <span className="text-[10px] text-[#7C6CFF] font-bold">นี่คือการวิเคราะห์ ไม่ใช่คำแนะนำการลงทุน</span>
                   </div>
                 </div>
               )}
               <button
                 onClick={handleAiAnalyze}
                 disabled={!calc || isAnalyzing}
-                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#FF0033] to-[#8A2BE2] hover:opacity-90 disabled:opacity-40 text-white text-sm font-black shadow-[0_0_15px_rgba(255,0,51,0.3)] inline-flex items-center justify-center gap-2 transition-all cursor-pointer"
+                className="w-full py-2.5 rounded-xl bg-[#7C6CFF] hover:bg-[#6A58F0] disabled:opacity-40 text-[#0F1117] text-sm font-black shadow-[0_6px_18px_rgba(124,108,255,0.28)] inline-flex items-center justify-center gap-2 transition-all cursor-pointer"
               >
                 {isAnalyzing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bot className="w-4 h-4" />}
                 <span>{isAnalyzing ? t('risk_calc.ai.analyze_loading') : aiResult ? t('risk_calc.ai.reanalyze_btn') : t('risk_calc.ai.analyze_btn')}</span>
@@ -883,7 +883,7 @@ export const RiskCalculatorModal: React.FC<Props> = ({
                             item.action === 'BUY'
                               ? 'bg-[#10B981]/15 border-[#10B981]/50 text-[#34D399]'
                               : item.action === 'SELL'
-                              ? 'bg-[#FF0033]/15 border-[#FF0033]/50 text-[#FF0033]'
+                              ? 'bg-[#7C6CFF]/15 border-[#7C6CFF]/50 text-[#7C6CFF]'
                               : 'bg-white/5 border-white/10 text-[#9CA3AF]'
                           }`}
                         >
@@ -949,7 +949,7 @@ export const RiskCalculatorModal: React.FC<Props> = ({
                         <span className="text-[#9CA3AF]">Drift:</span>
                         <span
                           className={`font-bold ${
-                            item.driftPct > 0 ? 'text-[#FF0033]' : item.driftPct < 0 ? 'text-[#34D399]' : 'text-[#9CA3AF]'
+                            item.driftPct > 0 ? 'text-[#7C6CFF]' : item.driftPct < 0 ? 'text-[#34D399]' : 'text-[#9CA3AF]'
                           }`}
                         >
                           {item.driftPct > 0 ? `+${item.driftPct.toFixed(1)}% (Over)` : `${item.driftPct.toFixed(1)}% (Under)`}
@@ -984,7 +984,7 @@ export const RiskCalculatorModal: React.FC<Props> = ({
                     Math.abs(rebalancePlan.totalTargetPct - 100) < 0.01
                       ? 'bg-gradient-to-r from-[#10B981] to-[#34D399]'
                       : rebalancePlan.totalTargetPct > 100
-                      ? 'bg-gradient-to-r from-[#FF0033] to-[#EF4444]'
+                      ? 'bg-gradient-to-r from-[#F59E0B] to-[#EF4444]'
                       : 'bg-gradient-to-r from-[#F59E0B] to-[#FBBF24]'
                   }`}
                   style={{ width: `${Math.min(100, rebalancePlan.totalTargetPct)}%` }}
@@ -1054,7 +1054,7 @@ export const RiskCalculatorModal: React.FC<Props> = ({
                           className={`font-black px-2 py-0.5 rounded-md text-[11px] ${
                             order.action === 'BUY'
                               ? 'bg-[#10B981]/20 text-[#34D399] border border-[#10B981]/40'
-                              : 'bg-[#FF0033]/20 text-[#FF0033] border border-[#FF0033]/40'
+                              : 'bg-[#7C6CFF]/20 text-[#7C6CFF] border border-[#7C6CFF]/40'
                           }`}
                         >
                           {order.action}

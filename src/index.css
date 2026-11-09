@@ -12,8 +12,12 @@
    ============================================================================ */
 :root {
   /* --- v4.4 palette ------------------------------------------------------ */
-  --mb-brand-red: #FF0033;            /* โลโก้ M, ปุ่มหลัก, เส้นขอบ */
-  --mb-brand-red-fill: #E0002D;       /* filled variant: white text = 4.99:1 (AA) */
+  /* CALM SYSTEM v2.0: ลาเวนเดอร์เป็นสีแบรนด์ — ไม่ใช้แดงแสบตาเป็นสีหลัก */
+  --mb-brand: #7C6CFF;                /* ลาเวนเดอร์: โลโก้, ปุ่มหลัก, เน้น */
+  --mb-brand-ink: #0F1117;            /* ตัวหนังสือบนปุ่มลาเวนเดอร์ (ตามแบรนด์บุ๊ก) */
+  --mb-brand-hover: #6A58F0;
+  --mb-brand-red: #FF0033;            /* เก็บไว้ใช้เฉพาะเตือน/อันตราย */
+  --mb-brand-red-fill: #E0002D;       /* filled danger: white text = 4.99:1 (AA) */
   --mb-violet: #8A2BE2;               /* แอ็กเซนต์, AI, ไล่สี */
   --mb-neon-blue: #00E5FF;            /* ไอคอน ECU/AI/ลิงก์, ขอบปุ่ม AI */
   --mb-neon-green: #39FF14;           /* สถานะดี, สำเร็จ */
@@ -42,14 +46,15 @@
   --mb-border-circuit: var(--mb-metal-dark);
 
   /* --- legacy aliases (existing markup keeps working) -------------------- */
-  --mb-color-primary: var(--mb-brand-red);
+  --mb-color-primary: var(--mb-brand);
   --mb-color-secondary: var(--mb-violet);
   --mb-color-accent: var(--mb-neon-blue);
 
   /* --- glows ------------------------------------------------------------- */
-  --mb-gradient-brand: linear-gradient(135deg, #FF0033 0%, #8A2BE2 50%, #00E5FF 100%);
+  --mb-gradient-brand: linear-gradient(135deg, #7C6CFF 0%, #8A2BE2 50%, #00E5FF 100%);
   --mb-gradient-surface: linear-gradient(180deg, rgba(255, 0, 51, 0.06) 0%, rgba(15, 17, 23, 0.96) 100%);
-  --mb-neon-glow-red: 0 0 12px rgba(255, 0, 51, 0.45);   /* ปุ่มหลัก เงาแดง 12px */
+  --mb-neon-glow-red: 0 0 12px rgba(255, 0, 51, 0.45);   /* เตือน/อันตรายเท่านั้น */
+  --mb-glow-brand: 0 6px 18px rgba(124, 108, 255, 0.28); /* ปุ่มหลักแบบสงบ */
   --mb-neon-glow-purple: 0 0 15px rgba(138, 43, 226, 0.45);
   --mb-neon-glow-blue: 0 0 15px rgba(0, 229, 255, 0.45);
 }
@@ -57,6 +62,7 @@
 /* Tailwind v4 theme: makes the tokens usable as utilities (bg-mb-red,
    text-mb-neon, rounded-mb, font-sans…) without repeating hex values. */
 @theme {
+  --color-mb-brand: var(--mb-brand);
   --color-mb-red: var(--mb-brand-red);
   --color-mb-red-fill: var(--mb-brand-red-fill);
   --color-mb-violet: var(--mb-violet);
@@ -103,6 +109,7 @@
     border-radius: var(--mb-radius);
   }
 
+  /* สนิมเฉพาะขอบบน/ซ้าย (Brand Book: สนิมอยู่ขอบ ไม่ใช่พื้นหลังทั้งใบ) */
   .mb-card::after {
     content: '';
     position: absolute;
@@ -117,15 +124,15 @@
   .mb-btn-primary {
     min-height: var(--mb-btn-primary);
     border-radius: var(--mb-radius);
-    background-color: var(--mb-brand-red-fill);
-    color: #fff;
+    background-color: var(--mb-brand);
+    color: var(--mb-brand-ink);          /* ink on lavender = #0F1117 */
     font-weight: 700;
-    box-shadow: var(--mb-neon-glow-red);
+    box-shadow: var(--mb-glow-brand);
     transition: background-color 200ms ease, transform 200ms ease;
   }
 
   .mb-btn-primary:hover:not(:disabled) {
-    background-color: var(--mb-brand-red);
+    background-color: var(--mb-brand-hover);
   }
 
   .mb-btn-primary:disabled {
@@ -173,14 +180,14 @@
   }
 
   /* v4.4 brand red is tuned for the midnight (Book 2) surface. On the light
-     Book 1 theme #FF0033 text lands at 3.96:1, so text/icons drop to the darker
+     Book 1 theme #7C6CFF text lands at 3.86:1, so text/icons drop to the darker
      variant while filled buttons keep the brand red (white on #E0002D = 4.99:1). */
-  :where(html:not(.dark)) .text-\[\#FF0033\] {
-    color: #C2002A;
+  :where(html:not(.dark)) .text-\[\#7C6CFF\] {
+    color: #5B4BD6;
   }
 
-  :where(html:not(.dark)) .border-\[\#FF0033\] {
-    border-color: #E0002D;
+  :where(html:not(.dark)) .border-\[\#7C6CFF\] {
+    border-color: #6A58F0;
   }
 
   /* Calm 200ms default for interactive elements.
@@ -268,9 +275,10 @@ button, a {
   *,
   *::before,
   *::after {
-    animation-duration: 0.01ms !important;
+    /* CALM SYSTEM v2.0: เหลือแค่เฟด 120ms ไม่ตัดจบทุกอย่าง */
+    animation-duration: 120ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+    transition-duration: 120ms !important;
     scroll-behavior: auto !important;
   }
 }

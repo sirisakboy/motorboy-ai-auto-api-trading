@@ -55,6 +55,7 @@ import {
   ART_TRACKS,
   BOOKS,
   MAIN_ART_TRACK,
+  CALM_BRAND,
   MASCOT_SET,
   MOODS,
   POSE_MOOD,
@@ -222,7 +223,8 @@ describe('L2 ADAPTER — namespaces, assets, mount decision', () => {
 
 describe('v4.4 RUST x MODERN — design tokens (encoded, not imposed)', () => {
   it('carries the exact spec palette', () => {
-    expect(RUST_MODERN_COLORS.brandRed).toBe('#FF0033');
+    expect(RUST_MODERN_COLORS.brandAccent).toBe('#7C6CFF');
+    expect(RUST_MODERN_COLORS.dangerRed).toBe('#FF0033');
     expect(RUST_MODERN_COLORS.violet).toBe('#8A2BE2');
     expect(RUST_MODERN_COLORS.neonBlue).toBe('#00E5FF');
     expect(RUST_MODERN_COLORS.neonGreen).toBe('#39FF14');
@@ -254,7 +256,7 @@ describe('v4.4 RUST x MODERN — design tokens (encoded, not imposed)', () => {
     expect(RUST_MODERN_LINES.rustCorner).toContain('#C97B2A');
     expect(RUST_MODERN_SHADOWS.glossySheen).toBe(0.4);
     expect(RUST_MODERN_SHADOWS.rustSheen).toBe(0);
-    expect(RUST_MODERN_SHADOWS.primaryButton).toContain('#FF0033');
+    expect(RUST_MODERN_SHADOWS.primaryButton).toContain('rgba(124, 108, 255');
     expect(RUST_MODERN_TYPE.thaiLineHeight).toBe(1.7);
     expect(RUST_MODERN_TYPE.minWeight).toBe(400);
   });
@@ -274,7 +276,7 @@ describe('v4.4 RUST x MODERN — design tokens (encoded, not imposed)', () => {
     expect(BOOKS.BOOK_1_HA_NGOEN.canShake).toBe(false);
 
     expect(BOOKS.BOOK_2_CHAI_NGOEN.surface).toBe('#0F1117');
-    expect(BOOKS.BOOK_2_CHAI_NGOEN.accent).toBe('#FF0033');
+    expect(BOOKS.BOOK_2_CHAI_NGOEN.accent).toBe('#7C6CFF');
     expect(BOOKS.BOOK_2_CHAI_NGOEN.sound).toBe(80);
     expect(BOOKS.BOOK_2_CHAI_NGOEN.canShake).toBe(true);
   });
@@ -304,7 +306,7 @@ describe('v4.4 RUST x MODERN — design tokens (encoded, not imposed)', () => {
   });
 
   it('exposes the copy-paste CSS block but injects nothing', () => {
-    expect(RUST_MODERN_CSS).toContain('--mb-brand-red: #FF0033');
+    expect(RUST_MODERN_CSS).toContain('--mb-brand: #7C6CFF');
     expect(RUST_MODERN_CSS).toContain(`--mb-face-id: ${FACE_ID}`); // never changes
     expect(RUST_MODERN_CSS).toContain('--mb-radius: 12px');
     expect(typeof document).toBe('object');
@@ -313,19 +315,23 @@ describe('v4.4 RUST x MODERN — design tokens (encoded, not imposed)', () => {
 });
 
 describe('L3 SKIN — editable, per project, never touches core', () => {
-  it('speaks the trading palette in the app’s own brand accent', () => {
+  it('speaks the calm palette: lavender accent, dark ink on lavender', () => {
     const { palette } = TRADING_SKIN;
     expect(palette.masterBlack).toBe('#000000');
     // The mascot adapts to this product: same accent as App.tsx / index.css,
     // not a second red borrowed from the master brand.
-    expect(palette.primary).toBe('#FF0033');
+    expect(palette.primary).toBe('#7C6CFF');
     expect(palette.bull).toBe('#00E676');
     expect(palette.bear).toBe('#FF5252');
     expect(palette.signal).toBe('#00E5FF');
   });
 
   it('keeps the V4.1 master brand available for the other projects', () => {
+    // Rust x Modern master brand is archived as data; the Calm System v2.0
+    // lavender now drives the UI (see CALM_BRAND in tokens.ts).
     expect(MASTER_BRAND).toEqual({ black: '#000000', red: '#FF0033' });
+    expect(CALM_BRAND.primary).toBe('#7C6CFF');
+    expect(CALM_BRAND.inkOnAccent).toBe('#0F1117');
   });
 
   it('defines all nine poses as visuals', () => {

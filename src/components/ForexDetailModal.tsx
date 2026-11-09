@@ -441,7 +441,7 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
             onClick={() => setActiveTab('gemini')}
             className={`flex-1 px-3 py-2 text-xs font-semibold rounded-xl transition-colors whitespace-nowrap min-w-fit flex items-center justify-center space-x-1 ${
               activeTab === 'gemini'
-                ? 'bg-[#7C6CFF] text-white font-bold shadow-xs'
+                ? 'bg-[#7C6CFF] text-[#0F1117] font-bold shadow-xs'
                 : 'text-[#9CA3AF] hover:text-white'
             }`}
           >
@@ -510,7 +510,7 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
                   type="button"
                   onClick={handleRunAiAnalysis}
                   disabled={isAnalyzing}
-                  className="w-full bg-[#7C6CFF] hover:bg-[#6a5ad7] text-white font-bold text-xs py-2.5 rounded-xl transition-colors flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-50"
+                  className="w-full bg-[#7C6CFF] hover:bg-[#6a5ad7] text-[#0F1117] font-bold text-xs py-2.5 rounded-xl transition-colors flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-50"
                 >
                   {isAnalyzing ? (
                     <>

@@ -159,7 +159,7 @@ export const StockDetailModal: React.FC<StockDetailModalProps> = ({
           )}
 
           {!isAnalyzing && !aiResult && activeTab === 'gemini' && (
-            <div className="py-8 text-center"><button onClick={handleAnalyze} className="px-6 py-3 rounded-xl bg-[#7C6CFF] hover:bg-[#6D5DFF] text-white font-bold text-sm flex items-center gap-2 mx-auto"><Sparkles className="w-4 h-4" /> วิเคราะห์ด้วย AI</button></div>
+            <div className="py-8 text-center"><button onClick={handleAnalyze} className="px-6 py-3 rounded-xl bg-[#7C6CFF] hover:bg-[#6D5DFF] text-[#0F1117] font-bold text-sm flex items-center gap-2 mx-auto"><Sparkles className="w-4 h-4" /> วิเคราะห์ด้วย AI</button></div>
           )}
 
           {activeTab === 'fundamentals' && (
@@ -205,7 +205,7 @@ export const StockDetailModal: React.FC<StockDetailModalProps> = ({
             <Loader2 className={`w-3.5 h-3.5 ${isAnalyzing ? 'animate-spin' : ''}`} /><span>วิเคราะห์ใหม่</span>
           </button>
           {onSaveToHistory && (
-            <button onClick={handleSave} disabled={isAnalyzing || savedSuccess || !aiResult} className="px-4 py-2 rounded-xl text-xs font-semibold bg-[#7C6CFF] hover:bg-[#6D5DFF] text-white flex items-center gap-1.5 transition-colors disabled:opacity-50">
+            <button onClick={handleSave} disabled={isAnalyzing || savedSuccess || !aiResult} className="px-4 py-2 rounded-xl text-xs font-semibold bg-[#7C6CFF] hover:bg-[#6D5DFF] text-[#0F1117] flex items-center gap-1.5 transition-colors disabled:opacity-50">
               {savedSuccess ? 'บันทึกแล้ว' : 'บันทึกลงประวัติ'}
             </button>
           )}

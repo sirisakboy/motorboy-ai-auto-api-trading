@@ -958,7 +958,7 @@ export const App: React.FC = () => {
         <div
           role="status"
           aria-live="polite"
-          className="fixed top-4 right-4 left-4 sm:left-auto z-[60] sm:max-w-sm bg-[#FF0033] text-white px-4 py-3 rounded-2xl shadow-xl border border-white/20 flex items-center justify-between space-x-3 animate-fade-in"
+          className="fixed top-4 right-4 left-4 sm:left-auto z-[60] sm:max-w-sm bg-[#7C6CFF] text-[#0F1117] px-4 py-3 rounded-2xl shadow-xl border border-white/20 flex items-center justify-between space-x-3 animate-fade-in"
         >
           <span className="text-xs font-semibold">{alertToast}</span>
           <button
@@ -1042,7 +1042,7 @@ export const App: React.FC = () => {
                             }}
                             className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors flex items-center space-x-1.5 shrink-0 ${
                               selectedTab === idx
-                                ? 'bg-[#FF0033] text-white font-bold shadow-xs'
+                                ? 'bg-[#7C6CFF] text-[#0F1117] font-bold shadow-xs'
                                 : 'text-[#94A3B8] hover:text-white'
                             }`}
                           >
@@ -1071,17 +1071,17 @@ export const App: React.FC = () => {
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             placeholder="ค้นหาสินทรัพย์..."
-                            className="w-full sm:w-44 bg-[#0F1117] border border-[#2A2E45] focus:border-[#FF0033] rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-100 outline-none placeholder-[#94A3B8]"
+                            className="w-full sm:w-44 bg-[#0F1117] border border-[#2A2E45] focus:border-[#7C6CFF] rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-100 outline-none placeholder-[#94A3B8]"
                           />
                         </div>
 
                         <button
                           type="button"
                           onClick={() => setShowWatchlistModal(true)}
-                          className="px-3 py-1.5 bg-[#FF0033]/15 hover:bg-[#FF0033]/25 border border-[#FF0033]/30 text-[#FF0033] rounded-xl text-xs font-bold inline-flex items-center gap-1.5 transition-all shrink-0"
+                          className="px-3 py-1.5 bg-[#7C6CFF]/15 hover:bg-[#7C6CFF]/25 border border-[#7C6CFF]/30 text-[#7C6CFF] rounded-xl text-xs font-bold inline-flex items-center gap-1.5 transition-all shrink-0"
                           title="เปิดหน้าต่าง Watchlist (รายการโปรด)"
                         >
-                          <Star className="w-3.5 h-3.5 text-[#FF0033] fill-[#FF0033]" />
+                          <Star className="w-3.5 h-3.5 text-[#7C6CFF] fill-[#7C6CFF]" />
                           <span className="hidden sm:inline">Watchlist</span>
                           {[
                             ...signals.map((s) => s.symbol),
@@ -1089,7 +1089,7 @@ export const App: React.FC = () => {
                             ...thaiStocks.map((s) => s.symbol),
                             ...foreignStocks.map((s) => s.symbol),
                           ].filter((sym) => watchlist.has(sym)).length > 0 && (
-                            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[#FF0033] text-white">
+                            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[#7C6CFF] text-[#0F1117]">
                               {[
                                 ...signals.map((s) => s.symbol),
                                 ...forexSignals.map((s) => s.symbol),
@@ -1219,7 +1219,7 @@ export const App: React.FC = () => {
                           onClick={() => setSelectedChartAsset(coin.id)}
                           className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all shrink-0 whitespace-nowrap ${
                             selectedChartAsset === coin.id
-                              ? 'bg-[#7C6CFF] text-white shadow-xs'
+                              ? 'bg-[#7C6CFF] text-[#0F1117] shadow-xs'
                               : 'bg-[#0F1117] text-[#9CA3AF] hover:text-white border border-[#2A2E45]'
                           }`}
                         >
@@ -1610,7 +1610,7 @@ export const App: React.FC = () => {
               <div className="w-full max-w-2xl bg-[#131722] border border-[#2A2E39] rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
                 <div className="p-4 border-b border-[#2A2E39] flex items-center justify-between bg-gradient-to-r from-[#1E222D] to-[#131722]">
                   <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#FF0033] via-[#8A2BE2] to-[#00E5FF] p-[1.5px]">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#7C6CFF] to-[#6A58F0] p-[1.5px]">
                       <div className="w-full h-full bg-[#0F1117] rounded-[6.5px] flex items-center justify-center text-xs">
                         🏍️
                       </div>

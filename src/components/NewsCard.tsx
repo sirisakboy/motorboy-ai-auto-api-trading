@@ -225,7 +225,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
       {/* Header with MSN Money & Auto-Analysis Status */}
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-2">
-          <div className="w-2.5 h-2.5 rounded-full bg-[#FF0033] animate-pulse shadow-[0_0_8px_rgba(255,0,51,0.6)]" />
+          <div className="w-2.5 h-2.5 rounded-full bg-[#7C6CFF] animate-pulse shadow-[0_0_8px_rgba(124,108,255,0.6)]" />
           <h3 className="text-white font-black text-sm tracking-tight">
             MotorBoy News & Analysis Hub
           </h3>
@@ -297,7 +297,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
                   Auto-Analysis ทุก 1 ชม.
                 </span>
                 <span className="bg-[#22C55E]/20 text-[#4ADE80] text-[10px] font-bold px-1.5 py-0.2 rounded-md flex items-center gap-0.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#22C55E] animate-ping" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#22C55E]" />
                   Real-time
                 </span>
               </div>
@@ -319,7 +319,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
               id="btn-run-auto-analysis-now"
               onClick={() => runAutoAnalysis(true)}
               disabled={isAnalyzingAuto}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-[#7C6CFF] hover:bg-[#6D5DFF] text-white transition-all disabled:opacity-50 shadow-sm"
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-[#7C6CFF] hover:bg-[#6D5DFF] text-[#0F1117] transition-all disabled:opacity-50 shadow-sm"
               title="รันการวิเคราะห์เปรียบเทียบแบบเรียลไทม์ทันที"
             >
               <RefreshCw
@@ -442,7 +442,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
           onClick={() => setSelectedCategory('ALL')}
           className={`shrink-0 flex-1 py-1.5 px-3 text-xs font-medium rounded-lg transition-all whitespace-nowrap min-w-fit ${
             selectedCategory === 'ALL'
-              ? 'bg-[#7C6CFF] text-white shadow-sm'
+              ? 'bg-[#7C6CFF] text-[#0F1117] shadow-sm'
               : 'text-[#94A3B8] hover:text-white'
           }`}
         >
@@ -508,7 +508,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
           onClick={() => setSelectedCategory('CRYPTO')}
           className={`shrink-0 flex-1 py-1.5 px-3 text-xs font-medium rounded-lg transition-all whitespace-nowrap min-w-fit ${
             selectedCategory === 'CRYPTO'
-              ? 'bg-[#7C6CFF] text-white shadow-sm'
+              ? 'bg-[#7C6CFF] text-[#0F1117] shadow-sm'
               : 'text-[#94A3B8] hover:text-white'
           }`}
         >

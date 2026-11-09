@@ -18,8 +18,14 @@ import type { BookId, MoodId, PoseId } from './types';
 /* ------------------------------------------------------------------ colours */
 
 export const RUST_MODERN_COLORS = {
-  /** แดงแบรนด์ — โลโก้ M, ปุ่มหลัก, เส้นขอบ */
-  brandRed: '#FF0033',
+  /**
+   * สีแบรนด์ของโปรเจกต์นี้ = ลาเวนเดอร์ (Brand Book v2.0).
+   * ค่าเดิมของ v4.4 (`#FF0033`) ถูกเก็บเป็น `dangerRed` ไว้ใช้เชิงความหมายเท่านั้น —
+   * แดงไม่ใช่สีแบรนด์อีกต่อไป และห้ามใช้แดงแสบตาเป็นสีหลัก.
+   */
+  brandAccent: '#7C6CFF',
+  /** แดง — เตือน/ขาดทุน/อันตรายเท่านั้น (ไม่ใช่สีแบรนด์) */
+  dangerRed: '#FF0033',
   /** ม่วง — แอ็กเซนต์, AI, ไล่สี */
   violet: '#8A2BE2',
   /** ฟ้านีออน — ไอคอน ECU / AI / ลิงก์ (และเส้นขอบปุ่ม AI) */
@@ -38,6 +44,40 @@ export const RUST_MODERN_COLORS = {
   midnight: '#0F1117',
   /** สีหลักของเล่ม 1 */
   lavender: '#7C6CFF',
+} as const;
+
+/* ------------------------------------------------------- CALM SYSTEM v2.0 */
+
+/**
+ * MOTORBOY CALM SYSTEM v2.0 — Brand Book (8 Nov 2026).
+ *
+ * The studio's promise: "เทคโนโลยีที่เข้าใจใจคน … ทำให้เขาสงบ ชัด และไม่โดนเร่งให้ใจร้อน".
+ * The three lines that must never break: สงบ (calm) · ชัด (clear) · อบอุ่น (warm),
+ * and one hard rule for this project — **ไม่ใช้สีแดงแสบตาเป็นสีแบรนด์**
+ * (red stays for danger/loss only), with ink on lavender fixed to #0F1117.
+ */
+export const CALM_BRAND = {
+  /** ลาเวนเดอร์ — สีหลักของแบรนด์ */
+  primary: '#7C6CFF',
+  /** ตัวหนังสือ/ไอคอนบนพื้นลาเวอร์ */
+  inkOnAccent: '#0F1117',
+  /** พื้น Midnight (dark) */
+  surface: '#0F1117',
+  /** พื้น Paper (light) */
+  paperSurface: '#F7F5F0',
+  /** เขียว/เหลือง/แดง — ใช้เชิงความหมายเท่านั้น */
+  success: '#10B981',
+  warning: '#F59E0B',
+  danger: '#EF4444',
+  neutral: '#9AA0A8',
+} as const;
+
+/** Calm motion: ไม่กระพริบ ไม่เด้ง — hover 200ms, เปลี่ยนหน้า 320ms, reduced-motion 120ms */
+export const CALM_MOTION = {
+  hoverMs: 200,
+  pageMs: 320,
+  reducedMotionMs: 120,
+  blinking: false,
 } as const;
 
 /* ------------------------------------------------------------------- shapes */
@@ -74,8 +114,8 @@ export const RUST_MODERN_SHADOWS = {
   /** สนิม — เงาด้าน 0% + ความหยาบ */
   rustSheen: 0,
   card: '0 8px 8px rgba(0, 0, 0, 0.35)',
-  /** ปุ่มหลัก — เงาแดง 12px */
-  primaryButton: '0 0 12px #FF0033',
+  /** ปุ่มหลัก — เงานุ่มของลาเวนเดอร์ (ไม่ใช่เงาแดงกระพริบ) */
+  primaryButton: '0 6px 18px rgba(124, 108, 255, 0.28)',
 } as const;
 
 /** อัตราส่วนพื้นผิวรวมทั้งระบบ: โลหะ 70% + สนิม 20% + นีออน 10% */
@@ -126,7 +166,7 @@ export const BOOKS: Record<BookId, BookStyle> = {
     label: 'เล่ม 1 หาเงิน (สงบ)',
     surface: RUST_MODERN_COLORS.paper,
     accent: RUST_MODERN_COLORS.lavender,
-    accentAlt: RUST_MODERN_COLORS.brandRed,
+    accentAlt: RUST_MODERN_COLORS.dangerRed,
     texture: 'โลหะด้าน + สนิม 10%',
     motionMs: 320,
     easing: 'ease-calm',
@@ -139,7 +179,7 @@ export const BOOKS: Record<BookId, BookStyle> = {
     id: 'BOOK_2_CHAI_NGOEN',
     label: 'เล่ม 2 ใช้เงิน (สนุก)',
     surface: RUST_MODERN_COLORS.midnight,
-    accent: RUST_MODERN_COLORS.brandRed,
+    accent: RUST_MODERN_COLORS.brandAccent,
     accentAlt: RUST_MODERN_COLORS.neonBlue,
     texture: 'โลหะเงา + สนิม 25% + นีออน',
     motionMs: 200,
@@ -185,7 +225,7 @@ export const MOODS: Record<MoodId, { label: string; color: string }> = {
   CALM: { label: 'นิ่ง มั่นใจ', color: RUST_MODERN_COLORS.metal },
   FOCUS: { label: 'โฟกัส อ่านกราฟ', color: RUST_MODERN_COLORS.neonBlue },
   JOY: { label: 'สำเร็จ เฮ', color: RUST_MODERN_COLORS.neonGreen },
-  STRAIN: { label: 'ตึง เครียด ระวัง', color: RUST_MODERN_COLORS.brandRed },
+  STRAIN: { label: 'ตึง เครียด ระวัง', color: RUST_MODERN_COLORS.dangerRed },
 };
 
 export function moodForPose(pose: PoseId): MoodId {
@@ -198,9 +238,11 @@ export function moodForPose(pose: PoseId): MoodId {
  * The spec ships a copy-paste `:root` block. Exported as a plain string so a
  * project can opt in by injecting it — nothing is injected automatically.
  */
-export const RUST_MODERN_CSS = `/* MOTORBOY MASCOT + UI - Rust x Modern - Central v4.4 */
+export const RUST_MODERN_CSS = `/* MOTORBOY MASCOT + UI - Calm System v2.0 (Rust x Modern art tracks) */
 :root {
-  --mb-brand-red: ${RUST_MODERN_COLORS.brandRed};
+  --mb-brand: ${RUST_MODERN_COLORS.brandAccent};
+  --mb-brand-ink: ${CALM_BRAND.inkOnAccent};
+  --mb-danger: ${RUST_MODERN_COLORS.dangerRed};
   --mb-violet: ${RUST_MODERN_COLORS.violet};
   --mb-neon-blue: ${RUST_MODERN_COLORS.neonBlue};
   --mb-neon-green: ${RUST_MODERN_COLORS.neonGreen};

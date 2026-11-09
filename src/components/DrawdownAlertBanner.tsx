@@ -69,7 +69,7 @@ export const DrawdownAlertBanner: React.FC<DrawdownAlertBannerProps> = ({
             onClick={onOpenMonitor}
             className={`px-2.5 py-1 rounded-lg text-xs font-bold font-mono inline-flex items-center gap-1 transition-all shadow-xs cursor-pointer ${
               isExtreme
-                ? 'bg-[#f9df7b] hover:bg-[#f9df7b] text-black font-extrabold animate-bounce'
+                ? 'bg-[#f9df7b] hover:bg-[#f9df7b] text-black font-extrabold'
                 : 'bg-white/15 hover:bg-white/25 text-white border border-white/20'
             }`}
           >

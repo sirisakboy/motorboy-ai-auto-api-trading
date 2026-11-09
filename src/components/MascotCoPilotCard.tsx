@@ -29,14 +29,14 @@ export const MascotCoPilotCard: React.FC = () => {
   const getIcon = (s: MascotState) => {
     switch (s) {
       case 'SCANNING': return <Search className="w-5 h-5 text-blue-400 animate-pulse" />;
-      case 'TP_CELEBRATE': return <Trophy className="w-5 h-5 text-emerald-400 animate-bounce" />;
+      case 'TP_CELEBRATE': return <Trophy className="w-5 h-5 text-emerald-400" />;
       case 'SL_RESPECTED': return <AlertOctagon className="w-5 h-5 text-red-400" />;
       case 'RISK_REJECT': return <ShieldAlert className="w-5 h-5 text-orange-400" />;
-      case 'KILL_SWITCH_ACTIVE': return <AlertOctagon className="w-5 h-5 text-red-500 animate-ping" />;
+      case 'KILL_SWITCH_ACTIVE': return <AlertOctagon className="w-5 h-5 text-red-500" />;
       case 'SIDEWAYS': return <Coffee className="w-5 h-5 text-slate-400" />;
       case 'READY_TO_EXECUTE': return <Zap className="w-5 h-5 text-yellow-400 animate-pulse" />;
       case 'ONBOARDING': return <Sparkles className="w-5 h-5 text-purple-400" />;
-      default: return <Wrench className="w-5 h-5 text-[#FF0033]" />;
+      default: return <Wrench className="w-5 h-5 text-[#7C6CFF]" />;
     }
   };
 
@@ -45,7 +45,7 @@ export const MascotCoPilotCard: React.FC = () => {
       <div className="flex items-start gap-4">
         {/* Mascot Avatar with Neon Glow */}
         <div className="relative shrink-0">
-          <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br from-[#FF0033] via-[#8A2BE2] to-[#00E5FF] p-[1.5px] shadow-[0_0_15px_rgba(255,0,51,0.3)]`}>
+          <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br from-[#7C6CFF] to-[#6A58F0] p-[1.5px] shadow-[0_0_15px_rgba(124,108,255,0.3)]`}>
             <div className="w-full h-full bg-[#0F1117] rounded-[14.5px] flex items-center justify-center overflow-hidden relative">
               {/* Character Image */}
               <img 
@@ -73,14 +73,14 @@ export const MascotCoPilotCard: React.FC = () => {
               
               {/* Neon circuit overlay effect */}
               <div className="absolute inset-0 opacity-20 pointer-events-none">
-                 <div className="w-full h-full bg-[radial-gradient(circle_at_50%_50%,_rgba(255,0,51,0.2)_0%,_transparent_70%)]" />
+                 <div className="w-full h-full bg-[radial-gradient(circle_at_50%_50%,_rgba(124,108,255,0.2)_0%,_transparent_70%)]" />
               </div>
             </div>
           </div>
           
           {/* Status Indicator */}
           <div className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-[#0F1117] flex items-center justify-center ${
-            state === 'IDLE' ? 'bg-emerald-500' : 'bg-[#FF0033]'
+            state === 'IDLE' ? 'bg-emerald-500' : 'bg-[#7C6CFF]'
           }`}>
              <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
           </div>
@@ -89,7 +89,7 @@ export const MascotCoPilotCard: React.FC = () => {
         {/* Interaction Bubble */}
         <div className="flex-1 space-y-1">
           <div className="flex items-center justify-between">
-            <h4 className="text-[11px] font-black text-[#FF0033] uppercase tracking-widest flex items-center gap-1.5">
+            <h4 className="text-[11px] font-black text-[#7C6CFF] uppercase tracking-widest flex items-center gap-1.5">
               {getIcon(state)}
               Nong MotorBoy Co-Pilot
             </h4>

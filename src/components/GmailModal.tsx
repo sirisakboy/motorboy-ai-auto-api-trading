@@ -391,7 +391,7 @@ export const GmailModal: React.FC<GmailModalProps> = ({
                   className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center space-x-1.5 ${
                     activeTab === 'inbox'
                       ? isDark
-                        ? 'bg-[#1F2330] text-white border border-[#FF0033]/40 shadow-xs'
+                        ? 'bg-[#1F2330] text-white border border-[#7C6CFF]/40 shadow-xs'
                         : 'bg-white text-slate-900 border border-slate-300 shadow-xs'
                       : 'text-[#9CA3AF] hover:text-white'
                   }`}
@@ -411,7 +411,7 @@ export const GmailModal: React.FC<GmailModalProps> = ({
                   className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center space-x-1.5 ${
                     activeTab === 'compose'
                       ? isDark
-                        ? 'bg-[#1F2330] text-white border border-[#FF0033]/40 shadow-xs'
+                        ? 'bg-[#1F2330] text-white border border-[#7C6CFF]/40 shadow-xs'
                         : 'bg-white text-slate-900 border border-slate-300 shadow-xs'
                       : 'text-[#9CA3AF] hover:text-white'
                   }`}
@@ -720,7 +720,7 @@ export const GmailModal: React.FC<GmailModalProps> = ({
                       type="checkbox"
                       checked={includeSignalReport}
                       onChange={(e) => setIncludeSignalReport(e.target.checked)}
-                      className="w-4 h-4 accent-[#FF0033]"
+                      className="w-4 h-4 accent-[#7C6CFF]"
                     />
                   </div>
 
@@ -768,7 +768,7 @@ export const GmailModal: React.FC<GmailModalProps> = ({
                     <button
                       type="submit"
                       disabled={isSending}
-                      className="px-5 py-2.5 rounded-xl bg-[#FF0033] hover:bg-[#FF0033]/90 text-white font-bold text-xs flex items-center space-x-2 shadow-md cursor-pointer disabled:opacity-50"
+                      className="px-5 py-2.5 rounded-xl bg-[#7C6CFF] hover:bg-[#7C6CFF]/90 text-[#0F1117] font-bold text-xs flex items-center space-x-2 shadow-md cursor-pointer disabled:opacity-50"
                     >
                       <Send className="w-4 h-4" />
                       <span>ส่งอีเมลผ่าน Gmail</span>
@@ -785,7 +785,7 @@ export const GmailModal: React.FC<GmailModalProps> = ({
           <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/80">
             <div className="w-full max-w-md rounded-2xl bg-[#1A1D29] border border-[#2A2E45] p-5 shadow-2xl space-y-4">
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 rounded-xl bg-[#FF0033]/20 border border-[#FF0033]/40 flex items-center justify-center text-[#FF0033]">
+                <div className="w-10 h-10 rounded-xl bg-[#7C6CFF]/20 border border-[#7C6CFF]/40 flex items-center justify-center text-[#7C6CFF]">
                   <Send className="w-5 h-5" />
                 </div>
                 <div>
@@ -825,7 +825,7 @@ export const GmailModal: React.FC<GmailModalProps> = ({
                   type="button"
                   onClick={handleExecuteSend}
                   disabled={isSending}
-                  className="px-4 py-2 rounded-xl bg-[#FF0033] hover:bg-[#FF0033]/90 text-white text-xs font-bold flex items-center space-x-1.5"
+                  className="px-4 py-2 rounded-xl bg-[#7C6CFF] hover:bg-[#7C6CFF]/90 text-[#0F1117] text-xs font-bold flex items-center space-x-1.5"
                 >
                   {isSending ? (
                     <>

@@ -205,17 +205,17 @@ export const ChatModal: React.FC<ChatModalProps> = ({
         {/* Header: Short title & 100% AI badge */}
         <div className="flex justify-between items-center px-4 py-3 border-b border-[#2A2E45]/60 bg-[#141824]">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#FF0033] via-[#8A2BE2] to-[#00E5FF] p-[1.5px] shadow-[0_0_12px_rgba(255,0,51,0.4)]">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#7C6CFF] to-[#6A58F0] p-[1.5px] shadow-[0_0_12px_rgba(124,108,255,0.4)]">
               <div className="w-full h-full bg-[#0F1117] rounded-[9.5px] flex items-center justify-center text-sm">
                 🏍️
               </div>
             </div>
             <div>
               <h2 className="font-bold flex items-center gap-1.5 text-sm sm:text-base">
-                <span className="bg-gradient-to-r from-[#FF0033] via-[#8A2BE2] to-[#00E5FF] text-transparent bg-clip-text font-black">
+                <span className="bg-gradient-to-r from-[#7C6CFF] to-[#6A58F0] text-transparent bg-clip-text font-black">
                   MotorBoy AI-TH
                 </span>
-                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-[#FF0033]/20 text-[#FF0033] border border-[#FF0033]/40 font-mono">
+                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-[#7C6CFF]/20 text-[#7C6CFF] border border-[#7C6CFF]/40 font-mono">
                   HYBRID PRO
                 </span>
               </h2>
@@ -254,7 +254,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                 {user.photoURL ? (
                   <img src={user.photoURL} alt="" className="w-4 h-4 rounded-full object-cover" referrerPolicy="no-referrer" />
                 ) : (
-                  <span className="w-4 h-4 rounded-full bg-[#FF0033]/20 text-[#FF0033] flex items-center justify-center text-[9px] font-bold">
+                  <span className="w-4 h-4 rounded-full bg-[#7C6CFF]/20 text-[#7C6CFF] flex items-center justify-center text-[9px] font-bold">
                     {(user.displayName || user.email || 'T').charAt(0)}
                   </span>
                 )}
@@ -296,7 +296,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
         <div className="flex-1 min-h-[320px] max-h-[440px] overflow-y-auto px-4 py-3 space-y-3 bg-[#0A0D14]">
           {messages.length === 0 && (
             <div className="p-4 rounded-2xl bg-[#141824] border border-[#2A2E45] text-center my-4 space-y-2">
-              <Bot className="w-10 h-10 text-[#00FF66] mx-auto animate-bounce" />
+              <Bot className="w-10 h-10 text-[#00FF66] mx-auto" />
               <h3 className="text-white font-bold text-sm">ยินดีต้อนรับสู่ AI Deep Analyze (AI 100%)</h3>
               <p className="text-xs text-[#9CA3AF] max-w-sm mx-auto leading-relaxed">
                 ถามคำถาม วิเคราะห์แนวรับ-แนวต้าน หุ้นไทย (SET), หุ้นนอก (US), Forex, คริปโต หรือสรุปข่าวสารการเงินโลก AI จะประมวลผลตอบกลับ 100% ทุกข้อความ
@@ -351,7 +351,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                     {m.name.charAt(0)}
                   </span>
                 )}
-                <div className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 ${mine ? 'bg-[#FF0033]/20 border border-[#FF0033]/40' : 'bg-[#1A1D29] border border-[#2A2E45]'}`}>
+                <div className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 ${mine ? 'bg-[#7C6CFF]/20 border border-[#7C6CFF]/40' : 'bg-[#1A1D29] border border-[#2A2E45]'}`}>
                   <p className="text-[10px] text-[#9CA3AF] font-semibold mb-0.5">
                     {m.name} • {formatTime(m.createdAt)}
                   </p>
@@ -374,7 +374,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                 <Bot className="w-4 h-4 text-[#00FF66] animate-spin" />
               </div>
               <div className="rounded-2xl px-3.5 py-2.5 bg-[#0F1622] border border-[#00FF66]/30 text-xs text-[#00FF66] font-mono flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-[#00FF66] animate-ping" />
+                <div className="w-2 h-2 rounded-full bg-[#00FF66]" />
                 <span>AI Deep Analyze กำลังประมวลผลข้อมูลตลาดเชิงลึก...</span>
               </div>
             </div>
@@ -491,7 +491,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
             placeholder="พิมพ์คำถามหรือสินทรัพย์ให้ AI วิเคราะห์... (เช่น BTC, AOT, NVDA, EUR/USD)"
             disabled={isSending || isAiThinking}
             maxLength={500}
-            className="flex-1 bg-[#0F1117] border border-[#2A2E45] rounded-xl px-3 py-2 text-xs sm:text-sm outline-none focus:border-[#FF0033] placeholder-[#6F7787] text-white disabled:opacity-60"
+            className="flex-1 bg-[#0F1117] border border-[#2A2E45] rounded-xl px-3 py-2 text-xs sm:text-sm outline-none focus:border-[#7C6CFF] placeholder-[#6F7787] text-white disabled:opacity-60"
           />
           <button
             onClick={() => handleSend()}

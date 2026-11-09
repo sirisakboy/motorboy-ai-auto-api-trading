@@ -130,7 +130,7 @@ export const CalendarModal: React.FC<CalendarModalProps> = ({ isOpen, onClose, i
       key={id}
       onClick={() => setTab(id)}
       className={`flex-1 min-w-0 py-2 px-2 text-[11px] sm:text-xs font-semibold rounded-xl transition-all inline-flex items-center justify-center gap-1 ${
-        tab === id ? 'bg-[#FF0033] text-white shadow' : 'text-[#94A3B8] hover:text-white'
+        tab === id ? 'bg-[#7C6CFF] text-[#0F1117] shadow' : 'text-[#94A3B8] hover:text-white'
       }`}
     >
       {icon}
@@ -178,7 +178,7 @@ export const CalendarModal: React.FC<CalendarModalProps> = ({ isOpen, onClose, i
               {error.includes('กรุณาลองใหม่อีกครั้ง') && (
                 <button
                   onClick={() => loadEvents()}
-                  className="px-3 py-1.5 bg-[#7C6CFF] text-white rounded-lg text-xs font-semibold w-max"
+                  className="px-3 py-1.5 bg-[#7C6CFF] text-[#0F1117] rounded-lg text-xs font-semibold w-max"
                 >
                   ลองเชื่อมต่อใหม่
                 </button>
@@ -203,7 +203,7 @@ export const CalendarModal: React.FC<CalendarModalProps> = ({ isOpen, onClose, i
                     </button>
                   ))}
                 </div>
-                <button onClick={() => loadEvents()} disabled={isLoading} className="px-3 py-1.5 bg-[#FF0033] hover:bg-[#FF0033]/90 disabled:opacity-50 rounded-lg text-white text-xs font-semibold inline-flex items-center gap-1.5">
+                <button onClick={() => loadEvents()} disabled={isLoading} className="px-3 py-1.5 bg-[#7C6CFF] hover:bg-[#7C6CFF]/90 disabled:opacity-50 rounded-lg text-[#0F1117] text-xs font-semibold inline-flex items-center gap-1.5">
                   <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
                   <span>{isLoading ? 'กำลังโหลด...' : 'รีเฟรช'}</span>
                 </button>
@@ -297,7 +297,7 @@ export const CalendarModal: React.FC<CalendarModalProps> = ({ isOpen, onClose, i
                   {createMsg.text}
                 </div>
               )}
-              <button onClick={handleCreate} disabled={isCreating || !form.summary.trim()} className="w-full py-2.5 bg-[#FF0033] hover:bg-[#FF0033]/90 disabled:opacity-50 rounded-xl text-white text-sm font-bold inline-flex items-center justify-center gap-2">
+              <button onClick={handleCreate} disabled={isCreating || !form.summary.trim()} className="w-full py-2.5 bg-[#7C6CFF] hover:bg-[#7C6CFF]/90 disabled:opacity-50 rounded-xl text-[#0F1117] text-sm font-bold inline-flex items-center justify-center gap-2">
                 <Plus className="w-4 h-4" />
                 <span>{isCreating ? 'กำลังสร้าง...' : 'สร้างกิจกรรมในปฏิทินหลัก'}</span>
               </button>

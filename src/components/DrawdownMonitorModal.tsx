@@ -232,12 +232,12 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="font-bold text-base sm:text-lg tracking-tight">
-                  <span className="bg-gradient-to-r from-[#FF0033] via-[#8A2BE2] to-[#00E5FF] text-transparent bg-clip-text font-black">
+                  <span className="bg-gradient-to-r from-[#7C6CFF] to-[#6A58F0] text-transparent bg-clip-text font-black">
                     MotorBoy
                   </span>{' '}
                   Kill Switch & Risk Guard
                 </h2>
-                <span className="text-[10px] font-bold font-mono px-1.5 py-0.5 rounded bg-[#FF0033]/20 text-[#FF0033] border border-[#FF0033]/40">
+                <span className="text-[10px] font-bold font-mono px-1.5 py-0.5 rounded bg-[#7C6CFF]/20 text-[#7C6CFF] border border-[#7C6CFF]/40">
                   DRAWDOWN STOP 5%
                 </span>
                 {stressTestDropPct !== 0 && (
@@ -247,7 +247,7 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
                 )}
               </div>
               <p className="text-xs text-slate-400 flex items-center gap-1">
-                <span className="text-[#FF0033] font-bold font-mono">🛑 เบรกก่อนจิ!</span>
+                <span className="text-[#7C6CFF] font-bold font-mono">🛑 เบรกก่อนจิ!</span>
                 <span>— คุมความเสี่ยงสูงสุดไม่เกิน 2% ต่อไม้ และหยุดเทรดทันทีเมื่อ Drawdown เกิน 5%</span>
               </p>
             </div>
