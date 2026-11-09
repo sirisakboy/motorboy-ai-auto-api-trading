@@ -337,7 +337,7 @@ export function computePortfolioDrawdownSummary(
     recommendedActionTh = `⚠️ สัญญาณอันตรายระดับรุนแรง: มี ${extremeCount} สินทรัพย์ย่อตัวเกินเกณฑ์วิกฤต แนะนำปรับลดขนาด Position (De-risk), ตั้ง Hard Stop Loss ทันที และงดเปิดสถานะ Leverage เพิ่ม`;
   } else if (criticalCount > 0 || avgDrawdownPct <= -15) {
     portfolioStatus = 'CRITICAL';
-    recommendedActionTh = `🚨 สินทรัพย์หลุดแนวรับสำคัญ: มี ${criticalCount} สินทรัพย์แตะระดับ Critical (${worstAsset.symbol} ลดลง ${worstAsset.currentDrawdownPct}%) แนะนำเตรียมแผน Cut Loss หรือกระจายความเสี่ยง (Hedging)`;
+    recommendedActionTh = `⚠️ สินทรัพย์หลุดแนวรับสำคัญ: มี ${criticalCount} สินทรัพย์แตะระดับ Critical (${worstAsset.symbol} ลดลง ${worstAsset.currentDrawdownPct}%) แนะนำเตรียมแผน Cut Loss หรือกระจายความเสี่ยง (Hedging)`;
   } else if (warningCount > 0 || avgDrawdownPct <= -8) {
     portfolioStatus = 'WARNING';
     recommendedActionTh = `⚡ เฝ้าระวังใกล้ชิด: ตรวจพบ ${warningCount} สินทรัพย์เริ่มเข้าสู่โซนย่อตัว แนะนำทบทวนจุด Trailing Stop และจำกัดการถัวเฉลี่ยขาลง`;

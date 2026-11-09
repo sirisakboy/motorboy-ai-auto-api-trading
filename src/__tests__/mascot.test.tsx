@@ -11,7 +11,7 @@ import {
   MASCOT_AI_COOLDOWN_MS,
 } from '../services/mascotAiService';
 import { CRYPTO_INITIAL, generateRealSignals } from '../services/apiClient';
-import { loadJournal, saveMascotSettings } from '../mascot/journal';
+import { loadJournal, loadMascotPosition, saveMascotSettings } from '../mascot/journal';
 import { clearEndingsCache } from '../mascot/endings';
 
 const DEFAULT_MESSAGE = 'สวัสดีครับ ผมมอเตอร์บอย พร้อมเป็น Co-Pilot ให้คุณแล้ว!';
@@ -58,11 +58,15 @@ describe('MascotOverlay — never blocks the UI', () => {
     expect(layer.className).toContain('z-40'); // below every modal (z-50)
   });
 
-  it('collapses to a 56px chip when idle and exposes an accessible name', () => {
+  it('renders the transparent character as a draggable, accessible control', () => {
     render(<MascotOverlay />);
     const chip = screen.getByRole('button', { name: /น้องมอเตอร์บอย/ });
-    expect(chip.className).toContain('w-14');
     expect(chip.className).toContain('pointer-events-auto');
+    expect(chip.className).toContain('cursor-grab');
+    // no card chrome: the cut-out PNG is the whole button
+    const art = chip.querySelector('img');
+    expect(art).toBeTruthy();
+    expect(art?.getAttribute('alt')).toBe('');
   });
 
   it('expands on click and shows the current message as a live region', () => {
@@ -79,6 +83,55 @@ describe('MascotOverlay — never blocks the UI', () => {
     fireEvent.click(screen.getByRole('button', { name: /น้องมอเตอร์บอย/ }));
     fireEvent.click(screen.getByRole('button', { name: 'ซ่อน' }));
     expect(screen.queryByTestId('mascot-overlay')).toBeNull();
+  });
+});
+
+describe('MascotOverlay — the character is the door to the chat', () => {
+  it('opens the full AI chat from the bubble', () => {
+    const onOpenChat = vi.fn();
+    render(<MascotOverlay onOpenChat={onOpenChat} />);
+    fireEvent.click(screen.getByRole('button', { name: /น้องมอเตอร์บอย/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'คุยกับผม' }));
+    expect(onOpenChat).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('MascotOverlay — free-floating character', () => {
+  it('moves with the pointer and remembers where it was dropped', () => {
+    render(<MascotOverlay />);
+    const layer = screen.getByTestId('mascot-overlay');
+    const chip = screen.getByRole('button', { name: /น้องมอเตอร์บอย/ });
+
+    fireEvent.pointerDown(chip, { clientX: 40, clientY: 40, pointerId: 1, button: 0 });
+    fireEvent.pointerMove(chip, { clientX: 140, clientY: 90, pointerId: 1 });
+    fireEvent.pointerUp(chip, { clientX: 140, clientY: 90, pointerId: 1 });
+
+    expect(layer.style.left).toBe('100px');
+    expect(layer.style.top).toBe('50px');
+    expect(loadMascotPosition()).toEqual({ x: 100, y: 50 });
+  });
+
+  it('does not open the bubble when the gesture was a drag', () => {
+    render(<MascotOverlay />);
+    const chip = screen.getByRole('button', { name: /น้องมอเตอร์บอย/ });
+
+    fireEvent.pointerDown(chip, { clientX: 40, clientY: 40, pointerId: 1, button: 0 });
+    fireEvent.pointerMove(chip, { clientX: 160, clientY: 120, pointerId: 1 });
+    fireEvent.pointerUp(chip, { clientX: 160, clientY: 120, pointerId: 1 });
+    fireEvent.click(chip);
+
+    expect(screen.queryByRole('status')).toBeNull();
+  });
+
+  it('can be moved with the keyboard for people who cannot drag', () => {
+    render(<MascotOverlay />);
+    const chip = screen.getByRole('button', { name: /น้องมอเตอร์บอย/ });
+
+    fireEvent.keyDown(chip, { key: 'ArrowLeft' });
+    fireEvent.keyDown(chip, { key: 'ArrowUp' });
+
+    // clamped to the 8px viewport margin, then persisted
+    expect(loadMascotPosition()).toEqual({ x: 8, y: 8 });
   });
 });
 
@@ -114,7 +167,8 @@ describe('MascotOverlay — state driven by the shared mascot store', () => {
 
     const status = screen.getByRole('status');
     expect(status.textContent).toContain('หยุดเทรดชั่วคราว');
-    expect(status.className).toMatch(/border-\[#F4A6A6\]/); // skin-defined bear/danger ring
+    // skin-defined bear colour, applied inline because it depends on state
+    expect(status.style.borderColor.replace(/\s/g, '')).toBe('rgb(244,166,166)');
   });
 
   it('shows the GOD SPEED flourish while executing', () => {

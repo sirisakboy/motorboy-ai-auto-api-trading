@@ -1,7 +1,9 @@
 import { FACE_ID, canMountFace, type FaceQueryRoot } from './core';
 import { getSkin, type TradingSkinId } from './skins';
 import type { MascotAssetSet, ProjectId } from './types';
-import mascotHero from '../assets/images/nong_motorboy_hero_1794000288918.jpg';
+// Transparent cut-out of the same character (no card, no background) so she can
+// float anywhere on the page — see components/MascotOverlay.tsx.
+import mascotHero from '../assets/images/nong_motorboy_hero.png';
 
 /**
  * L2 ADAPTER — “Kernel”.

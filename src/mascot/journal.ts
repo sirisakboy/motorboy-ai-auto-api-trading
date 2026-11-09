@@ -60,6 +60,41 @@ function writeStorage(key: string, value: unknown): void {
   }
 }
 
+/* --------------------------------------------------- free-floating position */
+
+export const POSITION_STORAGE_KEY = 'motorboy_mascot_position_v1';
+
+/** Where the trader last dropped the mascot, in viewport pixels. */
+export interface MascotPosition {
+  x: number;
+  y: number;
+}
+
+function isPosition(value: unknown): value is MascotPosition {
+  const p = value as MascotPosition | null;
+  return (
+    !!p && typeof p.x === 'number' && typeof p.y === 'number' && isFinite(p.x) && isFinite(p.y)
+  );
+}
+
+/** Saved drop point, or null when the mascot should fall back to its corner. */
+export function loadMascotPosition(): MascotPosition | null {
+  const stored = readStorage<unknown>(POSITION_STORAGE_KEY, null);
+  return isPosition(stored) ? { x: stored.x, y: stored.y } : null;
+}
+
+export function saveMascotPosition(position: MascotPosition): void {
+  if (isPosition(position)) writeStorage(POSITION_STORAGE_KEY, position);
+}
+
+export function clearMascotPosition(): void {
+  try {
+    if (typeof localStorage !== 'undefined') localStorage.removeItem(POSITION_STORAGE_KEY);
+  } catch {
+    // ignore
+  }
+}
+
 export function loadMascotSettings(): MascotSettings {
   const stored = readStorage<Partial<MascotSettings>>(SETTINGS_STORAGE_KEY, {});
   return { ...DEFAULT_MASCOT_SETTINGS, ...stored };

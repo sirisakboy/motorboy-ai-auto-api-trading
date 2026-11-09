@@ -301,7 +301,7 @@ export const App: React.FC = () => {
     const maxChange = Math.max(...cryptoList.map(c => Math.abs(c.change)));
 
     if (maxChange > 10) {
-      useMascotStore.getState().setMascotState('KILL_SWITCH_ACTIVE', '🛑 ตลาดผันผวนรุนแรงมาก! ระวังการโดนล้างพอร์ตนะครับ');
+      useMascotStore.getState().setMascotState('KILL_SWITCH_ACTIVE', 'ตลาดผันผวนรุนแรงมากครับ — พักก่อน อย่าเพิ่งเข้าไม้ใหม่');
     } else if (avgChange < 0.2) {
       useMascotStore.getState().setMascotState('SIDEWAYS');
     } else if (activeMascotState === 'SIDEWAYS' && avgChange >= 0.2) {
@@ -1861,6 +1861,7 @@ export const App: React.FC = () => {
         useThb={useThb}
         usdThbRate={usdThbRate}
         geminiApiKey={geminiApiKey}
+        onOpenChat={() => setShowChat(true)}
       />
     </>
   );

@@ -334,8 +334,19 @@
   to { opacity: 1; }
 }
 
+@keyframes mascotDrift {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
 .animate-calm-pulse {
   animation: calmPulse 6s var(--mb-ease-calm) infinite;   /* หายใจ 6 วิ */
+}
+
+/* มาสคอตลอย: ขยับขึ้นลง 5px ใน 7 วิ — เบาพอที่จะไม่ดึงสายตา และหยุดสนิทเมื่อ
+   ผู้ใช้ตั้งค่า reduce motion (บล็อก prefers-reduced-motion ด้านล่างคุมไว้แล้ว) */
+.animate-mascot-drift {
+  animation: mascotDrift 7s var(--mb-ease-calm) infinite;
 }
 
 .animate-gentle-glow {

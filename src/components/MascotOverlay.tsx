@@ -22,9 +22,12 @@ import { poseVisual, TRADING_SKIN } from '../mascot/skins';
 import { analyzeEndings, fetchEndingsCandles } from '../mascot/endings';
 import { loadEndingsModel } from '../mascot/endingsModel';
 import {
+  loadMascotPosition,
   loadMascotSettings,
   recordEnding,
+  saveMascotPosition,
   saveMascotSettings,
+  type MascotPosition,
   type MascotSettings,
 } from '../mascot/journal';
 import {
@@ -96,6 +99,8 @@ export interface MascotOverlayProps {
   endingSymbol?: string;
   /** Disable the candle feed (tests / offline demo). */
   disableEndingsFeed?: boolean;
+  /** Open the full AI chat — the mascot is the door to it. */
+  onOpenChat?: () => void;
 }
 
 export const MascotOverlay: React.FC<MascotOverlayProps> = ({
@@ -106,6 +111,7 @@ export const MascotOverlay: React.FC<MascotOverlayProps> = ({
   geminiApiKey = '',
   endingSymbol,
   disableEndingsFeed = false,
+  onOpenChat,
 }) => {
   const { state, message } = useMascotStore();
   const skin = TRADING_SKIN;
@@ -323,10 +329,138 @@ export const MascotOverlay: React.FC<MascotOverlayProps> = ({
     }
   };
 
-  const anchorStyle: React.CSSProperties = {
-    right: 'calc(0.75rem + env(safe-area-inset-right, 0px))',
-    bottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))',
+  /* ==================================================================
+   * FREE-FLOATING CHARACTER
+   *
+   * The mascot is no longer a card in the page: it is a transparent cut-out
+   * that the trader can drag anywhere, and the drop point survives a reload.
+   * Everything still sits on a `pointer-events-none` layer, so a stray click
+   * never lands on her instead of the chart.
+   * ================================================================== */
+
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const [pos, setPos] = useState<MascotPosition | null>(() => loadMascotPosition());
+  const [dragging, setDragging] = useState(false);
+  /** A drag ends with a click event — remember it so dragging never toggles the bubble. */
+  const draggedRef = useRef(false);
+  const dragRef = useRef<{
+    startX: number;
+    startY: number;
+    originX: number;
+    originY: number;
+    pointerId: number;
+  } | null>(null);
+
+  const clampToViewport = useCallback((next: MascotPosition): MascotPosition => {
+    if (typeof window === 'undefined') return next;
+    const rect = rootRef.current?.getBoundingClientRect();
+    const width = rect && rect.width > 0 ? rect.width : 220;
+    const height = rect && rect.height > 0 ? rect.height : 150;
+    const maxX = Math.max(8, window.innerWidth - width - 8);
+    const maxY = Math.max(8, window.innerHeight - height - 8);
+    return {
+      x: Math.min(Math.max(8, next.x), maxX),
+      y: Math.min(Math.max(8, next.y), maxY),
+    };
+  }, []);
+
+  // Rotating the phone must not leave her half off-screen.
+  useEffect(() => {
+    if (!pos) return;
+    const onResize = () => setPos((current) => (current ? clampToViewport(current) : current));
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [pos, clampToViewport]);
+
+  const currentOrigin = () => {
+    const rect = rootRef.current?.getBoundingClientRect();
+    return { x: rect?.left ?? 0, y: rect?.top ?? 0 };
   };
+
+  const onDragStart = (event: React.PointerEvent<HTMLButtonElement>) => {
+    if (event.button !== 0) return;
+    const origin = currentOrigin();
+    draggedRef.current = false;
+    dragRef.current = {
+      startX: event.clientX,
+      startY: event.clientY,
+      originX: origin.x,
+      originY: origin.y,
+      pointerId: event.pointerId,
+    };
+    try {
+      event.currentTarget.setPointerCapture(event.pointerId);
+    } catch {
+      // older browsers — dragging still works, it just may lose the pointer
+    }
+    setDragging(true);
+  };
+
+  const onDragMove = (event: React.PointerEvent<HTMLButtonElement>) => {
+    const drag = dragRef.current;
+    if (!drag) return;
+    const dx = event.clientX - drag.startX;
+    const dy = event.clientY - drag.startY;
+    // 4px of slop so a tap on a touch screen is not read as a drag.
+    if (!draggedRef.current && Math.hypot(dx, dy) < 4) return;
+    draggedRef.current = true;
+    setLastActivityAt(Date.now());
+    setPos(clampToViewport({ x: drag.originX + dx, y: drag.originY + dy }));
+  };
+
+  const onDragEnd = (event: React.PointerEvent<HTMLButtonElement>) => {
+    const drag = dragRef.current;
+    dragRef.current = null;
+    setDragging(false);
+    if (!drag) return;
+    try {
+      event.currentTarget.releasePointerCapture(drag.pointerId);
+    } catch {
+      // ignore
+    }
+    if (draggedRef.current) {
+      setPos((current) => {
+        if (current) saveMascotPosition(current);
+        return current;
+      });
+    }
+  };
+
+  const onCharacterClick = () => {
+    if (draggedRef.current) {
+      draggedRef.current = false;
+      return;
+    }
+    setExpanded((value) => !value);
+    setLastActivityAt(Date.now());
+  };
+
+  const onCharacterKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
+    const step = event.shiftKey ? 48 : 16;
+    const delta: Record<string, [number, number]> = {
+      ArrowLeft: [-step, 0],
+      ArrowRight: [step, 0],
+      ArrowUp: [0, -step],
+      ArrowDown: [0, step],
+    };
+    const move = delta[event.key];
+    if (!move) return;
+    event.preventDefault();
+    setPos((current) => {
+      const base = current ?? currentOrigin();
+      const next = clampToViewport({ x: base.x + move[0], y: base.y + move[1] });
+      saveMascotPosition(next);
+      return next;
+    });
+    setLastActivityAt(Date.now());
+  };
+
+  const positionStyle: React.CSSProperties = pos
+    ? { left: pos.x, top: pos.y }
+    : {
+        right: 'calc(0.75rem + env(safe-area-inset-right, 0px))',
+        bottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))',
+      };
   const rootAttrs = { [MASCOT_ROOT_ATTR]: '', [MASCOT_FACE_ATTR]: FACE_ID };
 
   if (dismissed || settings.hidden) return null;
@@ -336,7 +470,7 @@ export const MascotOverlay: React.FC<MascotOverlayProps> = ({
     return (
       <div
         className="fixed z-40 pointer-events-none select-none"
-        style={anchorStyle}
+        style={positionStyle}
         data-testid="mascot-overlay"
         {...rootAttrs}
       >
@@ -356,86 +490,73 @@ export const MascotOverlay: React.FC<MascotOverlayProps> = ({
     );
   }
 
-  const showCard = expanded || isActive;
+  const showBubble = expanded || isActive;
+  const artHeight = minimized ? 80 : isActive ? 200 : 176;
+  // Dragged into the left third? The bubble grows to the other side so it never
+  // runs off the edge of the screen.
+  const bubbleFlip = pos !== null && pos.x < 320;
+  const accent = isCritical ? palette.bear : palette.primary;
 
   return (
     <div
+      ref={rootRef}
       className="fixed z-40 pointer-events-none select-none"
-      style={anchorStyle}
+      style={positionStyle}
       data-testid="mascot-overlay"
       {...rootAttrs}
     >
       <div
-        className={`flex flex-col items-end transition-all duration-300 ${
-          nearInteractive ? 'opacity-50 scale-90' : 'opacity-100 scale-100'
-        }`}
+        className={`flex items-end gap-1 ${bubbleFlip ? 'flex-row-reverse' : ''} ${
+          nearInteractive && !dragging ? 'opacity-60' : 'opacity-100'
+        } transition-opacity duration-300`}
       >
-        {showCard ? (
+        {showBubble && (
           <div
             role="status"
             aria-live="polite"
-            className={`pointer-events-auto w-[252px] sm:w-[272px] rounded-2xl border backdrop-blur-md shadow-[0_10px_30px_rgba(0,0,0,0.45)] p-3 ${visual.ring}`}
+            className="pointer-events-auto relative mb-6 w-[232px] sm:w-[264px] rounded-2xl border backdrop-blur-md p-3 shadow-[0_10px_30px_rgba(0,0,0,0.45)]"
             style={{
               backgroundColor: `${palette.surface}F2`,
-              // v4.4 layout token: cards are 12px, not "whatever rounded-2xl is".
+              borderColor: isCritical ? palette.bear : palette.border,
               borderRadius: RUST_MODERN_LAYOUT.radius,
               boxShadow: isCritical ? `0 0 25px ${palette.bear}59` : undefined,
             }}
           >
-            <div className="flex items-start gap-2.5">
-              <div className="relative shrink-0">
-                {mascot.assets.hero ? (
-                  <img
-                    src={mascot.assets.hero}
-                    alt="น้องมอเตอร์บอย"
-                    className="w-12 h-12 rounded-xl object-cover border border-white/10"
-                  />
+            {/* speech tail pointing at the character */}
+            <span
+              aria-hidden="true"
+              className={`absolute bottom-6 h-2.5 w-2.5 rotate-45 ${
+                bubbleFlip ? '-left-[5px] border-b border-l' : '-right-[5px] border-r border-t'
+              }`}
+              style={{
+                backgroundColor: `${palette.surface}F2`,
+                borderColor: isCritical ? palette.bear : palette.border,
+              }}
+            />
+            <div className="flex items-center justify-between gap-1">
+              <span
+                className="text-[10px] font-black uppercase tracking-wider flex items-center gap-1"
+                style={{ color: accent }}
+              >
+                {isCritical ? (
+                  <ShieldAlert className="w-3 h-3" aria-hidden="true" />
                 ) : (
-                  <div className="w-12 h-12 rounded-xl border border-white/10 flex items-center justify-center text-xl">
-                    {visual.emoji}
-                  </div>
+                  <Sparkles className="w-3 h-3" aria-hidden="true" />
                 )}
-                <span
-                  className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 flex items-center justify-center text-[9px] ${
-                    isCritical ? 'animate-pulse' : ''
-                  }`}
-                  style={{
-                    backgroundColor: isCritical ? palette.bear : palette.bull,
-                    borderColor: palette.surface,
-                  }}
-                  aria-hidden="true"
-                >
-                  {visual.emoji}
-                </span>
-              </div>
-
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between gap-1">
-                  <span
-                    className="text-[10px] font-black uppercase tracking-wider flex items-center gap-1"
-                    style={{ color: isCritical ? palette.bear : palette.primary }}
-                  >
-                    {isCritical ? (
-                      <ShieldAlert className="w-3 h-3" aria-hidden="true" />
-                    ) : (
-                      <Sparkles className="w-3 h-3" aria-hidden="true" />
-                    )}
-                    {stateLabel}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setExpanded(false)}
-                    aria-label="ย่อมาสคอต"
-                    className="text-[#A7A4B8] hover:text-white p-0.5 rounded transition-colors"
-                  >
-                    <ChevronDown className="w-3.5 h-3.5" aria-hidden="true" />
-                  </button>
-                </div>
-                <p className="mt-1 text-[11px] leading-relaxed text-[#ECEAF4] break-words">
-                  {bubbleText}
-                </p>
-              </div>
+                {stateLabel}
+              </span>
+              <button
+                type="button"
+                onClick={() => setExpanded(false)}
+                aria-label="ย่อมาสคอต"
+                className="text-[#A7A4B8] hover:text-white p-0.5 rounded transition-colors"
+              >
+                <ChevronDown className="w-3.5 h-3.5" aria-hidden="true" />
+              </button>
             </div>
+            <p className="mt-1 text-[11px] leading-relaxed text-[#ECEAF4] break-words">
+              {bubbleText}
+            </p>
 
             {ending && endingLabel && (
               <div
@@ -471,8 +592,6 @@ export const MascotOverlay: React.FC<MascotOverlayProps> = ({
               <button
                 type="button"
                 onClick={() => {
-                  // Same acknowledgement the old dashboard card offered, but it
-                  // only exists while a risk event is actually on screen.
                   useMascotStore.getState().resetToIdle();
                   setExpanded(false);
                 }}
@@ -500,12 +619,27 @@ export const MascotOverlay: React.FC<MascotOverlayProps> = ({
                 onClick={() => requestLine(true)}
                 disabled={isLoadingLine}
                 className="inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10px] font-bold hover:text-white disabled:opacity-50 transition-colors"
-                style={{ color: RUST_MODERN_COLORS.neonBlue, borderColor: `${RUST_MODERN_COLORS.neonBlue}66` }}
+                style={{
+                  color: RUST_MODERN_COLORS.neonBlue,
+                  borderColor: `${RUST_MODERN_COLORS.neonBlue}66`,
+                }}
               >
-                <RefreshCw className={`w-3 h-3 ${isLoadingLine ? 'animate-spin' : ''}`} aria-hidden="true" />
+                <RefreshCw
+                  className={`w-3 h-3 ${isLoadingLine ? 'animate-spin' : ''}`}
+                  aria-hidden="true"
+                />
                 {isLoadingLine ? 'กำลังคิด...' : 'ให้ AI พูด'}
               </button>
               <div className="flex items-center gap-2">
+                {onOpenChat && (
+                  <button
+                    type="button"
+                    onClick={onOpenChat}
+                    className="text-[10px] font-bold text-[#A89FFF] hover:text-[#ECEAF4] transition-colors"
+                  >
+                    คุยกับผม
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => updateSettings({ quietMode: !settings.quietMode })}
@@ -535,49 +669,52 @@ export const MascotOverlay: React.FC<MascotOverlayProps> = ({
               </div>
             )}
           </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() => {
-              setExpanded(true);
-              setLastActivityAt(Date.now());
-            }}
-            aria-label={`น้องมอเตอร์บอย — ${stateLabel}. เปิดกล่องข้อความ`}
-            className={`pointer-events-auto rounded-full border backdrop-blur-md shadow-lg flex items-center justify-center overflow-hidden relative hover:scale-105 transition-transform ${
-              minimized ? 'w-10 h-10' : 'w-14 h-14'
-            } ${visual.ring}`}
-            style={{ backgroundColor: `${palette.surface}F2` }}
-            title={`${visual.emoji} ${visual.caption}`}
-          >
+        )}
+
+        {/* The character herself: transparent PNG, draggable, never a box. */}
+        <button
+          type="button"
+          onPointerDown={onDragStart}
+          onPointerMove={onDragMove}
+          onPointerUp={onDragEnd}
+          onPointerCancel={onDragEnd}
+          onClick={onCharacterClick}
+          onKeyDown={onCharacterKeyDown}
+          aria-label={`น้องมอเตอร์บอย — ${stateLabel}. ลากเพื่อย้าย กดเพื่อเปิดกล่องข้อความ`}
+          title={`${visual.emoji} ${visual.caption} · ลากเพื่อย้าย`}
+          className={`pointer-events-auto touch-none select-none rounded-full outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0F1117] ${
+            dragging ? 'cursor-grabbing' : 'cursor-grab'
+          } ${dragging ? '' : 'animate-mascot-drift'}`}
+          style={{ height: artHeight, ['--tw-ring-color' as string]: accent }}
+        >
+          <span className="relative block h-full">
             {mascot.assets.hero ? (
-              <img src={mascot.assets.hero} alt="" className="w-full h-full object-cover" aria-hidden="true" />
+              <img
+                src={mascot.assets.hero}
+                alt=""
+                aria-hidden="true"
+                draggable={false}
+                className="pointer-events-none h-full w-auto drop-shadow-[0_10px_22px_rgba(0,0,0,0.55)]"
+              />
             ) : (
-              <span className="text-lg" aria-hidden="true">
+              <span className="text-2xl" aria-hidden="true">
                 {visual.emoji}
               </span>
             )}
             <span
-              className="absolute bottom-0.5 right-0.5 w-3 h-3 rounded-full border-2"
+              className={`absolute bottom-1 right-0 flex h-4 w-4 items-center justify-center rounded-full border-2 text-[9px] ${
+                isCritical ? 'animate-pulse' : ''
+              }`}
               style={{
-                backgroundColor: isCritical
-                  ? palette.bear
-                  : ending?.type === 'BULL_END'
-                    ? palette.bull
-                    : palette.primary,
+                backgroundColor: isCritical ? palette.bear : palette.bull,
                 borderColor: palette.surface,
               }}
               aria-hidden="true"
-            />
-            {minimized && (
-              <span
-                className="absolute bottom-0 inset-x-0 text-center text-[8px] font-mono text-[#ECEAF4]"
-                aria-hidden="true"
-              >
-                {visual.emoji}
-              </span>
-            )}
-          </button>
-        )}
+            >
+              {visual.emoji}
+            </span>
+          </span>
+        </button>
       </div>
     </div>
   );

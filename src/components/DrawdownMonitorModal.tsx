@@ -247,7 +247,7 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
                 )}
               </div>
               <p className="text-xs text-[#A7A4B8] flex items-center gap-1">
-                <span className="text-[#7C6CFF] font-bold font-mono">🛑 เบรกก่อนจิ!</span>
+                <span className="text-[#7C6CFF] font-bold font-mono">⚠️ เบรกก่อนจิ!</span>
                 <span>— คุมความเสี่ยงสูงสุดไม่เกิน 2% ต่อไม้ และหยุดเทรดทันทีเมื่อ Drawdown เกิน 5%</span>
               </p>
             </div>
