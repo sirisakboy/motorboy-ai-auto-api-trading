@@ -28,8 +28,8 @@ export interface MascotSettings {
   hidden: boolean;
 }
 
-export const JOURNAL_STORAGE_KEY = 'motorboy.journal.v1';
-export const SETTINGS_STORAGE_KEY = 'motorboy.mascot.settings.v1';
+export const JOURNAL_STORAGE_KEY = 'motorboy_journal_v1';
+export const SETTINGS_STORAGE_KEY = 'motorboy_mascot_settings_v1';
 export const JOURNAL_MAX_ENTRIES = 200;
 /** ไม่บันทึกซ้ำ type เดิมในหน้าต่างนี้ (กัน spam จาก poll ทุก 60 วิ) */
 export const JOURNAL_DEDUPE_MS = 5 * 60_000;

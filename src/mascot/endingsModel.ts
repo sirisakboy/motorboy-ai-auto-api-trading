@@ -4,7 +4,7 @@ import type { EndingThresholds } from './types';
  * `endings.model.json` in the V4.1 plan, kept as a typed default + an optional
  * local override so the trader can re-tune the brain without touching code:
  *
- *   localStorage['motorboy.endings.model.v1'] = { "volumeSpike": 1.8, ... }
+ *   localStorage['motorboy_endings_model_v1'] = { "volumeSpike": 1.8, ... }
  *
  * Everything the engine measures is derived from these numbers — there is no
  * randomness anywhere in the analysis, so a given candle series always produces
@@ -43,7 +43,7 @@ export const DEFAULT_ENDINGS_MODEL: EndingModel = {
   minCandles: 40,
 };
 
-export const ENDINGS_MODEL_STORAGE_KEY = 'motorboy.endings.model.v1';
+export const ENDINGS_MODEL_STORAGE_KEY = 'motorboy_endings_model_v1';
 
 /** Merge a partial override onto the defaults (ignores junk). */
 export function mergeModel(override?: Partial<EndingModel> | null): EndingModel {

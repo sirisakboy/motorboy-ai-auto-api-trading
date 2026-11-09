@@ -26,7 +26,7 @@
 | Check | Command | Result |
 |---|---|---|
 | Typecheck | `npx tsc --noEmit` | ✅ pass (0 errors) |
-| Tests (added 2026-11-04) | `npx vitest run` | ✅ 117/117 pass in 10 files (dialog a11y + mascot overlay + V4.1 core/endings) |
+| Tests (added 2026-11-04) | `npx vitest run` | ✅ 119/119 pass in 10 files (dialog a11y + mascot overlay + V4.1 core/endings) |
 | Production build | `npx vite build` | ✅ builds, ⚠️ single 1.78 MB chunk (440 kB gzip) |
 | Prod boot | `NODE_ENV=production node server.ts` | ❌ **crash** — `PathError: Missing parameter name at index 1: *` |
 | Dev boot | `npx tsx server.ts` | ✅ listens, `GET /` → 200 |
@@ -418,7 +418,20 @@ The V4.1 spec arrived as a drop-in snippet again (`index.html` + vanilla JS). It
 | brain | `src/mascot/endings.ts` + `endingsModel.ts` | the four endings, ATR/volume maths, the Binance feed, the tunable model | deterministic, no RNG, clock injectable |
 | manners | `src/mascot/guard.ts` + `journal.ts` | the ten anti-block rules, the auto journal, quiet/knock settings | pure functions, unit-tested |
 
-**The palette (L3, per spec):** master black `#000000` + master red `#FF0033`; TRADING bull `#00E676`, bear `#FF5252`, signal `#00E5FF`; surface `#141721`. The rest of the app's chrome still uses the older `#FF2D55` brand pink — unifying that is a one-line change in `App.tsx`/`index.css`, deliberately left out of this diff.
+**The palette (L3) — the mascot borrows the product's colours, not the other way round:** TRADING uses **this app's** accent `#FF2D55`, bull `#00E676`, bear `#FF5252`, signal `#00E5FF`, surface `#141721`. The V4.1 master brand (black `#000000` / red `#FF0033`) is exported as `MASTER_BRAND` for GARMENT / RACING / TEMPLE, but it is deliberately **not** painted over the trading UI — a second red on the same screen reads as a different brand, and changing 30 existing components to match a mascot is the wrong direction of adaptation.
+
+**Where the mascot adapted to the project (and where it refused to change the project):**
+
+| Tempting change to the project | What was done instead |
+|---|---|
+| Re-brand the app to the V4.1 master red `#FF0033` | Mascot uses `#FF2D55`; master brand kept as a constant for future projects |
+| Add a second price formatter for the endings card | Reuses `formatPrice({ price, mode, usdThbRate })` from `src/utils.ts` → ฿/$ follows the trader's existing toggle and the live FX rate, and small-cap prices keep their 7 decimals |
+| Introduce a mascot-specific storage scheme | Keys follow the repo's existing lowercase-snake `localStorage` convention (`motorboy_journal_v1`, `motorboy_mascot_settings_v1`, `motorboy_endings_model_v1`) |
+| Route candles through a new backend service | Uses the same public Binance REST call the project already makes in `apiClient.fetchPriceHistory` / `atsMatrixService` (identical URL shape + 6 s `AbortSignal.timeout`), so no new infra, no key, no server surface |
+| Replace the Zustand mascot store with a V4.1 state machine | V4.1 poses are *derived* from the existing store + the ending (`resolvePose`), so the sidebar Co-Pilot card and the overlay cannot disagree |
+| Ship new art for 9 poses | Emoji + colour ring per pose until real art exists (spec says start simple) |
+
+Two things the mascot **does** add to the host app, both additive: `data-motorboy-root` / `data-motorboy-face` attributes on its own root (that is how the one-face guard sees itself), and a 60 s poll of 120 hourly candles for the one symbol on screen.
 
 **The endings brain (`analyzeEndings(candles, { support, resistance, model, now })`).** Input is OHLCV + distance to S/R; output is `{ type, prob, target, support, resistance, oneLineTH, reasons, at }`, or `null` when there is nothing worth saying (silence beats noise). Priority order is deliberate — a `BREAKOUT_END` is a *stronger* claim than the `BULL_END` it technically also satisfies:
 
@@ -453,7 +466,7 @@ Thresholds live in `DEFAULT_ENDINGS_MODEL` and can be overridden without a build
 - Rule 7 originally used `document.querySelector('button')` — which happily returned *the mascot's own* button. It now skips anything inside `[data-motorboy-root]`.
 - **Spec discrepancy:** the section titled "8 POSES TRADING" lists **nine** poses (`IDLE, WALK_CHART, CLIMB_CANDLE, FALL_BREAK, WORK_ANALYZE, HAPPY_TP, SAD_SL, DRAG_FIBO, SLEEP_WAIT`). All nine are implemented; tell me if one was meant to be dropped.
 
-**Verified:** `npx tsc --noEmit` clean, `npx vitest run` **117/117 in 10 files** (28 new core/adapter/skin/guard/journal tests, 15 new endings tests, 5 new overlay tests), `npx vite build` still emits the hashed mascot asset and no `/src/assets/images` string, dev server serves `/` and `/src/mascot/*` with 200.
+**Verified:** `npx tsc --noEmit` clean, `npx vitest run` **119/119 in 10 files** (29 core/adapter/skin/guard/journal tests, 15 endings tests, 6 overlay tests), `npx vite build` still emits the hashed mascot asset and no `/src/assets/images` string, dev server serves `/` and `/src/mascot/*` with 200.
 
 **Rollout status vs the spec's own plan:**
 - **today** — CORE + ADAPTER + TRADING skin + endings brain + guard: shipped.

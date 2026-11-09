@@ -15,9 +15,17 @@ import type { MascotSkin, Palette, PoseId, PoseVisual, ProjectId } from './types
 
 export type TradingSkinId = 'TRADING';
 
+/**
+ * V4.1 master brand. Exported for the projects that will inherit it
+ * (GARMENT / RACING / TEMPLE) — the TRADING skin deliberately uses *this app's*
+ * accent instead, so the mascot looks like it belongs here rather than dragging
+ * a second red into the product.
+ */
+export const MASTER_BRAND = { black: '#000000', red: '#FF0033' } as const;
+
 const TRADING_PALETTE: Palette = {
-  masterBlack: '#000000', // MASTER brand black (shared by every project)
-  primary: '#FF0033', // MASTER brand red — one red for the whole family
+  masterBlack: MASTER_BRAND.black,
+  primary: '#FF2D55', // ← the app's existing brand accent (App.tsx / index.css)
   bull: '#00E676',
   bear: '#FF5252',
   signal: '#00E5FF',

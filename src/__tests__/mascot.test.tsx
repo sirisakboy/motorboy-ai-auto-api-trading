@@ -207,6 +207,16 @@ describe('MascotOverlay — AI endings (V4.1 brain)', () => {
     await waitFor(() => expect(toggle.textContent).toMatch(/BULL END \d+%/));
   });
 
+  it('quotes the ending in the same currency mode as the rest of the app', async () => {
+    stubEndingsFeed(bullKlines());
+    render(<MascotOverlay useThb usdThbRate={35} />);
+    fireEvent.click(screen.getByRole('button', { name: /น้องมอเตอร์บอย/ }));
+
+    await waitFor(() => expect(screen.getByRole('status').textContent).toContain('BULL END'));
+    // project formatter => ฿ when the trader is in ฿ mode (never a bare number)
+    expect(screen.getByRole('status').textContent).toContain('฿');
+  });
+
   it('onboarding outlines a real control instead of covering it (rule 7)', () => {
     render(<MascotOverlay />);
     act(() => setMascotState('ONBOARDING'));

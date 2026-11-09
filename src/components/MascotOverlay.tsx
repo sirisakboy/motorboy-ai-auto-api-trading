@@ -16,6 +16,7 @@ import type { CryptoCoin, TradingSignal } from '../types';
 import type { EndingResult, EndingType, Ohlcv, PoseId } from '../mascot/types';
 import { FACE_ID, MASCOT_FACE_ATTR, MASCOT_ROOT_ATTR, countMountedFaces } from '../mascot/core';
 import { resolveMascot } from '../mascot/adapter';
+import { formatPrice } from '../utils';
 import { poseVisual, TRADING_SKIN } from '../mascot/skins';
 import { analyzeEndings, fetchEndingsCandles } from '../mascot/endings';
 import { loadEndingsModel } from '../mascot/endingsModel';
@@ -281,6 +282,11 @@ export const MascotOverlay: React.FC<MascotOverlayProps> = ({
 
   const updateSettings = (patch: Partial<MascotSettings>) => setSettings(saveMascotSettings(patch));
 
+  // Same formatter, currency mode and live FX as the ticker/cards/modals, so the
+  // mascot never quotes a price in a different unit than the chart beside it.
+  const money = (value: number) =>
+    formatPrice({ price: value, mode: useThb ? 'THB' : 'USD', usdThbRate });
+
   /**
    * Rule 7 — onboarding points at the real buttons. We outline the actual
    * control for 2.5s instead of drawing a coach-mark overlay, so the mascot can
@@ -434,13 +440,11 @@ export const MascotOverlay: React.FC<MascotOverlayProps> = ({
                     {endingLabel.short}
                   </span>
                   <span>
-                    {ending.prob}% • เป้า{' '}
-                    {ending.target.toLocaleString('en-US', { maximumFractionDigits: 2 })}
+                    {ending.prob}% • เป้า {money(ending.target)}
                   </span>
                 </div>
                 <div className="mt-0.5 text-[9px] text-slate-400 font-mono">
-                  รับ {ending.support.toLocaleString('en-US', { maximumFractionDigits: 2 })} · ต้าน{' '}
-                  {ending.resistance.toLocaleString('en-US', { maximumFractionDigits: 2 })}
+                  รับ {money(ending.support)} · ต้าน {money(ending.resistance)}
                 </div>
               </div>
             )}

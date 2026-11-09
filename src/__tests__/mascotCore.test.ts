@@ -22,7 +22,13 @@ import {
   resolveMascot,
   resolveSkin,
 } from '../mascot/adapter';
-import { DECLARED_PROJECT_SKINS, TRADING_SKIN, getSkin, poseVisual } from '../mascot/skins';
+import {
+  DECLARED_PROJECT_SKINS,
+  MASTER_BRAND,
+  TRADING_SKIN,
+  getSkin,
+  poseVisual,
+} from '../mascot/skins';
 import {
   AUTO_HIDE_AFTER_SPEAK_MS,
   AVOID_DISTANCE_PX,
@@ -198,13 +204,19 @@ describe('L2 ADAPTER — namespaces, assets, mount decision', () => {
 });
 
 describe('L3 SKIN — editable, per project, never touches core', () => {
-  it('uses the spec palette: master black/red + trading bull/bear/signal', () => {
+  it('speaks the trading palette in the app’s own brand accent', () => {
     const { palette } = TRADING_SKIN;
     expect(palette.masterBlack).toBe('#000000');
-    expect(palette.primary).toBe('#FF0033');
+    // The mascot adapts to this product: same accent as App.tsx / index.css,
+    // not a second red borrowed from the master brand.
+    expect(palette.primary).toBe('#FF2D55');
     expect(palette.bull).toBe('#00E676');
     expect(palette.bear).toBe('#FF5252');
     expect(palette.signal).toBe('#00E5FF');
+  });
+
+  it('keeps the V4.1 master brand available for the other projects', () => {
+    expect(MASTER_BRAND).toEqual({ black: '#000000', red: '#FF0033' });
   });
 
   it('defines all nine poses as visuals', () => {
