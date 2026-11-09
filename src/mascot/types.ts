@@ -42,6 +42,12 @@ export interface FaceLock {
   readonly features: readonly string[];
 }
 
+/** v4.4 mascot set moods — every behavioural pose folds into one of four. */
+export type MoodId = 'CALM' | 'FOCUS' | 'JOY' | 'STRAIN';
+
+/** v4.4 books: เล่ม 1 หาเงิน (สงบ) / เล่ม 2 ใช้เงิน (สนุก). */
+export type BookId = 'BOOK_1_HA_NGOEN' | 'BOOK_2_CHAI_NGOEN';
+
 /* --------------------------------------------------------------- L2 adapter */
 
 export type ProjectId = 'MOTORBOY.PROJECT.TRADING' | 'MOTORBOY.PROJECT.GARMENT' | 'MOTORBOY.PROJECT.RACING' | 'MOTORBOY.PROJECT.TEMPLE';

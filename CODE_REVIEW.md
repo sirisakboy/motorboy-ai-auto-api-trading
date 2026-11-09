@@ -26,7 +26,7 @@
 | Check | Command | Result |
 |---|---|---|
 | Typecheck | `npx tsc --noEmit` | ✅ pass (0 errors) |
-| Tests (added 2026-11-04) | `npx vitest run` | ✅ 119/119 pass in 10 files (dialog a11y + mascot overlay + V4.1 core/endings) |
+| Tests (added 2026-11-04) | `npx vitest run` | ✅ 127/127 pass in 10 files (dialog a11y + mascot overlay + V4.1 core/endings + v4.4 tokens) |
 | Production build | `npx vite build` | ✅ builds, ⚠️ single 1.78 MB chunk (440 kB gzip) |
 | Prod boot | `NODE_ENV=production node server.ts` | ❌ **crash** — `PathError: Missing parameter name at index 1: *` |
 | Dev boot | `npx tsx server.ts` | ✅ listens, `GET /` → 200 |
@@ -466,7 +466,9 @@ Thresholds live in `DEFAULT_ENDINGS_MODEL` and can be overridden without a build
 - Rule 7 originally used `document.querySelector('button')` — which happily returned *the mascot's own* button. It now skips anything inside `[data-motorboy-root]`.
 - **Spec discrepancy:** the section titled "8 POSES TRADING" lists **nine** poses (`IDLE, WALK_CHART, CLIMB_CANDLE, FALL_BREAK, WORK_ANALYZE, HAPPY_TP, SAD_SL, DRAG_FIBO, SLEEP_WAIT`). All nine are implemented; tell me if one was meant to be dropped.
 
-**Verified:** `npx tsc --noEmit` clean, `npx vitest run` **119/119 in 10 files** (29 core/adapter/skin/guard/journal tests, 15 endings tests, 6 overlay tests), `npx vite build` still emits the hashed mascot asset and no `/src/assets/images` string, dev server serves `/` and `/src/mascot/*` with 200.
+**v4.4 follow-up:** the studio's `MASCOT + UI — Rust x Modern (Central v4.4)` PDF was encoded as data in `src/mascot/tokens.ts` (colours, 70/20/10 texture ratio, 64/8/12/48/40 layout, six art tracks, the two books, 4-mood mascot set) and the mascot reads it — the app's own chrome is **not** re-themed, because that would be changing the project to fit the mascot. Only the mascot card's radius (12) and the AI button's 1px neon edge are applied.
+
+**Verified:** `npx tsc --noEmit` clean, `npx vitest run` **127/127 in 10 files** (29 core/adapter/skin/guard/journal tests, 15 endings tests, 6 overlay tests), `npx vite build` still emits the hashed mascot asset and no `/src/assets/images` string, dev server serves `/` and `/src/mascot/*` with 200.
 
 **Rollout status vs the spec's own plan:**
 - **today** — CORE + ADAPTER + TRADING skin + endings brain + guard: shipped.

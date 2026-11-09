@@ -1,4 +1,5 @@
 import type { MascotSkin, Palette, PoseId, PoseVisual, ProjectId } from './types';
+import { RUST_MODERN_COLORS } from './tokens';
 
 /**
  * L3 SKIN — “App layer”. Freely editable per project, must not touch L1/L2.
@@ -21,7 +22,7 @@ export type TradingSkinId = 'TRADING';
  * accent instead, so the mascot looks like it belongs here rather than dragging
  * a second red into the product.
  */
-export const MASTER_BRAND = { black: '#000000', red: '#FF0033' } as const;
+export const MASTER_BRAND = { black: '#000000', red: RUST_MODERN_COLORS.brandRed } as const;
 
 const TRADING_PALETTE: Palette = {
   masterBlack: MASTER_BRAND.black,

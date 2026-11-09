@@ -41,7 +41,8 @@ src/mascot/
 ├── endings.ts       สมอง AI ENDINGS ANALYZE
 ├── endingsModel.ts  ค่า threshold ที่จูนได้ (localStorage override)
 ├── guard.ts         10 กฎกันบังจอ (pure functions)
-└── journal.ts       auto journal + settings (quiet mode / knock / hidden)
+├── journal.ts       auto journal + settings (quiet mode / knock / hidden)
+└── tokens.ts        v4.4 "Rust x Modern" design tokens (สี/ขนาด/หนังสือ/อาร์ตแทร็ก)
 ```
 
 ### L1 CORE — "BIOS" (`core.ts`) · ห้ามแก้
@@ -175,9 +176,9 @@ git push origin arena/fdfaa3af-motorboy-ai-auto-api-trading
 | ตรวจ | คำสั่ง | ผล |
 |---|---|---|
 | Typecheck | `npx tsc --noEmit` | ✅ 0 error |
-| Tests | `npx vitest run` | ✅ **119/119 pass ใน 10 ไฟล์** |
+| Tests | `npx vitest run` | ✅ **127/127 pass ใน 10 ไฟล์** |
 | — mascot overlay | `mascot.test.tsx` | 19 (pointer-events, chip↔card, critical style, GOD SPEED, Gemini line, ไม่กระพริบตอน poll, ending badge, quiet mode, THB, onboarding, face attr) |
-| — core/adapter/guard/journal | `mascotCore.test.ts` | 29 (identity lock, tamper, one-face, namespace, asset isolation, bridge, palette, 10 กฎ, journal) |
+| — core/adapter/guard/journal/tokens | `mascotCore.test.ts` | 37 (identity lock, tamper, one-face, namespace, asset isolation, bridge, palette, 10 กฎ, journal, v4.4 tokens) |
 | — endings brain | `endings.test.ts` | 15 (BULL/BEAR/SIDEWAY/BREAKOUT, priority, minCandles, determinism, junk candles, ATR, mapper) |
 | Build | `npx vite build` | ✅ ผ่าน, asset hashed, ไม่มี `/src/assets` หลุดใน bundle |
 | Dev server | `GET /` (ผ่าน preview host) | ✅ 200 |
@@ -202,3 +203,42 @@ git push origin arena/fdfaa3af-motorboy-ai-auto-api-trading
 | **วันนี้ (เสร็จ)** | CORE + ADAPTER + TRADING skin + endings brain + guard |
 | **ถัดไป** | เติม ending model จากประวัติเทรดจริง ~100 ไม้ แล้วเทียบผล |
 | **หลังจากนั้น** | knock sound ที่ไพเราะขึ้น + Telegram ending alert (ต้องเพิ่ม server route) |
+
+---
+
+## 9. v4.4 "Rust x Modern" — DESIGN SYSTEM ที่เพิ่งได้รับ (แปลงเป็น token แล้ว)
+
+เอกสาร `MOTORBOY-Mascot-UI-Rust-X-Modern-Complete.pdf` (Book 3 · Central v4.4) เป็น **design system ระดับสตูดิโอ** ไม่ใช่แค่มาสคอต: มีสี/ฟอนต์/เส้น/เงา/ขนาด/แทร็กอาร์ต 6 แบบ และระบบ "2 เล่ม" (หาเงิน / ใช้เงิน)
+
+**วิธีรับมาใช้แบบไม่ดัดแปลงโปรเจค:** แปลงเป็น **ข้อมูล** ใน `src/mascot/tokens.ts` แล้วให้มาสคอตอ่าน — **ไม่ฉีด CSS ทับแอป** (ไม่มี `:root` override อัตโนมัติ) การจะเปลี่ยนหน้าตาทั้งแอปเป็นการตัดสินใจแยก
+
+| ของในสเปค v4.4 | ค่า | ที่เก็บในโค้ด |
+|---|---|---|
+| แดงแบรนด์ / ม่วง / ฟ้านีออน / เขียวนีออน | `#FF0033` `#8A2BE2` `#00E5FF` `#39FF14` | `RUST_MODERN_COLORS` |
+| สนิม / โลหะ | `#8A4B2A`–`#C97B2A` / `#9AA0A8`–`#2A2E45` | `RUST_MODERN_COLORS` |
+| พื้น Paper / Midnight | `#F7F5F0` / `#0F1117` | `RUST_MODERN_COLORS` |
+| สัดส่วนพื้นผิว | โลหะ 70 % + สนิม 20 % + นีออน 10 % | `TEXTURE_RATIO` |
+| TopBar · grid · radius · ปุ่ม 48/40 · ฟีด 12 | 64 · 8 · 12 · 48/40 · 12 | `RUST_MODERN_LAYOUT` |
+| เส้นขอบ 2px `#2A2E45` · สนิม 1px `#C97B2A` · นีออน 1px `#00E5FF` (ปุ่ม AI) | — | `RUST_MODERN_LINES` |
+| เงา glossy 40 % · สนิม 0 % · การ์ด 8px · ปุ่มหลักแดง 12px | — | `RUST_MODERN_SHADOWS` |
+| ฟอนต์ Inter/Noto Sans Thai · line-height 1.7 · น้ำหนัก ≥ 400 · tabular-nums | — | `RUST_MODERN_TYPE` |
+| Art Track 01–06 (MAIN = 06 RUSTY METAL) | 6 แทร็ก | `ART_TRACKS`, `MAIN_ART_TRACK` |
+| เล่ม 1 หาเงิน (สงบ) | Paper + Lavender `#7C6CFF` + motion 320ms + เสียง 0 % | `BOOKS.BOOK_1_HA_NGOEN` |
+| เล่ม 2 ใช้เงิน (สนุก) | Midnight + แดง/นีออน + motion 200ms + เสียง 80 % | `BOOKS.BOOK_2_CHAI_NGOEN` |
+| มาสคอต 1 คน · 4 ท่า · 4 อารมณ์ · หน้าเดิมทุกภาพ | — | `MASCOT_SET`, `POSE_MOOD`, `MOODS` |
+| CSS block พร้อมคัดลอก | — | `RUST_MODERN_CSS` (เป็น string เฉย ๆ ไม่ inject) |
+
+**การเชื่อม 9 ท่า (ของแอปนี้) เข้ากับ 4 อารมณ์ (ของสเปค):**
+
+| Mood | ท่าในแอป |
+|---|---|
+| `CALM` นิ่ง มั่นใจ | `IDLE`, `SLEEP_WAIT` |
+| `FOCUS` โฟกัส | `WALK_CHART`, `WORK_ANALYZE`, `DRAG_FIBO` |
+| `JOY` สำเร็จ | `CLIMB_CANDLE`, `HAPPY_TP` |
+| `STRAIN` ตึง ระวัง | `FALL_BREAK`, `SAD_SL` |
+
+**สิ่งที่แตะ UI จริงแล้ว (แค่ของมาสคอต):** การ์ดใช้ radius 12 ตาม token, ปุ่ม "ให้ AI พูด" ได้เส้นนีออน 1px ตามสเปค (`RUST_MODERN_LINES.aiNeon`) — นอกนั้นไม่แตะ
+
+**สิ่งที่ยัง *ไม่* ทำ เพราะจะเป็นการดัดแปลงโปรเจคตามมาสคอต:** เปลี่ยนสี/ฟอนต์/ระยะของทั้งแอป, ใส่ `:root` ของ v4.4 ทับ `index.css`, เปลี่ยน TopBar เป็น 64px, เปลี่ยนปุ่มหลักเป็น 48px — ต้องได้ไฟเขียวจากเจ้าของโปรเจคก่อน (คำสั่งพร้อมแล้วใน §5)
+
+**กติกาที่คงไว้:** หน้าเดิม `MB-33-MASTER-001` ห้ามเปลี่ยน (v4.4 ระบุว่า NEVER CHANGE เช่นกัน), 1 หน้าจอใช้ 1 สไตล์ ห้ามปน 2 แทร็ก, โปรเจค "หาเงิน" ใช้ Track 01–03, "ใช้เงิน" ใช้ Track 04–06

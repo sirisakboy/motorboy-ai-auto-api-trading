@@ -17,6 +17,7 @@ import type { EndingResult, EndingType, Ohlcv, PoseId } from '../mascot/types';
 import { FACE_ID, MASCOT_FACE_ATTR, MASCOT_ROOT_ATTR, countMountedFaces } from '../mascot/core';
 import { resolveMascot } from '../mascot/adapter';
 import { formatPrice } from '../utils';
+import { RUST_MODERN_COLORS, RUST_MODERN_LAYOUT } from '../mascot/tokens';
 import { poseVisual, TRADING_SKIN } from '../mascot/skins';
 import { analyzeEndings, fetchEndingsCandles } from '../mascot/endings';
 import { loadEndingsModel } from '../mascot/endingsModel';
@@ -367,6 +368,8 @@ export const MascotOverlay: React.FC<MascotOverlayProps> = ({
             className={`pointer-events-auto w-[252px] sm:w-[272px] rounded-2xl border backdrop-blur-md shadow-[0_10px_30px_rgba(0,0,0,0.45)] p-3 ${visual.ring}`}
             style={{
               backgroundColor: `${palette.surface}F2`,
+              // v4.4 layout token: cards are 12px, not "whatever rounded-2xl is".
+              borderRadius: RUST_MODERN_LAYOUT.radius,
               boxShadow: isCritical ? `0 0 25px ${palette.bear}59` : undefined,
             }}
           >
@@ -471,7 +474,8 @@ export const MascotOverlay: React.FC<MascotOverlayProps> = ({
                 type="button"
                 onClick={() => requestLine(true)}
                 disabled={isLoadingLine}
-                className="inline-flex items-center gap-1 text-[10px] font-bold text-[#A5B4FC] hover:text-white disabled:opacity-50 transition-colors"
+                className="inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10px] font-bold hover:text-white disabled:opacity-50 transition-colors"
+                style={{ color: RUST_MODERN_COLORS.neonBlue, borderColor: `${RUST_MODERN_COLORS.neonBlue}66` }}
               >
                 <RefreshCw className={`w-3 h-3 ${isLoadingLine ? 'animate-spin' : ''}`} aria-hidden="true" />
                 {isLoadingLine ? 'กำลังคิด...' : 'ให้ AI พูด'}

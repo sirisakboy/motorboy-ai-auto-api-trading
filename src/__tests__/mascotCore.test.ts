@@ -51,7 +51,24 @@ import {
   saveMascotSettings,
   summarizeJournal,
 } from '../mascot/journal';
-import type { EndingResult, PoseId } from '../mascot/types';
+import {
+  ART_TRACKS,
+  BOOKS,
+  MAIN_ART_TRACK,
+  MASCOT_SET,
+  MOODS,
+  POSE_MOOD,
+  RUST_MODERN_COLORS,
+  RUST_MODERN_CSS,
+  RUST_MODERN_LAYOUT,
+  RUST_MODERN_LINES,
+  RUST_MODERN_SHADOWS,
+  RUST_MODERN_TYPE,
+  TEXTURE_RATIO,
+  artTracksFor,
+  moodForPose,
+} from '../mascot/tokens';
+import type { BookId, EndingResult, MoodId, PoseId } from '../mascot/types';
 
 /**
  * MOTORBOY CENTRAL V4.1 — the contract tests.
@@ -200,6 +217,98 @@ describe('L2 ADAPTER — namespaces, assets, mount decision', () => {
     expect(getSkin('TRADING')).toBe(TRADING_SKIN);
     expect(DECLARED_PROJECT_SKINS['MOTORBOY.PROJECT.TRADING']).toBe('TRADING');
     expect(DECLARED_PROJECT_SKINS['MOTORBOY.PROJECT.TEMPLE']).toBeNull();
+  });
+});
+
+describe('v4.4 RUST x MODERN — design tokens (encoded, not imposed)', () => {
+  it('carries the exact spec palette', () => {
+    expect(RUST_MODERN_COLORS.brandRed).toBe('#FF0033');
+    expect(RUST_MODERN_COLORS.violet).toBe('#8A2BE2');
+    expect(RUST_MODERN_COLORS.neonBlue).toBe('#00E5FF');
+    expect(RUST_MODERN_COLORS.neonGreen).toBe('#39FF14');
+    expect(RUST_MODERN_COLORS.rust).toBe('#8A4B2A');
+    expect(RUST_MODERN_COLORS.rustLight).toBe('#C97B2A');
+    expect(RUST_MODERN_COLORS.metal).toBe('#9AA0A8');
+    expect(RUST_MODERN_COLORS.metalDark).toBe('#2A2E45');
+    expect(RUST_MODERN_COLORS.paper).toBe('#F7F5F0');
+    expect(RUST_MODERN_COLORS.midnight).toBe('#0F1117');
+    expect(RUST_MODERN_COLORS.lavender).toBe('#7C6CFF');
+  });
+
+  it('keeps the texture ratio at metal 70 / rust 20 / neon 10', () => {
+    expect(TEXTURE_RATIO).toEqual({ metal: 70, rust: 20, neon: 10 });
+    expect(TEXTURE_RATIO.metal + TEXTURE_RATIO.rust + TEXTURE_RATIO.neon).toBe(100);
+  });
+
+  it('keeps the layout contract (TopBar 64, grid 8, card 12, buttons 48/40, feed 12)', () => {
+    expect(RUST_MODERN_LAYOUT).toMatchObject({
+      topBarHeight: 64,
+      grid: 8,
+      radius: 12,
+      primaryButton: 48,
+      secondaryButton: 40,
+      feedLimit: 12,
+    });
+    expect(RUST_MODERN_LINES.card).toContain('#2A2E45');
+    expect(RUST_MODERN_LINES.aiNeon).toContain('#00E5FF');
+    expect(RUST_MODERN_LINES.rustCorner).toContain('#C97B2A');
+    expect(RUST_MODERN_SHADOWS.glossySheen).toBe(0.4);
+    expect(RUST_MODERN_SHADOWS.rustSheen).toBe(0);
+    expect(RUST_MODERN_SHADOWS.primaryButton).toContain('#FF0033');
+    expect(RUST_MODERN_TYPE.thaiLineHeight).toBe(1.7);
+    expect(RUST_MODERN_TYPE.minWeight).toBe(400);
+  });
+
+  it('declares the six art tracks with Track 06 as the main style', () => {
+    expect(ART_TRACKS).toHaveLength(6);
+    expect(ART_TRACKS.map((t) => t.id)).toEqual([1, 2, 3, 4, 5, 6]);
+    expect(MAIN_ART_TRACK.name).toBe('RUSTY METAL');
+    expect(MAIN_ART_TRACK.id).toBe(6);
+  });
+
+  it('splits the books correctly: หาเงิน = calm paper, ใช้เงิน = fun midnight', () => {
+    expect(BOOKS.BOOK_1_HA_NGOEN.surface).toBe('#F7F5F0');
+    expect(BOOKS.BOOK_1_HA_NGOEN.accent).toBe('#7C6CFF');
+    expect(BOOKS.BOOK_1_HA_NGOEN.motionMs).toBe(320);
+    expect(BOOKS.BOOK_1_HA_NGOEN.sound).toBe(0); // เงียบเป็นค่าเริ่มต้น
+    expect(BOOKS.BOOK_1_HA_NGOEN.canShake).toBe(false);
+
+    expect(BOOKS.BOOK_2_CHAI_NGOEN.surface).toBe('#0F1117');
+    expect(BOOKS.BOOK_2_CHAI_NGOEN.accent).toBe('#FF0033');
+    expect(BOOKS.BOOK_2_CHAI_NGOEN.sound).toBe(80);
+    expect(BOOKS.BOOK_2_CHAI_NGOEN.canShake).toBe(true);
+  });
+
+  it('gives each book its own art tracks, no overlap (one style per screen)', () => {
+    const books: BookId[] = ['BOOK_1_HA_NGOEN', 'BOOK_2_CHAI_NGOEN'];
+    const [book1, book2] = books.map(artTracksFor);
+    expect(book1).toHaveLength(3);
+    expect(book2).toHaveLength(3);
+    expect(book1.map((t) => t.id)).toEqual([1, 2, 3]);
+    expect(book2.map((t) => t.id)).toEqual([4, 5, 6]);
+    expect(book1.filter((t) => book2.some((o) => o.id === t.id))).toHaveLength(0);
+  });
+
+  it('folds all nine behavioural poses into the 4-mood mascot set', () => {
+    expect(MASCOT_SET).toEqual({ characters: 1, poses: 4, moods: 4, sameFace: true });
+    const poses = Object.keys(TRADING_SKIN.poses) as PoseId[];
+    expect(poses).toHaveLength(9);
+    poses.forEach((pose) => expect(Object.keys(MOODS)).toContain(POSE_MOOD[pose]));
+    expect(new Set(Object.values(POSE_MOOD)).size).toBe(4);
+    expect(moodForPose('HAPPY_TP')).toBe('JOY');
+    expect(moodForPose('FALL_BREAK')).toBe('STRAIN');
+    expect(moodForPose('SLEEP_WAIT')).toBe('CALM');
+    (['CALM', 'FOCUS', 'JOY', 'STRAIN'] as MoodId[]).forEach((mood) =>
+      expect(MOODS[mood].label.length).toBeGreaterThan(0)
+    );
+  });
+
+  it('exposes the copy-paste CSS block but injects nothing', () => {
+    expect(RUST_MODERN_CSS).toContain('--mb-brand-red: #FF0033');
+    expect(RUST_MODERN_CSS).toContain(`--mb-face-id: ${FACE_ID}`); // never changes
+    expect(RUST_MODERN_CSS).toContain('--mb-radius: 12px');
+    expect(typeof document).toBe('object');
+    expect(document.documentElement.getAttribute('style')).toBeFalsy();
   });
 });
 
