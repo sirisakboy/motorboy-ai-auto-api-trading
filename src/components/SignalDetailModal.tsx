@@ -27,6 +27,7 @@ import {
 } from '../services/geminiService';
 import { t } from '../i18n';
 import { useModalA11y } from '../hooks/useModalA11y';
+import { formatNumber } from '../utils';
 
 interface SignalDetailModalProps {
   signal: TradingSignal | null;
@@ -86,14 +87,10 @@ export const SignalDetailModal: React.FC<SignalDetailModalProps> = ({
     change: signal.change,
   };
 
-  const formatPrice = (val?: number) => {
-    if (val === undefined || val === null) return '-';
-    const v = val * multiplier;
-    return `${currency}${v.toLocaleString(undefined, {
-      minimumFractionDigits: decimals,
-      maximumFractionDigits: decimals,
-    })}${quoteSuffix}`;
-  };
+  const formatPrice = (val?: number) =>
+    val === undefined || val === null
+      ? '-'
+      : `${currency}${formatNumber(val * multiplier, decimals)}${quoteSuffix}`;
 
   const handleFetchSentiment = async () => {
     if (!signal) return;

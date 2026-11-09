@@ -1,6 +1,7 @@
 import React from 'react';
 import { Star, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { ForexPair, TradingSignal } from '../types';
+import { formatNumber } from '../utils';
 
 interface ForexCardProps {
   forex: ForexPair;
@@ -30,13 +31,7 @@ export const ForexCard: React.FC<ForexCardProps> = ({
       : 'bg-[#141725]';
 
   // Currency decimal formatting (4 decimals for pairs under 10 like EUR/USD, 2 for JPY/THB)
-  const formatPrice = (val: number) => {
-    const decimals = val < 10 ? 4 : 2;
-    return val.toLocaleString(undefined, {
-      minimumFractionDigits: decimals,
-      maximumFractionDigits: decimals,
-    });
-  };
+  const formatPrice = (val: number) => formatNumber(val, val < 10 ? 4 : 2);
 
   const displayPrice = formatPrice(forex.price);
   const displaySl = currentSignal ? formatPrice(currentSignal.sl) : null;

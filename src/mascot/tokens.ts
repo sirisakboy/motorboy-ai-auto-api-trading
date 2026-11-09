@@ -1,12 +1,11 @@
 /**
- * MOTORBOY "RUST x MODERN" — CENTRAL v4.4 design tokens.
+ * MOTORBOY design tokens — Calm System v2.0 (colour/type/motion) + the
+ * "Rust x Modern" art tracks (v4.4) that still describe the mascot artwork.
  *
- * Source: the MASCOT + UI DESIGN SYSTEM PDF (Book 3, v4.4 installed). It is a
- * studio-wide design system, so it is encoded here as data, not painted over the
- * app: `src/mascot/` can read these tokens, the trading UI keeps its own look
- * until the product owner says otherwise.
+ * Source of truth for colour: Brand Book v2.0, sections 04 + 16.
+ * Source of truth for the mascot art system: the v4.4 MASCOT + UI PDF.
  *
- * Rules that must survive any refactor (from the spec):
+ * Rules that must survive any refactor:
  *   · หน้าเดิม ห้ามเปลี่ยน — Face ID MB-33-MASTER-001 never changes (see core.ts)
  *   · โลหะ 70% + สนิม 20% + นีออน 10%
  *   · 1 หน้าจอ ใช้ 1 สไตล์พอล์บ pencil ห้ามใช้ 2 สไตล์ปนกัน
@@ -16,51 +15,23 @@
 import { FACE_ID } from './core';
 import type { BookId, MoodId, PoseId } from './types';
 
-/* ------------------------------------------------------------------ colours */
-
-export const RUST_MODERN_COLORS = {
-  /**
-   * สีแบรนด์ของโปรเจกต์นี้ = ลาเวนเดอร์ (Brand Book v2.0).
-   * ค่าเดิมของ v4.4 (`#FF0033`) ถูกเก็บเป็น `dangerRed` ไว้ใช้เชิงความหมายเท่านั้น —
-   * แดงไม่ใช่สีแบรนด์อีกต่อไป และห้ามใช้แดงแสบตาเป็นสีหลัก.
-   */
-  brandAccent: '#7C6CFF',
-  /** พีช — SHORT/ระวัง (Brand Book: ห้ามใช้แดงสด #FF0000, แดงทำให้ตกใจ) */
-  dangerRed: '#F4A6A6',
-  /** ม่วง — แอ็กเซนต์, AI, ไล่สี */
-  violet: '#A89FFF',
-  /** ฟ้านีออน — ไอคอน ECU / AI / ลิงก์ (และเส้นขอบปุ่ม AI) */
-  neonBlue: '#4CC9F0',
-  /** เขียวนีออน — สถานะดี, สำเร็จ, ชาร์จ */
-  neonGreen: '#7EE0B5',
-  /** สนิม — กรอบ, พื้นหลังอู่, คราบ */
-  rust: '#8A4B2A',
-  rustLight: '#C97B2A',
-  /** โลหะเทา — พื้นผิวโลหะ, การ์ด, แถบ */
-  metal: '#A7A4B8',
-  metalDark: '#222640',
-  /** พื้น Paper (เล่ม 1 หาเงิน) */
-  paper: '#F7F5F0',
-  /** พื้น Midnight (เล่ม 2 ใช้เงิน) */
-  midnight: '#0F1117',
-  /** สีหลักของเล่ม 1 */
-  lavender: '#7C6CFF',
-} as const;
-
 /* ------------------------------------------------------- CALM SYSTEM v2.0 */
 
 /**
- * MOTORBOY CALM SYSTEM v2.0 — Brand Book (8 Nov 2026).
+ * MOTORBOY CALM SYSTEM v2.0 — Brand Book (8 Nov 2026), section 04 + 16.
  *
  * The studio's promise: "เทคโนโลยีที่เข้าใจใจคน … ทำให้เขาสงบ ชัด และไม่โดนเร่งให้ใจร้อน".
  * The three lines that must never break: สงบ (calm) · ชัด (clear) · อบอุ่น (warm),
  * and one hard rule for this project — **ไม่ใช้สีแดงแสบตาเป็นสีแบรนด์**
  * (red stays for danger/loss only), with ink on lavender fixed to #0F1117.
+ *
+ * This object is the single source of truth for the mascot palette: every other
+ * colour export below reads from it, so a hex is typed once per project.
  */
 export const CALM_BRAND = {
   /** ลาเวนเดอร์ — สีหลักของแบรนด์ */
   primary: '#7C6CFF',
-  /** ตัวหนังสือ/ไอคอนบนพื้นลาเวอร์ */
+  /** ตัวหนังสือ/ไอคอนบนพื้นลาเวนเดอร์ */
   inkOnAccent: '#0F1117',
   /** พื้น Midnight (dark) */
   surface: '#0F1117',
@@ -80,6 +51,38 @@ export const CALM_BRAND = {
   /** ฟ้าใส — ข้อมูล ปฏิทิน */
   info: '#4CC9F0',
 } as const;
+
+/* ------------------------------------------------------------------ colours */
+
+/**
+ * ชื่อเดิมของ v4.4 ("Rust x Modern") ที่โค้ดอื่นยังอ้างถึง
+ * — ค่าทั้งหมดชี้ไปที่ CALM_BRAND ไม่มีการประกาศ hex ซ้ำ
+ */
+export const RUST_MODERN_COLORS = {
+  /** สีแบรนด์ของโปรเจกต์นี้ = ลาเวนเดอร์ (Brand Book v2.0) */
+  brandAccent: CALM_BRAND.primary,
+  /** พีช — SHORT/ระวัง (ห้ามใช้แดงสด #FF0000) */
+  dangerRed: CALM_BRAND.danger,
+  /** ม่วงอ่อน — แอ็กเซนต์, AI, ลิงก์ */
+  violet: CALM_BRAND.lavenderSoft,
+  /** ฟ้าใส — ไอคอน ECU / AI / ลิงก์ */
+  neonBlue: CALM_BRAND.info,
+  /** มินต์ — สถานะดี, สำเร็จ */
+  neonGreen: CALM_BRAND.success,
+  /** สนิม — ใช้เฉพาะงานอาร์ตของมาสคอต (ไม่ใช่สี UI) */
+  rust: '#8A4B2A',
+  rustLight: '#C97B2A',
+  /** เทากลาง — คำอธิบาย/ข้อความรอง */
+  metal: CALM_BRAND.neutral,
+  metalDark: CALM_BRAND.surfaceRaised,
+  /** พื้น Paper (โหมดสว่าง) */
+  paper: CALM_BRAND.paperSurface,
+  /** พื้น Midnight (โหมดมืด) */
+  midnight: CALM_BRAND.surface,
+  /** สีหลักของแบรนด์ */
+  lavender: CALM_BRAND.primary,
+} as const;
+
 
 /** Calm motion: ไม่กระพริบ ไม่เด้ง — hover 180ms, เปลี่ยนหน้า 320ms, หน่วงค่า 600ms */
 export const CALM_MOTION = {

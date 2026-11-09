@@ -296,6 +296,8 @@
   select,
   textarea,
   summary {
+    /* explicit property list: `all` would animate layout on every hover */
+    transition-property: color, background-color, border-color, opacity;
     transition-duration: var(--mb-t-quick);
     transition-timing-function: var(--mb-ease-calm);
   }
@@ -348,12 +350,8 @@
   animation: calmFadeIn var(--mb-t-base) var(--mb-ease-calm) both;
 }
 
-/* Lightweight button & interactive UI transitions */
-button, a {
-  transition-property: color, background-color, border-color, opacity;
-  transition-duration: var(--mb-t-quick);
-  transition-timing-function: var(--mb-ease-calm);
-}
+/* (transition defaults for interactive elements live in @layer base above —
+   keeping a second copy here made later overrides harder to reason about) */
 
 /* Custom Eye-Friendly Scrollbar */
 ::-webkit-scrollbar {

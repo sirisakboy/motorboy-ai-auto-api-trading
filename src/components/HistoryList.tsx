@@ -13,6 +13,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { TradingHistoryEntry } from '../types';
+import { formatPriceSimple, formatDate as formatDateShared } from '../utils';
 
 interface HistoryListProps {
   entries: TradingHistoryEntry[];
@@ -44,27 +45,9 @@ export const HistoryList: React.FC<HistoryListProps> = ({
     return matchesType && matchesSearch;
   });
 
-  const formatPrice = (p: number) => {
-    if (useThb) {
-      return `฿${(p * usdThbRate).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
-    }
-    return `$${p.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
-  };
+  const formatPrice = (p: number) => formatPriceSimple(p, useThb ? 'THB' : 'USD', usdThbRate);
 
-  const formatDate = (isoString: string) => {
-    try {
-      const d = new Date(isoString);
-      return d.toLocaleDateString('th-TH', {
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      });
-    } catch {
-      return isoString;
-    }
-  };
+  const formatDate = (isoString: string) => formatDateShared(isoString);
 
   return (
     <div className="space-y-4">

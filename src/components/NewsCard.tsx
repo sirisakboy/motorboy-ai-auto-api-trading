@@ -25,6 +25,7 @@ import {
 import { NewsDetailModal } from './NewsDetailModal';
 import { MSN_MONEY_URL, MITRADE_NEWS_URL } from '../services/apiClient';
 import { synthesizeNewsAndSignalsForHistory } from '../services/geminiService';
+import { formatClockTime } from '../utils';
 
 interface NewsCardProps {
   articles: NewsArticle[];
@@ -56,13 +57,7 @@ function readLastRun(): number | null {
   }
 }
 
-function formatClock(ms: number): string {
-  try {
-    return new Date(ms).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
-  } catch {
-    return '--:--';
-  }
-}
+
 
 export const NewsCard: React.FC<NewsCardProps> = ({
   articles,
@@ -330,7 +325,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({
                 <Clock className="w-3 h-3" />
                 <span>
                   {lastRunAt
-                    ? `ตรวจล่าสุด ${formatClock(lastRunAt)} • รอบถัดไป ${formatClock(lastRunAt + AUTO_INTERVAL_MS)}`
+                    ? `ตรวจล่าสุด ${formatClockTime(lastRunAt)} • รอบถัดไป ${formatClockTime(lastRunAt + AUTO_INTERVAL_MS)}`
                     : 'ยังไม่เคยตรวจ — จะเริ่มในอีกสักครู่'}
                 </span>
               </div>

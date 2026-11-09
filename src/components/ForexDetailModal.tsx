@@ -25,6 +25,7 @@ import {
   fetchMarketSentimentScore,
 } from '../services/geminiService';
 import { useModalA11y } from '../hooks/useModalA11y';
+import { formatNumber } from '../utils';
 
 interface ForexDetailModalProps {
   forex: ForexPair | null;
@@ -88,13 +89,8 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
     resistance: isLong ? forex.price * 1.022 : forex.price * 1.012,
   };
 
-  const formatPrice = (val?: number) => {
-    if (val === undefined || val === null) return '-';
-    return `${val.toLocaleString(undefined, {
-      minimumFractionDigits: decimals,
-      maximumFractionDigits: decimals,
-    })} ${quote}`;
-  };
+  const formatPrice = (val?: number) =>
+    val === undefined || val === null ? '-' : `${formatNumber(val, decimals)} ${quote}`;
 
   const supportVal = activeSignal.support || (isLong ? forex.price * 0.988 : forex.price * 0.975);
   const resistanceVal = activeSignal.resistance || (isLong ? forex.price * 1.022 : forex.price * 1.012);

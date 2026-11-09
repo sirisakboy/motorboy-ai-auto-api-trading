@@ -110,6 +110,87 @@ export function buildSourceList(input: {
   return sources;
 }
 
+/* ------------------------------------------------------------- market brief */
+
+export interface MarketBriefSources {
+  cryptoList?: Array<{ symbol: string; price: number; change: number }>;
+  forexRates?: Array<{ pair: string; price: number; change: number }>;
+  thaiStocks?: Array<{ symbol: string; price: number; change: number; pe?: number }>;
+  foreignStocks?: Array<{ symbol: string; price: number; change: number; sector?: string }>;
+  stockIndices?: Array<{ name: string; price: number; change: number }>;
+  articles?: Array<{ title: string }>;
+}
+
+/**
+ * One market snapshot, used by every AI path (chat stream, REST fallback and the
+ * quant engine). This logic used to exist twice — `buildMarketContextBrief()` in
+ * aiChatService and `buildMarketBrief()` in chatStreamClient — with slightly
+ * different wording, so the same question could reach the model with different
+ * numbers depending on which tier answered.
+ */
+export function buildMarketBrief(sources: MarketBriefSources): string {
+  const parts: string[] = [];
+  const signed = (value: number) => `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`;
+
+  if (sources.cryptoList?.length) {
+    parts.push(
+      '- คริปโต: ' +
+        sources.cryptoList
+          .slice(0, 6)
+          .map((c) => `${c.symbol} $${c.price.toLocaleString()} (${signed(c.change)})`)
+          .join(', ')
+    );
+  }
+  if (sources.forexRates?.length) {
+    parts.push(
+      '- ค่าเงิน: ' +
+        sources.forexRates
+          .slice(0, 5)
+          .map((f) => `${f.pair} ${f.price.toFixed(4)} (${signed(f.change)})`)
+          .join(', ')
+    );
+  }
+  if (sources.thaiStocks?.length) {
+    parts.push(
+      '- หุ้นไทย: ' +
+        sources.thaiStocks
+          .slice(0, 6)
+          .map(
+            (s) =>
+              `${s.symbol} ฿${s.price} (${signed(s.change)}${
+                typeof s.pe === 'number' && Number.isFinite(s.pe) && s.pe > 0 ? ` P/E ${s.pe}x` : ''
+              })`
+          )
+          .join(', ')
+    );
+  }
+  if (sources.foreignStocks?.length) {
+    parts.push(
+      '- หุ้นสหรัฐฯ: ' +
+        sources.foreignStocks
+          .slice(0, 6)
+          .map(
+            (s) =>
+              `${s.symbol} $${s.price} (${signed(s.change)}${s.sector ? ` ${s.sector}` : ''})`
+          )
+          .join(', ')
+    );
+  }
+  if (sources.stockIndices?.length) {
+    parts.push(
+      '- ดัชนีโลก: ' +
+        sources.stockIndices
+          .map((s) => `${s.name} ${s.price.toLocaleString()} (${signed(s.change)})`)
+          .join(', ')
+    );
+  }
+  if (sources.articles?.length) {
+    parts.push('- ข่าว: ' + sources.articles.slice(0, 4).map((a) => a.title).join(' | '));
+  }
+
+  return parts.join('\n');
+}
+
 /* ------------------------------------------------------------------- prompt */
 
 export interface ChatPromptInput {

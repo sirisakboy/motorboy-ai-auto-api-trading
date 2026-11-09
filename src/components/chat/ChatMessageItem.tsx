@@ -3,6 +3,7 @@ import { Bot, Check, ChevronDown, Copy, RefreshCw, Sparkles } from 'lucide-react
 import { ChatMessage } from '../../types';
 import { CHAT_TONES, ChatTone } from '../../services/chatStreamCore';
 import { STICKER_MAP, parseStickerCode } from '../ChatStickers';
+import { formatTime } from '../../utils';
 import { MarkdownLite } from './MarkdownLite';
 
 interface ChatMessageItemProps {
@@ -17,14 +18,6 @@ interface ChatMessageItemProps {
 
 const isAiMessage = (message: ChatMessage) =>
   message.uid === 'ai-deep-analyze' || message.uid.startsWith('ats-matrix') || message.name.includes('AI');
-
-function formatTime(iso: string): string {
-  try {
-    return new Date(iso).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
-  } catch {
-    return '';
-  }
-}
 
 /**
  * One chat row. AI answers carry the Brand Book §09 disclosure:

@@ -624,28 +624,33 @@ Respond ONLY with valid JSON array of objects:
 /** 9. Call Gemini for Chat Reply */
 app.post('/api/gemini/chat-reply', async (req, res) => {
   const { query, marketBrief, geminiApiKey } = req.body || {};
+  if (typeof query !== 'string' || !query.trim()) {
+    return res.status(400).json({ error: 'Missing query' });
+  }
+
   const ai = getGeminiClient(geminiApiKey);
 
   if (!ai) {
     return res.status(400).json({ error: 'Missing Gemini API Key' });
   }
 
-  const prompt = `คุณคือ MotorBoy AI-TH (น้องมอเตอร์บอย) AI Trading Co-Pilot + Auto API Assistant, Hybrid Pro จาก MotorBoy Studio AI-TH
-สโลแกน: "AI auto API Trading - เร็ว แม่น ปลอดภัย แบบ MotorBoy"
-บุคลิก: พี่ชายนักบิดมือโปร (pro_rider_brother) — รวดเร็ว แม่นยำ เป็นมิตร มีวินัยสูง ชัดเจน ไม่มีน้ำ
-หลักการ 5 เสาหลัก:
-1. ENGINE: วิเคราะห์แนวโน้ม แท่งเทียน Volume แนวรับ/แนวต้าน อย่างแม่นยำ
-2. API MODE: วางแผนการเทรด มี Entry, SL, TP1/TP2 และ RR Ratio ชัดเจนเสมอ
-3. RISK GUARD: คุมความเสี่ยงไม่เกิน 2% ต่อไม้ อัตรา RR Ratio ไม่ต่ำกว่า 1:1.5 ถ้าความเสี่ยงเกิน 2% ให้ปฏิเสธและเตือนทันที
-4. KILL SWITCH: ถ้าตลาดผันผวนรุนแรง หรือ Drawdown เกิน 5% ให้หยุดและบอก "🛑 เบรกก่อนจิ!"
-5. กฎเหล็ก: ห้ามการันตีผลกำไรเด็ดขาด และต้องปิดท้ายด้วยข้อความ: "นี่คือการวิเคราะห์ ไม่ใช่คำแนะนำการลงทุน" เสมอ
-คำพูดติดปากเมื่อเจอจุดเข้าที่ดี: "🏍️ Full Throttle! จุดเข้าตามแผน ล็อคความเสี่ยงเรียบร้อย"
+  // Same prompt builder as the streaming route: one voice, one set of brand
+  // rules. The old inline prompt here had drifted (it still used urgency copy
+  // like "เบรกก่อนจิ" and had no 3-reason/disclosure requirement).
+  const toneFromBody: ChatTone = isChatTone(req.body?.tone) ? req.body.tone : 'friend';
+  const sourceList: string[] = Array.isArray(req.body?.sources)
+    ? req.body.sources
+        .filter((item: unknown): item is string => typeof item === 'string')
+        .slice(0, 6)
+        .map((item: string) => item.slice(0, 80))
+    : [];
 
-ข้อมูลตลาดสดประกอบการวิเคราะห์:
-${marketBrief || 'ไม่มีข้อมูลตลาดสดเพิ่มเติม'}
-
-คำถามจากผู้ใช้: "${query}"
-`.trim();
+  const prompt = buildChatPrompt({
+    query: typeof query === 'string' ? query.slice(0, 800) : '',
+    marketBrief: typeof marketBrief === 'string' ? marketBrief.slice(0, 2400) : '',
+    tone: toneFromBody,
+    sources: sourceList,
+  });
 
   try {
     const response = await ai.models.generateContent({

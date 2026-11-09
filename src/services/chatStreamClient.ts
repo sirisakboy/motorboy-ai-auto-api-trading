@@ -1,6 +1,7 @@
 import { generateAiChatReply, AiChatContext } from './aiChatService';
 import {
   ChatTone,
+  buildMarketBrief,
   buildSourceList,
   isChatTone,
   parseSseBuffer,
@@ -30,71 +31,6 @@ export interface StreamChatResult {
   latencyMs: number;
 }
 
-function buildMarketBrief(context: AiChatContext): string {
-  const parts: string[] = [];
-  if (context.cryptoList && context.cryptoList.length > 0) {
-    parts.push(
-      '- คริปโต: ' +
-        context.cryptoList
-          .slice(0, 6)
-          .map(
-            (c) =>
-              `${c.symbol} $${c.price.toLocaleString()} (${c.change >= 0 ? '+' : ''}${c.change.toFixed(2)}%)`
-          )
-          .join(', ')
-    );
-  }
-  if (context.forexRates && context.forexRates.length > 0) {
-    parts.push(
-      '- ค่าเงิน: ' +
-        context.forexRates
-          .slice(0, 5)
-          .map(
-            (f) =>
-              `${f.pair} ${f.price.toFixed(4)} (${f.change >= 0 ? '+' : ''}${f.change.toFixed(2)}%)`
-          )
-          .join(', ')
-    );
-  }
-  if (context.thaiStocks && context.thaiStocks.length > 0) {
-    parts.push(
-      '- หุ้นไทย: ' +
-        context.thaiStocks
-          .slice(0, 6)
-          .map(
-            (s) =>
-              `${s.symbol} ฿${s.price} (${s.change >= 0 ? '+' : ''}${s.change.toFixed(2)}%)`
-          )
-          .join(', ')
-    );
-  }
-  if (context.foreignStocks && context.foreignStocks.length > 0) {
-    parts.push(
-      '- หุ้นสหรัฐฯ: ' +
-        context.foreignStocks
-          .slice(0, 6)
-          .map(
-            (s) =>
-              `${s.symbol} $${s.price} (${s.change >= 0 ? '+' : ''}${s.change.toFixed(2)}%)`
-          )
-          .join(', ')
-    );
-  }
-  if (context.stockIndices && context.stockIndices.length > 0) {
-    parts.push(
-      '- ดัชนีโลก: ' +
-        context.stockIndices
-          .map(
-            (s) => `${s.name} ${s.price.toLocaleString()} (${s.change >= 0 ? '+' : ''}${s.change.toFixed(2)}%)`
-          )
-          .join(', ')
-    );
-  }
-  if (context.articles && context.articles.length > 0) {
-    parts.push('- ข่าว: ' + context.articles.slice(0, 4).map((a) => a.title).join(' | '));
-  }
-  return parts.join('\n');
-}
 
 export function sourcesFromContext(context: AiChatContext): string[] {
   return buildSourceList({
