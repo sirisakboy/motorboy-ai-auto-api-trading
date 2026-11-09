@@ -35,20 +35,20 @@ export class ErrorBoundary extends Component<Props, State> {
   public render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen bg-[#0A0D14] text-white flex items-center justify-center p-4">
-          <div className="max-w-md w-full rounded-2xl bg-[#1A1D29] border border-[#2A2E45] p-6 text-center space-y-4 shadow-2xl">
-            <div className="mx-auto w-12 h-12 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center">
-              <AlertTriangle className="w-6 h-6 text-amber-400" />
+        <div className="min-h-screen bg-[#141725] text-white flex items-center justify-center p-4">
+          <div className="max-w-md w-full rounded-2xl bg-[#141725] border border-white/[0.07] p-6 text-center space-y-4 shadow-2xl">
+            <div className="mx-auto w-12 h-12 rounded-xl bg-[#FFB86B]/20 border border-amber-500/30 flex items-center justify-center">
+              <AlertTriangle className="w-6 h-6 text-[#FFB86B]" />
             </div>
             <h2 className="text-lg font-bold text-white">ระบบพบข้อผิดพลาดชั่วคราว</h2>
-            <p className="text-xs text-[#9CA3AF] leading-relaxed">
+            <p className="text-xs text-[#A7A4B8] leading-relaxed">
               {this.state.error?.message || 'เกิดข้อผิดพลาดในการแสดงผล กรุณากดรีโหลดเพื่อเริ่มการทำงานใหม่อีกครั้ง'}
             </p>
             <div className="pt-2 flex items-center justify-center gap-3">
               <button
                 type="button"
                 onClick={this.handleReset}
-                className="px-4 py-2 rounded-xl bg-[#2A2E45] hover:bg-[#2D3345] text-xs font-semibold text-white transition-colors"
+                className="px-4 py-2 rounded-xl bg-[#222640] hover:bg-[#2D3345] text-xs font-semibold text-white transition-colors"
               >
                 ลองอีกครั้ง
               </button>

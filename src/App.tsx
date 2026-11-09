@@ -950,7 +950,7 @@ export const App: React.FC = () => {
 
     <div
       className={`min-h-screen ${
-        isDark ? 'bg-[#0F1117] text-slate-100' : 'bg-[#F8FAFC] text-[#0F172A]'
+        isDark ? 'bg-[#0F1117] text-[#ECEAF4]' : 'bg-[#F8FAFC] text-[#0F172A]'
       } flex flex-col font-sans transition-colors duration-200 overflow-x-hidden w-full max-w-[100vw]`}
     >
       {/* Toast Notification */}
@@ -1024,10 +1024,10 @@ export const App: React.FC = () => {
               <div className="lg:col-span-8 space-y-6">
                 {/* Asset Tabs & Filter — Floating Action Sidebar Style Bar */}
                 <div className="space-y-4">
-                  <div className="rounded-[20px] bg-[#131826] border border-[#2A2E45] p-3 shadow-lg">
+                  <div className="rounded-[20px] bg-[#141725] border border-white/[0.07] p-3 shadow-lg">
                     <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
                       {/* Tabs / Filters */}
-                      <div className="flex items-center space-x-1 bg-[#0F1117] p-1 rounded-xl border border-[#2A2E45] overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] max-w-full">
+                      <div className="flex items-center space-x-1 bg-[#0F1117] p-1 rounded-xl border border-white/[0.07] overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] max-w-full">
                         {tabs.map((tab, idx) => (
                           <button
                             key={tab.label}
@@ -1043,7 +1043,7 @@ export const App: React.FC = () => {
                             className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors flex items-center space-x-1.5 shrink-0 ${
                               selectedTab === idx
                                 ? 'bg-[#7C6CFF] text-[#0F1117] font-bold shadow-xs'
-                                : 'text-[#94A3B8] hover:text-white'
+                                : 'text-[#A7A4B8] hover:text-white'
                             }`}
                           >
                             <span>{tab.label}</span>
@@ -1052,7 +1052,7 @@ export const App: React.FC = () => {
                                 className={`text-[10px] px-1.5 py-0.2 rounded-full ${
                                   selectedTab === idx
                                     ? 'bg-black/30 text-white'
-                                    : 'bg-[#2A2E45] text-[#A5B4FC]'
+                                    : 'bg-[#222640] text-[#A89FFF]'
                                 }`}
                               >
                                 {tab.count}
@@ -1065,13 +1065,13 @@ export const App: React.FC = () => {
                       {/* Right Action Group: Search Bar + News & AI Hub Button */}
                       <div className="flex items-center gap-2">
                         <div className="relative flex-1 sm:flex-initial">
-                          <Search className="w-4 h-4 text-[#94A3B8] absolute left-3 top-1/2 -translate-y-1/2" />
+                          <Search className="w-4 h-4 text-[#A7A4B8] absolute left-3 top-1/2 -translate-y-1/2" />
                           <input
                             type="text"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             placeholder="ค้นหาสินทรัพย์..."
-                            className="w-full sm:w-44 bg-[#0F1117] border border-[#2A2E45] focus:border-[#7C6CFF] rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-100 outline-none placeholder-[#94A3B8]"
+                            className="w-full sm:w-44 bg-[#0F1117] border border-white/[0.07] focus:border-[#7C6CFF] rounded-xl pl-9 pr-3 py-1.5 text-xs text-[#ECEAF4] outline-none placeholder-[#A7A4B8]"
                           />
                         </div>
 
@@ -1103,13 +1103,13 @@ export const App: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => setShowHistoryModal(true)}
-                          className="px-3 py-1.5 bg-[#10B981]/15 hover:bg-[#10B981]/25 border border-[#10B981]/30 text-[#34D399] rounded-xl text-xs font-bold inline-flex items-center gap-1.5 transition-all shrink-0"
+                          className="px-3 py-1.5 bg-[#7EE0B5]/15 hover:bg-[#7EE0B5]/25 border border-[#7EE0B5]/30 text-[#7EE0B5] rounded-xl text-xs font-bold inline-flex items-center gap-1.5 transition-all shrink-0"
                           title="เปิดหน้าต่างประวัติการวิเคราะห์"
                         >
-                          <History className="w-3.5 h-3.5 text-[#10B981]" />
+                          <History className="w-3.5 h-3.5 text-[#7EE0B5]" />
                           <span className="hidden sm:inline">ประวัติ</span>
                           {historyEntries.length > 0 && (
-                            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[#10B981] text-white">
+                            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[#7EE0B5] text-[#0F1117]">
                               {historyEntries.length}
                             </span>
                           )}
@@ -1118,7 +1118,7 @@ export const App: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => setShowNewsModal(true)}
-                          className="px-3 py-1.5 bg-[#0284C7]/15 hover:bg-[#0284C7]/25 border border-[#0284C7]/30 text-[#38BDF8] rounded-xl text-xs font-bold inline-flex items-center gap-1.5 transition-all shrink-0"
+                          className="px-3 py-1.5 bg-[#4CC9F0]/15 hover:bg-[#4CC9F0]/25 border border-[#4CC9F0]/30 text-[#4CC9F0] rounded-xl text-xs font-bold inline-flex items-center gap-1.5 transition-all shrink-0"
                           title="เปิดหน้าต่างข่าวสาร & วิเคราะห์ AI"
                         >
                           <Sparkles className="w-3.5 h-3.5" />
@@ -1129,12 +1129,12 @@ export const App: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => setShowAtsMatrixModal(true)}
-                          className="px-3 py-1.5 bg-[#10B981]/15 hover:bg-[#10B981]/25 border border-[#10B981]/40 text-[#34D399] rounded-xl text-xs font-mono font-bold inline-flex items-center gap-1.5 transition-all shrink-0 cursor-pointer"
+                          className="px-3 py-1.5 bg-[#7EE0B5]/15 hover:bg-[#7EE0B5]/25 border border-[#7EE0B5]/40 text-[#7EE0B5] rounded-xl text-xs font-mono font-bold inline-flex items-center gap-1.5 transition-all shrink-0 cursor-pointer"
                           title="เปิดโหมด ATS MATRIX (Polymarket & Crypto Arbitrage)"
                         >
-                          <Radio className="w-3.5 h-3.5 text-[#34D399]" />
+                          <Radio className="w-3.5 h-3.5 text-[#7EE0B5]" />
                           <span className="hidden sm:inline">ATS Matrix</span>
-                          <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[#10B981] text-black font-extrabold">
+                          <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[#7EE0B5] text-black font-extrabold">
                             LIVE
                           </span>
                         </button>
@@ -1143,19 +1143,19 @@ export const App: React.FC = () => {
 
                     {/* Auto-detected ATS MATRIX Trigger Banner */}
                     {isAtsMatrixTrigger(searchQuery) && (
-                      <div className="mt-3 p-3 rounded-xl bg-gradient-to-r from-[#00FF66]/20 via-[#0A0D14] to-[#00F0FF]/20 border border-[#00FF66]/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-[0_0_20px_rgba(0,255,102,0.15)] animate-in fade-in duration-300">
+                      <div className="mt-3 p-3 rounded-xl bg-gradient-to-r from-[#7EE0B5]/20 via-[#141725] to-[#4CC9F0]/20 border border-[#7EE0B5]/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-[0_0_20px_rgba(0,255,102,0.15)] animate-in fade-in duration-300">
                         <div className="flex items-center gap-2.5">
-                          <div className="w-8 h-8 rounded-lg bg-[#00FF66]/20 border border-[#00FF66]/50 flex items-center justify-center text-[#00FF66] shrink-0 animate-pulse">
+                          <div className="w-8 h-8 rounded-lg bg-[#7EE0B5]/20 border border-[#7EE0B5]/50 flex items-center justify-center text-[#7EE0B5] shrink-0 animate-pulse">
                             <Radio className="w-4 h-4" />
                           </div>
                           <div>
                             <div className="text-xs font-mono font-black text-white flex items-center gap-2">
                               <span>⚡ สลับเป็น ATS MATRIX MODE (MARKETS / BTC / POLYMARKET)</span>
-                              <span className="text-[9px] px-1.5 py-0.5 rounded-sm bg-[#00FF66] text-black font-extrabold">
+                              <span className="text-[9px] px-1.5 py-0.5 rounded-sm bg-[#7EE0B5] text-black font-extrabold">
                                 AUTO-DETECTED
                               </span>
                             </div>
-                            <p className="text-[11px] font-mono text-slate-300 mt-0.5">
+                            <p className="text-[11px] font-mono text-[#ECEAF4] mt-0.5">
                               ตรวจพบคำค้นหาเกี่ยวข้อง — เปิดวิเคราะห์ Torus Model, Feed Latency, Inefficiency และทำนาย 1M/15M/1H
                             </p>
                           </div>
@@ -1167,14 +1167,14 @@ export const App: React.FC = () => {
                               setIsAtsMatrixMode(true);
                               setShowAtsMatrixModal(true);
                             }}
-                            className="px-3 py-1.5 rounded-lg bg-[#00FF66] hover:bg-[#00FF66]/90 text-black text-xs font-mono font-black transition-all shadow-[0_0_12px_rgba(0,255,102,0.3)] cursor-pointer"
+                            className="px-3 py-1.5 rounded-lg bg-[#7EE0B5] hover:bg-[#7EE0B5]/90 text-black text-xs font-mono font-black transition-all shadow-[0_0_12px_rgba(0,255,102,0.3)] cursor-pointer"
                           >
                             เปิด Cockpit ทันที
                           </button>
                           <button
                             type="button"
                             onClick={() => setIsAtsMatrixMode((v) => !v)}
-                            className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-mono font-bold transition-all border border-slate-700 cursor-pointer"
+                            className="px-3 py-1.5 rounded-lg bg-[#222640] hover:bg-[#222640] text-[#ECEAF4] text-xs font-mono font-bold transition-all border border-white/[0.07] cursor-pointer"
                           >
                             {isAtsMatrixMode ? 'ซ่อนในแดชบอร์ด' : 'แสดงในแดชบอร์ด'}
                           </button>
@@ -1195,13 +1195,13 @@ export const App: React.FC = () => {
                 )}
 
                 {/* Real Price Chart Canvas with Asset Selector */}
-                <div className="rounded-[20px] bg-[#1A1D29] border border-[#2A2E45] p-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 mb-3 border-b border-[#2A2E45]/60 gap-2">
+                <div className="rounded-[20px] bg-[#141725] border border-white/[0.07] p-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 mb-3 border-b border-white/[0.07]/60 gap-2">
                     <div>
                       <h2 className="text-white font-bold text-sm">
                         กราฟราคา 90 วัน & ค่าเฉลี่ย EMA (20/50)
                       </h2>
-                      <p className="text-[#909AAB] text-[11px] mt-0.5">
+                      <p className="text-[#A7A4B8] text-[11px] mt-0.5">
                         {selectedTab === 0 && 'ดึงข้อมูล Binance 1D Klines จริง วิเคราะห์เส้น EMA (20/50) และแนวรับ-แนวต้าน'}
                         {selectedTab === 1 && 'ดึงข้อมูลอัตราแลกเปลี่ยน Forex 1D Closes จริง วิเคราะห์กรอบสวิง 90 วัน'}
                         {selectedTab === 2 && 'ดึงข้อมูลราคาปิดหุ้นไทย SET (.BK) รายวันจากตลาดหลักทรัพย์ พร้อมแนวรับ-แนวต้าน'}
@@ -1220,7 +1220,7 @@ export const App: React.FC = () => {
                           className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all shrink-0 whitespace-nowrap ${
                             selectedChartAsset === coin.id
                               ? 'bg-[#7C6CFF] text-[#0F1117] shadow-xs'
-                              : 'bg-[#0F1117] text-[#9CA3AF] hover:text-white border border-[#2A2E45]'
+                              : 'bg-[#0F1117] text-[#A7A4B8] hover:text-white border border-white/[0.07]'
                           }`}
                         >
                           {coin.symbol}
@@ -1233,8 +1233,8 @@ export const App: React.FC = () => {
                           onClick={() => setSelectedChartAsset(forex.pair)}
                           className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all shrink-0 whitespace-nowrap ${
                             selectedChartAsset === forex.pair
-                              ? 'bg-[#10B981] text-white shadow-xs'
-                              : 'bg-[#0F1117] text-[#9CA3AF] hover:text-white border border-[#2A2E45]'
+                              ? 'bg-[#7EE0B5] text-[#0F1117] shadow-xs'
+                              : 'bg-[#0F1117] text-[#A7A4B8] hover:text-white border border-white/[0.07]'
                           }`}
                         >
                           {forex.pair}
@@ -1247,8 +1247,8 @@ export const App: React.FC = () => {
                           onClick={() => setSelectedChartAsset(stock.symbol)}
                           className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all shrink-0 whitespace-nowrap ${
                             selectedChartAsset === stock.symbol
-                              ? 'bg-[#F59E0B] text-black shadow-xs font-black'
-                              : 'bg-[#0F1117] text-[#9CA3AF] hover:text-white border border-[#2A2E45]'
+                              ? 'bg-[#FFB86B] text-black shadow-xs font-black'
+                              : 'bg-[#0F1117] text-[#A7A4B8] hover:text-white border border-white/[0.07]'
                           }`}
                         >
                           {stock.symbol}
@@ -1261,8 +1261,8 @@ export const App: React.FC = () => {
                           onClick={() => setSelectedChartAsset(stock.symbol)}
                           className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all shrink-0 whitespace-nowrap ${
                             selectedChartAsset === stock.symbol
-                              ? 'bg-[#38BDF8] text-black shadow-xs font-black'
-                              : 'bg-[#0F1117] text-[#9CA3AF] hover:text-white border border-[#2A2E45]'
+                              ? 'bg-[#4CC9F0] text-black shadow-xs font-black'
+                              : 'bg-[#0F1117] text-[#A7A4B8] hover:text-white border border-white/[0.07]'
                           }`}
                         >
                           {stock.symbol}
@@ -1275,8 +1275,8 @@ export const App: React.FC = () => {
                           onClick={() => setSelectedChartAsset(idxItem.symbol)}
                           className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all shrink-0 whitespace-nowrap ${
                             selectedChartAsset === idxItem.symbol
-                              ? 'bg-[#EC4899] text-white shadow-xs'
-                              : 'bg-[#0F1117] text-[#9CA3AF] hover:text-white border border-[#2A2E45]'
+                              ? 'bg-[#A89FFF] text-[#0F1117] shadow-xs'
+                              : 'bg-[#0F1117] text-[#A7A4B8] hover:text-white border border-white/[0.07]'
                           }`}
                         >
                           {idxItem.symbol}
@@ -1422,16 +1422,16 @@ export const App: React.FC = () => {
           </main>
 
           {/* Eye-Friendly Footer */}
-          <footer className="py-6 border-t border-[#2A2E45] text-xs text-[#94A3B8] transition-colors">
+          <footer className="py-6 border-t border-white/[0.07] text-xs text-[#A7A4B8] transition-colors">
             <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
               <div className="flex items-center gap-2">
-                <span className="font-semibold text-slate-300">MotorBoy AI-TH</span>
+                <span className="font-semibold text-[#ECEAF4]">MotorBoy AI-TH</span>
                 <span>·</span>
                 <span>Real-Time Multi-Asset & AI Deep Analytics</span>
               </div>
               {globalSession?.title && (
-                <div className="text-[11px] px-2.5 py-1 rounded-lg bg-[#131826] border border-[#2A2E45] text-slate-400">
-                  Global Session: <span className="font-medium text-slate-200">{globalSession.title}</span>
+                <div className="text-[11px] px-2.5 py-1 rounded-lg bg-[#141725] border border-white/[0.07] text-[#A7A4B8]">
+                  Global Session: <span className="font-medium text-[#ECEAF4]">{globalSession.title}</span>
                 </div>
               )}
             </div>
@@ -1607,10 +1607,10 @@ export const App: React.FC = () => {
               aria-modal="true"
               aria-label="ศูนย์รวมข่าวสารตลาดและวิเคราะห์ AI"
               className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm overflow-y-auto">
-              <div className="w-full max-w-2xl bg-[#131722] border border-[#2A2E39] rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
-                <div className="p-4 border-b border-[#2A2E39] flex items-center justify-between bg-gradient-to-r from-[#1E222D] to-[#131722]">
+              <div className="w-full max-w-2xl bg-[#141725] border border-[#222640] rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+                <div className="p-4 border-b border-[#222640] flex items-center justify-between bg-gradient-to-r from-[#1C1F2E] to-[#141725]">
                   <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#7C6CFF] to-[#6A58F0] p-[1.5px]">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#7C6CFF] to-[#8E80FF] p-[1.5px]">
                       <div className="w-full h-full bg-[#0F1117] rounded-[6.5px] flex items-center justify-center text-xs">
                         🏍️
                       </div>
@@ -1621,7 +1621,7 @@ export const App: React.FC = () => {
                   </div>
                   <button
                     onClick={() => setShowNewsModal(false)}
-                    className="text-[#94A3B8] hover:text-white p-1 rounded-lg transition-colors"
+                    className="text-[#A7A4B8] hover:text-white p-1 rounded-lg transition-colors"
                   >
                     <X className="w-5 h-5" />
                   </button>
@@ -1650,8 +1650,8 @@ export const App: React.FC = () => {
               aria-modal="true"
               aria-label="รายการโปรด Watchlist"
               className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm overflow-y-auto">
-              <div className="w-full max-w-2xl bg-[#131722] border border-[#2A2E39] rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
-                <div className="p-4 border-b border-[#2A2E39] flex items-center justify-between bg-gradient-to-r from-[#1E222D] to-[#131722]">
+              <div className="w-full max-w-2xl bg-[#141725] border border-[#222640] rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+                <div className="p-4 border-b border-[#222640] flex items-center justify-between bg-gradient-to-r from-[#1C1F2E] to-[#141725]">
                   <div className="flex items-center gap-2">
                     <Star className="w-5 h-5 text-[#7C6CFF] fill-[#7C6CFF]" />
                     <h2 className="text-white font-bold text-sm">
@@ -1660,7 +1660,7 @@ export const App: React.FC = () => {
                   </div>
                   <button
                     onClick={() => setShowWatchlistModal(false)}
-                    className="text-[#94A3B8] hover:text-white p-1 rounded-lg transition-colors"
+                    className="text-[#A7A4B8] hover:text-white p-1 rounded-lg transition-colors"
                   >
                     <X className="w-5 h-5" />
                   </button>
@@ -1749,11 +1749,11 @@ export const App: React.FC = () => {
                       })}
                     </>
                   ) : (
-                    <div className="rounded-[18px] bg-[#1A1D29] border border-[#2A2E45] p-8 text-center">
+                    <div className="rounded-[18px] bg-[#141725] border border-white/[0.07] p-8 text-center">
                       <p className="text-white text-sm font-semibold">
                         ยังไม่มีรายการใน Watchlist
                       </p>
-                      <p className="text-[#909AAB] text-xs mt-1">
+                      <p className="text-[#A7A4B8] text-xs mt-1">
                         แตะรูปดาว ⭐️ ที่การ์ดคริปโต คู่เงิน Forex หรือหุ้นไทย/ต่างประเทศ เพื่อเพิ่มลงในรายการโปรด
                       </p>
                     </div>
@@ -1771,17 +1771,17 @@ export const App: React.FC = () => {
               aria-modal="true"
               aria-label="ประวัติการวิเคราะห์"
               className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm overflow-y-auto">
-              <div className="w-full max-w-3xl bg-[#131722] border border-[#2A2E39] rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
-                <div className="p-4 border-b border-[#2A2E39] flex items-center justify-between bg-gradient-to-r from-[#1E222D] to-[#131722]">
+              <div className="w-full max-w-3xl bg-[#141725] border border-[#222640] rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+                <div className="p-4 border-b border-[#222640] flex items-center justify-between bg-gradient-to-r from-[#1C1F2E] to-[#141725]">
                   <div className="flex items-center gap-2">
-                    <History className="w-5 h-5 text-[#10B981]" />
+                    <History className="w-5 h-5 text-[#7EE0B5]" />
                     <h2 className="text-white font-bold text-sm">
                       ประวัติการวิเคราะห์ & สัญญาณที่บันทึก (Google Sync)
                     </h2>
                   </div>
                   <button
                     onClick={() => setShowHistoryModal(false)}
-                    className="text-[#94A3B8] hover:text-white p-1 rounded-lg transition-colors"
+                    className="text-[#A7A4B8] hover:text-white p-1 rounded-lg transition-colors"
                   >
                     <X className="w-5 h-5" />
                   </button>

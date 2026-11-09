@@ -337,7 +337,7 @@ export const MascotOverlay: React.FC<MascotOverlayProps> = ({
           aria-label="โหมดเงียบ — AI ยังทำงานอยู่ กดเพื่อเปิดมาสคอต"
           className="pointer-events-auto px-2.5 py-1 rounded-full border bg-black/70 backdrop-blur-md text-[10px] font-mono font-bold"
           style={{
-            color: ending ? endingColor : '#94A3B8',
+            color: ending ? endingColor : '#A7A4B8',
             borderColor: ending ? `${endingColor}66` : palette.border,
           }}
         >
@@ -417,12 +417,12 @@ export const MascotOverlay: React.FC<MascotOverlayProps> = ({
                     type="button"
                     onClick={() => setExpanded(false)}
                     aria-label="ย่อมาสคอต"
-                    className="text-slate-400 hover:text-white p-0.5 rounded transition-colors"
+                    className="text-[#A7A4B8] hover:text-white p-0.5 rounded transition-colors"
                   >
                     <ChevronDown className="w-3.5 h-3.5" aria-hidden="true" />
                   </button>
                 </div>
-                <p className="mt-1 text-[11px] leading-relaxed text-slate-200 break-words">
+                <p className="mt-1 text-[11px] leading-relaxed text-[#ECEAF4] break-words">
                   {bubbleText}
                 </p>
               </div>
@@ -446,14 +446,14 @@ export const MascotOverlay: React.FC<MascotOverlayProps> = ({
                     {ending.prob}% • เป้า {money(ending.target)}
                   </span>
                 </div>
-                <div className="mb-num mt-0.5 text-[9px] text-slate-400 font-mono">
+                <div className="mb-num mt-0.5 text-[9px] text-[#A7A4B8] font-mono">
                   รับ {money(ending.support)} · ต้าน {money(ending.resistance)}
                 </div>
               </div>
             )}
 
             {!ending && candles && (
-              <div className="mt-2 text-[9px] font-mono text-slate-500">
+              <div className="mt-2 text-[9px] font-mono text-[#8B88A0]">
                 ยังไม่มีจุดจบเทรนที่ชัดเจน — ขอเงียบไว้ก่อน
               </div>
             )}
@@ -485,7 +485,7 @@ export const MascotOverlay: React.FC<MascotOverlayProps> = ({
                   type="button"
                   onClick={() => updateSettings({ quietMode: !settings.quietMode })}
                   aria-label={settings.quietMode ? 'ปิดโหมดเงียบ' : 'เปิดโหมดเงียบ'}
-                  className="text-[10px] font-bold text-slate-500 hover:text-slate-300 inline-flex items-center gap-1"
+                  className="text-[10px] font-bold text-[#8B88A0] hover:text-[#ECEAF4] inline-flex items-center gap-1"
                 >
                   {settings.quietMode ? (
                     <Volume2 className="w-3 h-3" aria-hidden="true" />
@@ -497,7 +497,7 @@ export const MascotOverlay: React.FC<MascotOverlayProps> = ({
                 <button
                   type="button"
                   onClick={() => setDismissed(true)}
-                  className="text-[10px] font-bold text-slate-500 hover:text-slate-300 transition-colors"
+                  className="text-[10px] font-bold text-[#8B88A0] hover:text-[#ECEAF4] transition-colors"
                 >
                   ซ่อน
                 </button>
@@ -545,7 +545,7 @@ export const MascotOverlay: React.FC<MascotOverlayProps> = ({
             />
             {minimized && (
               <span
-                className="absolute bottom-0 inset-x-0 text-center text-[8px] font-mono text-slate-300"
+                className="absolute bottom-0 inset-x-0 text-center text-[8px] font-mono text-[#ECEAF4]"
                 aria-hidden="true"
               >
                 {visual.emoji}

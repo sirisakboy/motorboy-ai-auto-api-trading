@@ -89,7 +89,7 @@ describe('MascotOverlay — state driven by the shared mascot store', () => {
 
     const status = screen.getByRole('status');
     expect(status.textContent).toContain('หยุดเทรดชั่วคราว');
-    expect(status.className).toMatch(/border-\[#FF5252\]/); // skin-defined bear/danger ring
+    expect(status.className).toMatch(/border-\[#F4A6A6\]/); // skin-defined bear/danger ring
   });
 
   it('shows the GOD SPEED flourish while executing', () => {

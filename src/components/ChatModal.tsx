@@ -200,26 +200,26 @@ export const ChatModal: React.FC<ChatModalProps> = ({
       aria-label="แชทวิเคราะห์ตลาด AI"
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-6 bg-black/75 backdrop-blur-xs overflow-y-auto"
     >
-      <div className={`w-full sm:max-w-xl rounded-t-2xl sm:rounded-2xl flex flex-col overflow-hidden border-t sm:border max-h-[92vh] sm:my-8 shadow-2xl ${isDark ? 'bg-[#0F1117] text-white border-[#2A2E45]' : 'bg-white text-slate-900 border-slate-200'}`}>
+      <div className={`w-full sm:max-w-xl rounded-t-2xl sm:rounded-2xl flex flex-col overflow-hidden border-t sm:border max-h-[92vh] sm:my-8 shadow-2xl ${isDark ? 'bg-[#0F1117] text-white border-white/[0.07]' : 'bg-white text-[#0F1117] border-white/[0.07]'}`}>
         
         {/* Header: Short title & 100% AI badge */}
-        <div className="flex justify-between items-center px-4 py-3 border-b border-[#2A2E45]/60 bg-[#141824]">
+        <div className="flex justify-between items-center px-4 py-3 border-b border-white/[0.07]/60 bg-[#141725]">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#7C6CFF] to-[#6A58F0] p-[1.5px] shadow-[0_0_12px_rgba(124,108,255,0.4)]">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#7C6CFF] to-[#8E80FF] p-[1.5px] shadow-[0_0_12px_rgba(124,108,255,0.4)]">
               <div className="w-full h-full bg-[#0F1117] rounded-[9.5px] flex items-center justify-center text-sm">
                 🏍️
               </div>
             </div>
             <div>
               <h2 className="font-bold flex items-center gap-1.5 text-sm sm:text-base">
-                <span className="bg-gradient-to-r from-[#7C6CFF] to-[#6A58F0] text-transparent bg-clip-text font-black">
+                <span className="bg-gradient-to-r from-[#7C6CFF] to-[#8E80FF] text-transparent bg-clip-text font-black">
                   MotorBoy AI-TH
                 </span>
                 <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-[#7C6CFF]/20 text-[#7C6CFF] border border-[#7C6CFF]/40 font-mono">
                   HYBRID PRO
                 </span>
               </h2>
-              <p className="text-[10px] text-[#9CA3AF] flex items-center gap-1">
+              <p className="text-[10px] text-[#A7A4B8] flex items-center gap-1">
                 เร็ว แม่น ปลอดภัย แบบ MotorBoy • Auto API Co-Pilot
               </p>
             </div>
@@ -233,21 +233,21 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                   onClose();
                   onOpenAtsMatrix();
                 }}
-                className="px-2.5 py-1 rounded-lg bg-[#00FF66]/15 hover:bg-[#00FF66]/25 border border-[#00FF66]/40 text-[#00FF66] text-[11px] font-mono font-bold flex items-center gap-1 transition-all cursor-pointer"
+                className="px-2.5 py-1 rounded-lg bg-[#7EE0B5]/15 hover:bg-[#7EE0B5]/25 border border-[#7EE0B5]/40 text-[#7EE0B5] text-[11px] font-mono font-bold flex items-center gap-1 transition-all cursor-pointer"
                 title="สลับเป็น ATS MATRIX MODE"
               >
                 <Radio className="w-3 h-3 animate-pulse" />
                 <span className="hidden sm:inline">ATS Matrix</span>
               </button>
             )}
-            <button onClick={onClose} className="text-[#909AAB] hover:text-white p-1 rounded-lg transition-colors cursor-pointer" aria-label="ปิดแชท">
+            <button onClick={onClose} className="text-[#A7A4B8] hover:text-white p-1 rounded-lg transition-colors cursor-pointer" aria-label="ปิดแชท">
               <X className="w-5 h-5" />
             </button>
           </div>
         </div>
 
         {/* Identity & Live Engine bar */}
-        <div className="px-4 py-2 text-[11px] text-[#9CA3AF] border-b border-[#2A2E45]/60 flex items-center justify-between bg-[#0A0D14] flex-wrap gap-2">
+        <div className="px-4 py-2 text-[11px] text-[#A7A4B8] border-b border-white/[0.07]/60 flex items-center justify-between bg-[#141725] flex-wrap gap-2">
           <div className="flex items-center gap-2">
             {user ? (
               <>
@@ -261,7 +261,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                 <span>คุณ: <strong className="text-white">{user.displayName || user.email}</strong></span>
               </>
             ) : (
-              <div className="flex items-center gap-1.5 text-[#34D399]">
+              <div className="flex items-center gap-1.5 text-[#7EE0B5]">
                 <UserIcon className="w-3.5 h-3.5" />
                 <span>โหมด Trader • วิเคราะห์สด 100%</span>
               </div>
@@ -271,19 +271,19 @@ export const ChatModal: React.FC<ChatModalProps> = ({
             <span
               className={`text-[10px] font-mono px-2 py-0.5 rounded font-bold border flex items-center gap-1 ${
                 engineStatus.isOnlineLlm
-                  ? 'bg-purple-500/15 text-purple-300 border-purple-500/40'
-                  : 'bg-[#00FF66]/15 text-[#00FF66] border-[#00FF66]/40'
+                  ? 'bg-[#A89FFF]/15 text-[#A89FFF] border-purple-500/40'
+                  : 'bg-[#7EE0B5]/15 text-[#7EE0B5] border-[#7EE0B5]/40'
               }`}
               title={engineStatus.labelTh}
             >
-              <span className={`w-1.5 h-1.5 rounded-full ${engineStatus.isOnlineLlm ? 'bg-purple-400' : 'bg-[#00FF66] animate-pulse'}`} />
+              <span className={`w-1.5 h-1.5 rounded-full ${engineStatus.isOnlineLlm ? 'bg-purple-400' : 'bg-[#7EE0B5] animate-pulse'}`} />
               {engineStatus.badgeTh}
             </span>
             {onOpenSettings && !engineStatus.isOnlineLlm && (
               <button
                 type="button"
                 onClick={onOpenSettings}
-                className="text-[10px] font-mono text-[#38BDF8] hover:underline cursor-pointer"
+                className="text-[10px] font-mono text-[#4CC9F0] hover:underline cursor-pointer"
                 title="ใส่ Gemini API Key ในตั้งค่าเพื่อเปิดระบบประมวลผล LLM ออนไลน์"
               >
                 ⚙️ ใส่ API Key
@@ -293,12 +293,12 @@ export const ChatModal: React.FC<ChatModalProps> = ({
         </div>
 
         {/* Messages list */}
-        <div className="flex-1 min-h-[320px] max-h-[440px] overflow-y-auto px-4 py-3 space-y-3 bg-[#0A0D14]">
+        <div className="flex-1 min-h-[320px] max-h-[440px] overflow-y-auto px-4 py-3 space-y-3 bg-[#141725]">
           {messages.length === 0 && (
-            <div className="p-4 rounded-2xl bg-[#141824] border border-[#2A2E45] text-center my-4 space-y-2">
-              <Bot className="w-10 h-10 text-[#00FF66] mx-auto" />
+            <div className="p-4 rounded-2xl bg-[#141725] border border-white/[0.07] text-center my-4 space-y-2">
+              <Bot className="w-10 h-10 text-[#7EE0B5] mx-auto" />
               <h3 className="text-white font-bold text-sm">ยินดีต้อนรับสู่ AI Deep Analyze (AI 100%)</h3>
-              <p className="text-xs text-[#9CA3AF] max-w-sm mx-auto leading-relaxed">
+              <p className="text-xs text-[#A7A4B8] max-w-sm mx-auto leading-relaxed">
                 ถามคำถาม วิเคราะห์แนวรับ-แนวต้าน หุ้นไทย (SET), หุ้นนอก (US), Forex, คริปโต หรือสรุปข่าวสารการเงินโลก AI จะประมวลผลตอบกลับ 100% ทุกข้อความ
               </p>
             </div>
@@ -313,16 +313,16 @@ export const ChatModal: React.FC<ChatModalProps> = ({
             if (isAi) {
               return (
                 <div key={m.id} className="flex gap-2.5 items-start">
-                  <div className="w-7 h-7 rounded-xl bg-[#00FF66]/20 border border-[#00FF66]/40 flex items-center justify-center shrink-0 mt-0.5 shadow-[0_0_10px_rgba(0,255,102,0.2)]">
-                    <Bot className="w-4 h-4 text-[#00FF66]" />
+                  <div className="w-7 h-7 rounded-xl bg-[#7EE0B5]/20 border border-[#7EE0B5]/40 flex items-center justify-center shrink-0 mt-0.5 shadow-[0_0_10px_rgba(0,255,102,0.2)]">
+                    <Bot className="w-4 h-4 text-[#7EE0B5]" />
                   </div>
-                  <div className="flex-1 rounded-2xl p-3.5 bg-[#0F1622] border border-[#00FF66]/30 shadow-[0_0_15px_rgba(0,255,102,0.06)] relative group">
-                    <div className="flex items-center justify-between pb-1.5 mb-1.5 border-b border-[#2A2E45]/60">
+                  <div className="flex-1 rounded-2xl p-3.5 bg-[#0F1622] border border-[#7EE0B5]/30 shadow-[0_0_15px_rgba(0,255,102,0.06)] relative group">
+                    <div className="flex items-center justify-between pb-1.5 mb-1.5 border-b border-white/[0.07]/60">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-[11px] font-bold text-[#00FF66] font-mono">{m.name}</span>
-                        <span className="text-[9px] px-1 rounded bg-[#00FF66]/20 text-[#00FF66] font-mono font-bold">VERIFIED</span>
+                        <span className="text-[11px] font-bold text-[#7EE0B5] font-mono">{m.name}</span>
+                        <span className="text-[9px] px-1 rounded bg-[#7EE0B5]/20 text-[#7EE0B5] font-mono font-bold">VERIFIED</span>
                       </div>
-                      <div className="flex items-center gap-1.5 text-[10px] text-[#909AAB]">
+                      <div className="flex items-center gap-1.5 text-[10px] text-[#A7A4B8]">
                         <span>{formatTime(m.createdAt)}</span>
                         <button
                           type="button"
@@ -330,11 +330,11 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                           className="hover:text-white transition-colors p-0.5"
                           title="คัดลอกบทวิเคราะห์"
                         >
-                          {copiedId === m.id ? <Check className="w-3 h-3 text-[#00FF66]" /> : <Copy className="w-3 h-3" />}
+                          {copiedId === m.id ? <Check className="w-3 h-3 text-[#7EE0B5]" /> : <Copy className="w-3 h-3" />}
                         </button>
                       </div>
                     </div>
-                    <div className="text-xs text-slate-200 font-mono leading-relaxed whitespace-pre-wrap select-text">
+                    <div className="text-xs text-[#ECEAF4] font-mono leading-relaxed whitespace-pre-wrap select-text">
                       {m.text}
                     </div>
                   </div>
@@ -347,12 +347,12 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                 {m.photoURL ? (
                   <img src={m.photoURL} alt="" className="w-7 h-7 rounded-full object-cover shrink-0" referrerPolicy="no-referrer" />
                 ) : (
-                  <span className="w-7 h-7 rounded-full bg-[#2A2E45] text-[#A5B4FC] flex items-center justify-center text-xs font-bold shrink-0">
+                  <span className="w-7 h-7 rounded-full bg-[#222640] text-[#A89FFF] flex items-center justify-center text-xs font-bold shrink-0">
                     {m.name.charAt(0)}
                   </span>
                 )}
-                <div className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 ${mine ? 'bg-[#7C6CFF]/20 border border-[#7C6CFF]/40' : 'bg-[#1A1D29] border border-[#2A2E45]'}`}>
-                  <p className="text-[10px] text-[#9CA3AF] font-semibold mb-0.5">
+                <div className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 ${mine ? 'bg-[#7C6CFF]/20 border border-[#7C6CFF]/40' : 'bg-[#141725] border border-white/[0.07]'}`}>
+                  <p className="text-[10px] text-[#A7A4B8] font-semibold mb-0.5">
                     {m.name} • {formatTime(m.createdAt)}
                   </p>
                   {StickerArt ? (
@@ -370,11 +370,11 @@ export const ChatModal: React.FC<ChatModalProps> = ({
           {/* AI Thinking Animation */}
           {isAiThinking && (
             <div className="flex gap-2.5 items-start animate-pulse">
-              <div className="w-7 h-7 rounded-xl bg-[#00FF66]/20 border border-[#00FF66]/40 flex items-center justify-center shrink-0 mt-0.5">
-                <Bot className="w-4 h-4 text-[#00FF66] animate-spin" />
+              <div className="w-7 h-7 rounded-xl bg-[#7EE0B5]/20 border border-[#7EE0B5]/40 flex items-center justify-center shrink-0 mt-0.5">
+                <Bot className="w-4 h-4 text-[#7EE0B5] animate-spin" />
               </div>
-              <div className="rounded-2xl px-3.5 py-2.5 bg-[#0F1622] border border-[#00FF66]/30 text-xs text-[#00FF66] font-mono flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-[#00FF66]" />
+              <div className="rounded-2xl px-3.5 py-2.5 bg-[#0F1622] border border-[#7EE0B5]/30 text-xs text-[#7EE0B5] font-mono flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-[#7EE0B5]" />
                 <span>AI Deep Analyze กำลังประมวลผลข้อมูลตลาดเชิงลึก...</span>
               </div>
             </div>
@@ -385,15 +385,15 @@ export const ChatModal: React.FC<ChatModalProps> = ({
 
         {/* Error notification */}
         {error && (
-          <div className="mx-4 mb-2 text-[#f9df7b] bg-[#f9df7b]/10 border border-[#f9df7b]/30 rounded-lg px-3 py-2 text-xs">
+          <div className="mx-4 mb-2 text-[#FFB86B] bg-[#FFB86B]/10 border border-[#FFB86B]/30 rounded-lg px-3 py-2 text-xs">
             {error}
           </div>
         )}
 
         {/* Sticker picker */}
         {showStickers && (
-          <div className="mx-3 mb-2 rounded-xl border border-[#2A2E45] bg-[#1A1D29] p-2">
-            <p className="px-1 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-[#909AAB]">
+          <div className="mx-3 mb-2 rounded-xl border border-white/[0.07] bg-[#141725] p-2">
+            <p className="px-1 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-[#A7A4B8]">
               สติ๊กเกอร์เทรด • แตะเพื่อส่งให้ AI วิเคราะห์
             </p>
             <div className="grid grid-cols-6 gap-1 max-h-[160px] overflow-y-auto">
@@ -405,7 +405,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                   className="p-1.5 rounded-lg hover:bg-white/10 flex flex-col items-center justify-center gap-0.5 transition-colors cursor-pointer"
                 >
                   <Art size={36} />
-                  <span className="text-[9px] text-[#9CA3AF] truncate max-w-full font-mono">{name}</span>
+                  <span className="text-[9px] text-[#A7A4B8] truncate max-w-full font-mono">{name}</span>
                 </button>
               ))}
             </div>
@@ -413,13 +413,13 @@ export const ChatModal: React.FC<ChatModalProps> = ({
         )}
 
         {/* Quick Suggestion Chips */}
-        <div className="px-3 py-1.5 border-t border-[#2A2E45]/40 bg-[#0F1117] flex items-center gap-1.5 overflow-x-auto text-[11px] font-mono [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-          <span className="text-slate-500 text-[10px] shrink-0 font-bold">คำสั่งด่วน:</span>
+        <div className="px-3 py-1.5 border-t border-white/[0.07]/40 bg-[#0F1117] flex items-center gap-1.5 overflow-x-auto text-[11px] font-mono [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          <span className="text-[#8B88A0] text-[10px] shrink-0 font-bold">ลองถามแบบนี้:</span>
           <button
             type="button"
             onClick={() => handleSend('BTC SPOT & NIULAI4')}
             disabled={isSending || isAiThinking}
-            className="px-2 py-0.5 rounded-md bg-[#00FF66]/10 hover:bg-[#00FF66]/20 border border-[#00FF66]/30 text-[#00FF66] shrink-0 whitespace-nowrap transition-colors cursor-pointer"
+            className="px-2 py-0.5 rounded-md bg-[#7EE0B5]/10 hover:bg-[#7EE0B5]/20 border border-[#7EE0B5]/30 text-[#7EE0B5] shrink-0 whitespace-nowrap transition-colors cursor-pointer"
           >
             ⚡ วิเคราะห์ BTC
           </button>
@@ -427,7 +427,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
             type="button"
             onClick={() => handleSend('วิเคราะห์หุ้นไทย AOT และ DELTA')}
             disabled={isSending || isAiThinking}
-            className="px-2 py-0.5 rounded-md bg-[#F59E0B]/10 hover:bg-[#F59E0B]/20 border border-[#F59E0B]/30 text-[#FBBF24] shrink-0 whitespace-nowrap transition-colors cursor-pointer"
+            className="px-2 py-0.5 rounded-md bg-[#FFB86B]/10 hover:bg-[#FFB86B]/20 border border-[#FFB86B]/30 text-[#FFB86B] shrink-0 whitespace-nowrap transition-colors cursor-pointer"
           >
             ⚡ หุ้นไทย AOT/DELTA
           </button>
@@ -435,7 +435,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
             type="button"
             onClick={() => handleSend('ตรวจอัตราแลกเปลี่ยน USD/THB')}
             disabled={isSending || isAiThinking}
-            className="px-2 py-0.5 rounded-md bg-[#38BDF8]/10 hover:bg-[#38BDF8]/20 border border-[#38BDF8]/30 text-[#38BDF8] shrink-0 whitespace-nowrap transition-colors cursor-pointer"
+            className="px-2 py-0.5 rounded-md bg-[#4CC9F0]/10 hover:bg-[#4CC9F0]/20 border border-[#4CC9F0]/30 text-[#4CC9F0] shrink-0 whitespace-nowrap transition-colors cursor-pointer"
           >
             ⚡ ค่าเงินบาท USD/THB
           </button>
@@ -443,7 +443,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
             type="button"
             onClick={() => handleSend('วิเคราะห์หุ้นสหรัฐฯ NVDA')}
             disabled={isSending || isAiThinking}
-            className="px-2 py-0.5 rounded-md bg-[#8A2BE2]/10 hover:bg-[#8A2BE2]/20 border border-[#8A2BE2]/30 text-[#C084FC] shrink-0 whitespace-nowrap transition-colors cursor-pointer"
+            className="px-2 py-0.5 rounded-md bg-[#A89FFF]/10 hover:bg-[#A89FFF]/20 border border-[#A89FFF]/30 text-[#C084FC] shrink-0 whitespace-nowrap transition-colors cursor-pointer"
           >
             ⚡ หุ้นนอก NVDA
           </button>
@@ -451,7 +451,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
             type="button"
             onClick={() => handleSend('สรุปข่าวเศรษฐกิจโลกวันนี้')}
             disabled={isSending || isAiThinking}
-            className="px-2 py-0.5 rounded-md bg-[#EC4899]/10 hover:bg-[#EC4899]/20 border border-[#EC4899]/30 text-[#F472B6] shrink-0 whitespace-nowrap transition-colors cursor-pointer"
+            className="px-2 py-0.5 rounded-md bg-[#A89FFF]/10 hover:bg-[#A89FFF]/20 border border-[#A89FFF]/30 text-[#F472B6] shrink-0 whitespace-nowrap transition-colors cursor-pointer"
           >
             ⚡ ข่าวเศรษฐกิจโลก
           </button>
@@ -459,22 +459,22 @@ export const ChatModal: React.FC<ChatModalProps> = ({
             type="button"
             onClick={() => handleSend('วิเคราะห์ Drawdown พอร์ตและความเสี่ยง Peak-to-Trough')}
             disabled={isSending || isAiThinking}
-            className="px-2 py-0.5 rounded-md bg-[#f9df7b]/10 hover:bg-[#f9df7b]/20 border border-[#f9df7b]/30 text-[#f9df7b] shrink-0 whitespace-nowrap transition-colors cursor-pointer"
+            className="px-2 py-0.5 rounded-md bg-[#FFB86B]/10 hover:bg-[#FFB86B]/20 border border-[#FFB86B]/30 text-[#FFB86B] shrink-0 whitespace-nowrap transition-colors cursor-pointer"
           >
             📉 ตรวจ Drawdown พอร์ต
           </button>
         </div>
 
         {/* Input Bar */}
-        <div className="p-3 border-t border-[#2A2E45]/60 flex gap-2 bg-[#141824]">
+        <div className="p-3 border-t border-white/[0.07]/60 flex gap-2 bg-[#141725]">
           <button
             onClick={() => setShowStickers((v) => !v)}
             title="สติ๊กเกอร์"
             aria-label="เปิดชุดสติ๊กเกอร์"
             className={`px-2.5 rounded-xl border transition-colors cursor-pointer ${
               showStickers
-                ? 'bg-[#F59E0B]/20 border-[#F59E0B]/50 text-[#FBBF24]'
-                : 'bg-[#1A1D29] border-[#2A2E45] text-[#9CA3AF] hover:text-[#FBBF24]'
+                ? 'bg-[#FFB86B]/20 border-[#FFB86B]/50 text-[#FFB86B]'
+                : 'bg-[#141725] border-white/[0.07] text-[#A7A4B8] hover:text-[#FFB86B]'
             }`}
           >
             <StickerIcon className="w-5 h-5" />
@@ -491,12 +491,12 @@ export const ChatModal: React.FC<ChatModalProps> = ({
             placeholder="พิมพ์คำถามหรือสินทรัพย์ให้ AI วิเคราะห์... (เช่น BTC, AOT, NVDA, EUR/USD)"
             disabled={isSending || isAiThinking}
             maxLength={500}
-            className="flex-1 bg-[#0F1117] border border-[#2A2E45] rounded-xl px-3 py-2 text-xs sm:text-sm outline-none focus:border-[#7C6CFF] placeholder-[#6F7787] text-white disabled:opacity-60"
+            className="flex-1 bg-[#0F1117] border border-white/[0.07] rounded-xl px-3 py-2 text-xs sm:text-sm outline-none focus:border-[#7C6CFF] placeholder-[#8B88A0] text-white disabled:opacity-60"
           />
           <button
             onClick={() => handleSend()}
             disabled={isSending || isAiThinking || !draft.trim()}
-            className="px-4 py-2 bg-[#00FF66] hover:bg-[#00E55B] text-black disabled:opacity-50 rounded-xl text-xs sm:text-sm font-bold inline-flex items-center gap-1.5 transition-all shadow-[0_0_10px_rgba(0,255,102,0.3)] cursor-pointer disabled:cursor-not-allowed"
+            className="px-4 py-2 bg-[#7EE0B5] hover:bg-[#00E55B] text-black disabled:opacity-50 rounded-xl text-xs sm:text-sm font-bold inline-flex items-center gap-1.5 transition-all shadow-[0_0_10px_rgba(0,255,102,0.3)] cursor-pointer disabled:cursor-not-allowed"
           >
             {isAiThinking ? (
               <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />

@@ -181,29 +181,29 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
     switch (status) {
       case 'EXTREME':
         return (
-          <span className="px-2 py-0.5 rounded-md text-[10px] font-bold font-mono bg-[#f9df7b]/20 text-[#f9df7b] border border-[#f9df7b]/50 flex items-center gap-1 animate-pulse">
-            <ShieldAlert className="w-3 h-3 text-[#f9df7b]" />
+          <span className="px-2 py-0.5 rounded-md text-[10px] font-bold font-mono bg-[#FFB86B]/20 text-[#FFB86B] border border-[#FFB86B]/50 flex items-center gap-1 animate-pulse">
+            <ShieldAlert className="w-3 h-3 text-[#FFB86B]" />
             EXTREME ({thresholds.extreme}%)
           </span>
         );
       case 'CRITICAL':
         return (
-          <span className="px-2 py-0.5 rounded-md text-[10px] font-bold font-mono bg-rose-500/15 text-rose-400 border border-rose-500/40 flex items-center gap-1">
-            <AlertTriangle className="w-3 h-3 text-rose-400" />
+          <span className="px-2 py-0.5 rounded-md text-[10px] font-bold font-mono bg-[#F4A6A6]/15 text-[#F4A6A6] border border-rose-500/40 flex items-center gap-1">
+            <AlertTriangle className="w-3 h-3 text-[#F4A6A6]" />
             CRITICAL ({thresholds.critical}%)
           </span>
         );
       case 'WARNING':
         return (
-          <span className="px-2 py-0.5 rounded-md text-[10px] font-bold font-mono bg-amber-500/15 text-amber-400 border border-amber-500/40 flex items-center gap-1">
-            <AlertTriangle className="w-3 h-3 text-amber-400" />
+          <span className="px-2 py-0.5 rounded-md text-[10px] font-bold font-mono bg-[#FFB86B]/15 text-[#FFB86B] border border-amber-500/40 flex items-center gap-1">
+            <AlertTriangle className="w-3 h-3 text-[#FFB86B]" />
             WARNING ({thresholds.warning}%)
           </span>
         );
       default:
         return (
-          <span className="px-2 py-0.5 rounded-md text-[10px] font-bold font-mono bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
-            <ShieldCheck className="w-3 h-3 text-emerald-400" />
+          <span className="px-2 py-0.5 rounded-md text-[10px] font-bold font-mono bg-[#7EE0B5]/15 text-[#7EE0B5] border border-emerald-500/30 flex items-center gap-1">
+            <ShieldCheck className="w-3 h-3 text-[#7EE0B5]" />
             NORMAL
           </span>
         );
@@ -220,19 +220,19 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
     >
       <div
         className={`w-full max-w-5xl rounded-2xl flex flex-col overflow-hidden border shadow-2xl max-h-[94vh] my-auto ${
-          isDark ? 'bg-[#0F1117] text-white border-[#2A2E45]' : 'bg-white text-slate-900 border-slate-200'
+          isDark ? 'bg-[#0F1117] text-white border-white/[0.07]' : 'bg-white text-[#0F1117] border-white/[0.07]'
         }`}
       >
         {/* Header */}
-        <div className="px-4 sm:px-6 py-3.5 border-b border-[#2A2E45]/70 flex items-center justify-between bg-gradient-to-r from-[#141824] via-[#0F1117] to-[#141824]">
+        <div className="px-4 sm:px-6 py-3.5 border-b border-white/[0.07]/70 flex items-center justify-between bg-gradient-to-r from-[#141725] via-[#0F1117] to-[#141725]">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-[#f9df7b]/15 border border-[#f9df7b]/40 flex items-center justify-center text-[#f9df7b] shadow-[0_0_15px_rgba(239,68,68,0.2)]">
+            <div className="w-9 h-9 rounded-xl bg-[#FFB86B]/15 border border-[#FFB86B]/40 flex items-center justify-center text-[#FFB86B] shadow-[0_0_15px_rgba(239,68,68,0.2)]">
               <TrendingDown className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="font-bold text-base sm:text-lg tracking-tight">
-                  <span className="bg-gradient-to-r from-[#7C6CFF] to-[#6A58F0] text-transparent bg-clip-text font-black">
+                  <span className="bg-gradient-to-r from-[#7C6CFF] to-[#8E80FF] text-transparent bg-clip-text font-black">
                     MotorBoy
                   </span>{' '}
                   Kill Switch & Risk Guard
@@ -241,12 +241,12 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
                   DRAWDOWN STOP 5%
                 </span>
                 {stressTestDropPct !== 0 && (
-                  <span className="text-[10px] font-bold font-mono px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse">
+                  <span className="text-[10px] font-bold font-mono px-1.5 py-0.5 rounded bg-[#FFB86B]/20 text-[#FFB86B] border border-amber-500/40 animate-pulse">
                     STRESS TEST: {stressTestDropPct}%
                   </span>
                 )}
               </div>
-              <p className="text-xs text-slate-400 flex items-center gap-1">
+              <p className="text-xs text-[#A7A4B8] flex items-center gap-1">
                 <span className="text-[#7C6CFF] font-bold font-mono">🛑 เบรกก่อนจิ!</span>
                 <span>— คุมความเสี่ยงสูงสุดไม่เกิน 2% ต่อไม้ และหยุดเทรดทันทีเมื่อ Drawdown เกิน 5%</span>
               </p>
@@ -259,8 +259,8 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
               onClick={() => setShowSettings((v) => !v)}
               className={`p-2 rounded-xl border text-xs font-mono font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
                 showSettings
-                  ? 'bg-[#f9df7b]/20 border-[#f9df7b]/60 text-[#f9df7b]'
-                  : 'bg-[#1A1D29] border-[#2A2E45] text-slate-400 hover:text-white'
+                  ? 'bg-[#FFB86B]/20 border-[#FFB86B]/60 text-[#FFB86B]'
+                  : 'bg-[#141725] border-white/[0.07] text-[#A7A4B8] hover:text-white'
               }`}
               title="ตั้งค่าเกณฑ์แจ้งเตือน"
             >
@@ -271,7 +271,7 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+              className="p-2 rounded-xl text-[#A7A4B8] hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
               aria-label="ปิดหน้าต่าง"
             >
               <X className="w-5 h-5" />
@@ -284,11 +284,11 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
           
           {/* Threshold Settings Panel (Collapsible) */}
           {showSettings && (
-            <div className="p-4 rounded-xl border border-[#f9df7b]/30 bg-[#f9df7b]/20 backdrop-blur-xs space-y-3 animate-in fade-in duration-200">
-              <div className="flex items-center justify-between pb-2 border-b border-[#2A2E45]">
+            <div className="p-4 rounded-xl border border-[#FFB86B]/30 bg-[#FFB86B]/20 backdrop-blur-xs space-y-3 animate-in fade-in duration-200">
+              <div className="flex items-center justify-between pb-2 border-b border-white/[0.07]">
                 <div className="flex items-center gap-2">
-                  <Sliders className="w-4 h-4 text-[#f9df7b]" />
-                  <span className="font-bold text-xs sm:text-sm text-[#f9df7b]">
+                  <Sliders className="w-4 h-4 text-[#FFB86B]" />
+                  <span className="font-bold text-xs sm:text-sm text-[#FFB86B]">
                     กำหนดเกณฑ์การแจ้งเตือน Drawdown (Alert Thresholds)
                   </span>
                 </div>
@@ -296,7 +296,7 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
                   <button
                     type="button"
                     onClick={handleTestSound}
-                    className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/15 border border-white/20 text-xs font-mono flex items-center gap-1 text-slate-300 cursor-pointer"
+                    className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/15 border border-white/20 text-xs font-mono flex items-center gap-1 text-[#ECEAF4] cursor-pointer"
                   >
                     <Volume2 className="w-3.5 h-3.5" />
                     <span>ทดสอบเสียง</span>
@@ -304,7 +304,7 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
                   <button
                     type="button"
                     onClick={handleSaveThresholdSettings}
-                    className="px-3 py-1 rounded-lg bg-[#f9df7b] hover:bg-[#f9df7b] text-black font-bold text-xs font-mono transition-colors cursor-pointer"
+                    className="px-3 py-1 rounded-lg bg-[#FFB86B] hover:bg-[#FFB86B] text-black font-bold text-xs font-mono transition-colors cursor-pointer"
                   >
                     บันทึกเกณฑ์
                   </button>
@@ -315,10 +315,10 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
                 {/* Warning Slider */}
                 <div className="p-3 rounded-lg bg-[#0F1117] border border-amber-500/30 space-y-1.5">
                   <div className="flex justify-between items-center text-xs">
-                    <span className="text-amber-400 font-bold flex items-center gap-1">
+                    <span className="text-[#FFB86B] font-bold flex items-center gap-1">
                       <AlertTriangle className="w-3.5 h-3.5" /> Warning Threshold
                     </span>
-                    <span className="font-mono font-bold text-amber-300">{localWarning}%</span>
+                    <span className="font-mono font-bold text-[#FFB86B]">{localWarning}%</span>
                   </div>
                   <input
                     type="range"
@@ -329,16 +329,16 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
                     onChange={(e) => setLocalWarning(Number(e.target.value))}
                     className="w-full accent-amber-400 cursor-pointer"
                   />
-                  <p className="text-[10px] text-slate-400">แจ้งเตือนเตือนภัยเมื่อราคาลดลงจากจุดพีค</p>
+                  <p className="text-[10px] text-[#A7A4B8]">แจ้งเตือนเตือนภัยเมื่อราคาลดลงจากจุดพีค</p>
                 </div>
 
                 {/* Critical Slider */}
                 <div className="p-3 rounded-lg bg-[#0F1117] border border-rose-500/30 space-y-1.5">
                   <div className="flex justify-between items-center text-xs">
-                    <span className="text-rose-400 font-bold flex items-center gap-1">
+                    <span className="text-[#F4A6A6] font-bold flex items-center gap-1">
                       <ShieldAlert className="w-3.5 h-3.5" /> Critical Threshold
                     </span>
-                    <span className="font-mono font-bold text-rose-300">{localCritical}%</span>
+                    <span className="font-mono font-bold text-[#F4A6A6]">{localCritical}%</span>
                   </div>
                   <input
                     type="range"
@@ -349,16 +349,16 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
                     onChange={(e) => setLocalCritical(Number(e.target.value))}
                     className="w-full accent-rose-500 cursor-pointer"
                   />
-                  <p className="text-[10px] text-slate-400">เปิดแบนเนอร์แจ้งเตือนระดับวิกฤตทันที</p>
+                  <p className="text-[10px] text-[#A7A4B8]">เปิดแบนเนอร์แจ้งเตือนระดับวิกฤตทันที</p>
                 </div>
 
                 {/* Extreme Slider */}
-                <div className="p-3 rounded-lg bg-[#0F1117] border border-[#f9df7b]/40 space-y-1.5">
+                <div className="p-3 rounded-lg bg-[#0F1117] border border-[#FFB86B]/40 space-y-1.5">
                   <div className="flex justify-between items-center text-xs">
-                    <span className="text-[#f9df7b] font-bold flex items-center gap-1">
+                    <span className="text-[#FFB86B] font-bold flex items-center gap-1">
                       <ShieldAlert className="w-3.5 h-3.5" /> Extreme Risk
                     </span>
-                    <span className="font-mono font-bold text-[#f9df7b]">{localExtreme}%</span>
+                    <span className="font-mono font-bold text-[#FFB86B]">{localExtreme}%</span>
                   </div>
                   <input
                     type="range"
@@ -367,19 +367,19 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
                     step={1}
                     value={localExtreme}
                     onChange={(e) => setLocalExtreme(Number(e.target.value))}
-                    className="w-full accent-[#f9df7b] cursor-pointer"
+                    className="w-full accent-[#FFB86B] cursor-pointer"
                   />
-                  <p className="text-[10px] text-slate-400">ระดับฉุกเฉิน / ล้างพอร์ต / Cut Loss</p>
+                  <p className="text-[10px] text-[#A7A4B8]">ระดับฉุกเฉิน / ล้างพอร์ต / Cut Loss</p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 pt-1 text-xs text-slate-300">
+              <div className="flex items-center gap-2 pt-1 text-xs text-[#ECEAF4]">
                 <label className="flex items-center gap-2 cursor-pointer select-none">
                   <input
                     type="checkbox"
                     checked={soundEnabled}
                     onChange={(e) => setSoundEnabled(e.target.checked)}
-                    className="rounded accent-[#f9df7b] cursor-pointer"
+                    className="rounded accent-[#FFB86B] cursor-pointer"
                   />
                   <span>เปิดเสียงแจ้งเตือนอัตโนมัติเมื่อเกิด Drawdown หลุดเกณฑ์ (Chime Alert)</span>
                 </label>
@@ -390,89 +390,89 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
           {/* KPI Dashboard Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3">
             {/* 1. Avg Portfolio Drawdown */}
-            <div className="p-3.5 rounded-xl border border-[#2A2E45] bg-[#141824] space-y-1">
-              <span className="text-[11px] font-mono uppercase text-slate-400 flex items-center gap-1">
-                <Activity className="w-3.5 h-3.5 text-[#38BDF8]" />
+            <div className="p-3.5 rounded-xl border border-white/[0.07] bg-[#141725] space-y-1">
+              <span className="text-[11px] font-mono uppercase text-[#A7A4B8] flex items-center gap-1">
+                <Activity className="w-3.5 h-3.5 text-[#4CC9F0]" />
                 ย่อตัวเฉลี่ยพอร์ต (Avg DD)
               </span>
               <div className="flex items-baseline gap-1.5">
                 <span
                   className={`text-xl sm:text-2xl font-black font-mono tracking-tight ${
                     summary.avgDrawdownPct <= -20
-                      ? 'text-[#f9df7b]'
+                      ? 'text-[#FFB86B]'
                       : summary.avgDrawdownPct <= -10
-                      ? 'text-amber-400'
-                      : 'text-emerald-400'
+                      ? 'text-[#FFB86B]'
+                      : 'text-[#7EE0B5]'
                   }`}
                 >
                   {summary.avgDrawdownPct}%
                 </span>
-                <span className="text-[10px] text-slate-400 font-mono">จากจุดสูงสุด</span>
+                <span className="text-[10px] text-[#A7A4B8] font-mono">จากจุดสูงสุด</span>
               </div>
-              <p className="text-[10px] text-slate-400 truncate">
+              <p className="text-[10px] text-[#A7A4B8] truncate">
                 {summary.monitoredCount} สินทรัพย์ในมอนิเตอร์
               </p>
             </div>
 
             {/* 2. Worst Peak-to-Trough */}
-            <div className="p-3.5 rounded-xl border border-[#f9df7b]/30 bg-[#f9df7b]/20 space-y-1 shadow-[0_0_15px_rgba(239,68,68,0.06)]">
-              <span className="text-[11px] font-mono uppercase text-[#f9df7b] flex items-center gap-1">
-                <TrendingDown className="w-3.5 h-3.5 text-[#f9df7b]" />
+            <div className="p-3.5 rounded-xl border border-[#FFB86B]/30 bg-[#FFB86B]/20 space-y-1 shadow-[0_0_15px_rgba(239,68,68,0.06)]">
+              <span className="text-[11px] font-mono uppercase text-[#FFB86B] flex items-center gap-1">
+                <TrendingDown className="w-3.5 h-3.5 text-[#FFB86B]" />
                 ย่อตัวลึกสุด (Max DD)
               </span>
               <div className="flex items-baseline gap-1.5">
-                <span className="text-xl sm:text-2xl font-black font-mono text-[#f9df7b] tracking-tight">
+                <span className="text-xl sm:text-2xl font-black font-mono text-[#FFB86B] tracking-tight">
                   {summary.worstDrawdownPct}%
                 </span>
-                <span className="text-xs font-bold text-[#f9df7b] font-mono">
+                <span className="text-xs font-bold text-[#FFB86B] font-mono">
                   {summary.worstAssetSymbol}
                 </span>
               </div>
-              <p className="text-[10px] text-slate-400 truncate">จุดทดสอบแนวรับสำคัญ</p>
+              <p className="text-[10px] text-[#A7A4B8] truncate">จุดทดสอบแนวรับสำคัญ</p>
             </div>
 
             {/* 3. Breached Assets Count */}
-            <div className="p-3.5 rounded-xl border border-[#2A2E45] bg-[#141824] space-y-1">
-              <span className="text-[11px] font-mono uppercase text-slate-400 flex items-center gap-1">
-                <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+            <div className="p-3.5 rounded-xl border border-white/[0.07] bg-[#141725] space-y-1">
+              <span className="text-[11px] font-mono uppercase text-[#A7A4B8] flex items-center gap-1">
+                <AlertTriangle className="w-3.5 h-3.5 text-[#FFB86B]" />
                 หลุดเกณฑ์เตือน (Breached)
               </span>
               <div className="flex items-baseline gap-1.5">
                 <span
                   className={`text-xl sm:text-2xl font-black font-mono ${
-                    summary.criticalCount + summary.extremeCount > 0 ? 'text-rose-400' : 'text-slate-200'
+                    summary.criticalCount + summary.extremeCount > 0 ? 'text-[#F4A6A6]' : 'text-[#ECEAF4]'
                   }`}
                 >
                   {summary.warningCount + summary.criticalCount + summary.extremeCount}
                 </span>
-                <span className="text-[10px] text-slate-400 font-mono">
+                <span className="text-[10px] text-[#A7A4B8] font-mono">
                   (วิกฤต {summary.criticalCount + summary.extremeCount})
                 </span>
               </div>
-              <p className="text-[10px] text-slate-400 truncate">
+              <p className="text-[10px] text-[#A7A4B8] truncate">
                 เกณฑ์ Warning {thresholds.warning}% / Critical {thresholds.critical}%
               </p>
             </div>
 
             {/* 4. Portfolio Risk Status */}
-            <div className="p-3.5 rounded-xl border border-[#2A2E45] bg-[#141824] space-y-1">
-              <span className="text-[11px] font-mono uppercase text-slate-400 flex items-center gap-1">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+            <div className="p-3.5 rounded-xl border border-white/[0.07] bg-[#141725] space-y-1">
+              <span className="text-[11px] font-mono uppercase text-[#A7A4B8] flex items-center gap-1">
+                <ShieldCheck className="w-3.5 h-3.5 text-[#7EE0B5]" />
                 ระดับความเสี่ยงพอร์ต
               </span>
               <div className="pt-0.5">{getStatusBadge(summary.portfolioStatus)}</div>
-              <p className="text-[10px] text-slate-400 truncate">ประเมินแบบเรียลไทม์ 100%</p>
+              <p className="text-[10px] text-[#A7A4B8] truncate">ประเมินแบบเรียลไทม์ 100%</p>
             </div>
           </div>
 
           {/* Actionable Strategy Advice Banner */}
-          <div className="p-3.5 rounded-xl bg-gradient-to-r from-[#141824] to-[#1A1D29] border border-[#2A2E45] flex items-start gap-3">
-            <div className="p-1.5 rounded-lg bg-[#7C6CFF]/20 text-[#A5B4FC] shrink-0 mt-0.5">
+          <div className="p-3.5 rounded-xl bg-gradient-to-r from-[#141725] to-[#141725] border border-white/[0.07] flex items-start gap-3">
+            <div className="p-1.5 rounded-lg bg-[#7C6CFF]/20 text-[#A89FFF] shrink-0 mt-0.5">
               <Sparkles className="w-4 h-4" />
             </div>
             <div className="flex-1 text-xs leading-relaxed">
               <span className="font-bold text-white mr-1.5">คำแนะนำการบริหารความเสี่ยง:</span>
-              <span className="text-slate-300">{summary.recommendedActionTh}</span>
+              <span className="text-[#ECEAF4]">{summary.recommendedActionTh}</span>
             </div>
           </div>
 
@@ -494,8 +494,8 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
                   onClick={() => setSelectedCategory(tab.id)}
                   className={`px-3 py-1.5 rounded-lg transition-colors shrink-0 cursor-pointer ${
                     selectedCategory === tab.id
-                      ? 'bg-[#f9df7b]/20 border border-[#f9df7b]/50 text-[#f9df7b] font-bold'
-                      : 'bg-[#141824] border border-[#2A2E45] text-slate-400 hover:text-white'
+                      ? 'bg-[#FFB86B]/20 border border-[#FFB86B]/50 text-[#FFB86B] font-bold'
+                      : 'bg-[#141725] border border-white/[0.07] text-[#A7A4B8] hover:text-white'
                   }`}
                 >
                   {tab.label}
@@ -506,8 +506,8 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
             {/* Stress Test & Search */}
             <div className="flex items-center gap-2">
               {/* Stress Test Dropdown */}
-              <div className="flex items-center gap-1.5 bg-[#141824] border border-[#2A2E45] rounded-xl px-2.5 py-1 text-xs">
-                <span className="text-slate-400 text-[10px] font-mono shrink-0 hidden sm:inline">
+              <div className="flex items-center gap-1.5 bg-[#141725] border border-white/[0.07] rounded-xl px-2.5 py-1 text-xs">
+                <span className="text-[#A7A4B8] text-[10px] font-mono shrink-0 hidden sm:inline">
                   Stress Test:
                 </span>
                 <select
@@ -515,19 +515,19 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
                   onChange={(e) => setStressTestDropPct(Number(e.target.value))}
                   className="bg-transparent text-white font-mono text-xs outline-none cursor-pointer"
                 >
-                  <option value={0} className="bg-[#141824]">
+                  <option value={0} className="bg-[#141725]">
                     ปัจจุบัน (0%)
                   </option>
-                  <option value={-5} className="bg-[#141824]">
+                  <option value={-5} className="bg-[#141725]">
                     ตลาดร่วงอีก -5%
                   </option>
-                  <option value={-10} className="bg-[#141824]">
+                  <option value={-10} className="bg-[#141725]">
                     ตลาดร่วงอีก -10%
                   </option>
-                  <option value={-20} className="bg-[#141824]">
+                  <option value={-20} className="bg-[#141725]">
                     Flash Crash -20%
                   </option>
-                  <option value={-30} className="bg-[#141824]">
+                  <option value={-30} className="bg-[#141725]">
                     Black Swan -30%
                   </option>
                 </select>
@@ -536,7 +536,7 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
                     type="button"
                     onClick={() => setStressTestDropPct(0)}
                     title="รีเซ็ตสภาวะตลาด"
-                    className="text-amber-400 hover:text-white"
+                    className="text-[#FFB86B] hover:text-white"
                   >
                     <RotateCcw className="w-3 h-3" />
                   </button>
@@ -545,13 +545,13 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
 
               {/* Search */}
               <div className="relative flex-1 sm:w-44">
-                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                <Search className="w-3.5 h-3.5 text-[#A7A4B8] absolute left-2.5 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="ค้นหาสินทรัพย์..."
-                  className="w-full bg-[#141824] border border-[#2A2E45] rounded-xl pl-8 pr-3 py-1.5 text-xs text-white placeholder-slate-500 outline-none focus:border-[#f9df7b]"
+                  className="w-full bg-[#141725] border border-white/[0.07] rounded-xl pl-8 pr-3 py-1.5 text-xs text-white placeholder-[#8B88A0] outline-none focus:border-[#FFB86B]"
                 />
               </div>
             </div>
@@ -560,7 +560,7 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
           {/* Asset List Grid */}
           <div className="space-y-2.5">
             {filteredAssets.length === 0 ? (
-              <div className="p-8 text-center text-slate-400 border border-[#2A2E45] rounded-xl bg-[#141824]">
+              <div className="p-8 text-center text-[#A7A4B8] border border-white/[0.07] rounded-xl bg-[#141725]">
                 ไม่พบสินทรัพย์ที่ตรงตามเงื่อนไขที่เลือก
               </div>
             ) : (
@@ -573,22 +573,22 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
                     key={asset.id}
                     className={`p-3.5 sm:p-4 rounded-xl border transition-all ${
                       asset.status === 'EXTREME'
-                        ? 'bg-[#f9df7b]/20 border-[#f9df7b]/60 shadow-[0_0_15px_rgba(239,68,68,0.12)]'
+                        ? 'bg-[#FFB86B]/20 border-[#FFB86B]/60 shadow-[0_0_15px_rgba(239,68,68,0.12)]'
                         : asset.status === 'CRITICAL'
                         ? 'bg-rose-950/15 border-rose-500/40 shadow-[0_0_10px_rgba(244,63,94,0.08)]'
                         : asset.status === 'WARNING'
-                        ? 'bg-amber-950/10 border-amber-500/35'
-                        : 'bg-[#141824] border-[#2A2E45] hover:border-slate-600'
+                        ? 'bg-[#141725]/10 border-amber-500/35'
+                        : 'bg-[#141725] border-white/[0.07] hover:border-white/[0.07]'
                     }`}
                   >
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2.5 border-b border-[#2A2E45]/60">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2.5 border-b border-white/[0.07]/60">
                       {/* Left: Symbol & Status */}
                       <div className="flex items-center gap-2.5">
                         <div
                           className={`w-9 h-9 rounded-xl flex items-center justify-center font-mono font-bold text-xs shrink-0 ${
                             isBreached
-                              ? 'bg-[#f9df7b]/20 text-[#f9df7b] border border-[#f9df7b]/40'
-                              : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                              ? 'bg-[#FFB86B]/20 text-[#FFB86B] border border-[#FFB86B]/40'
+                              : 'bg-[#7EE0B5]/15 text-[#7EE0B5] border border-emerald-500/30'
                           }`}
                         >
                           {asset.symbol.slice(0, 3)}
@@ -598,46 +598,46 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
                             <h3 className="font-bold text-sm sm:text-base font-mono tracking-tight text-white">
                               {asset.symbol}
                             </h3>
-                            <span className="text-[10px] text-slate-400 font-mono">
+                            <span className="text-[10px] text-[#A7A4B8] font-mono">
                               ({asset.category})
                             </span>
                             {getStatusBadge(asset.status)}
                           </div>
-                          <p className="text-xs text-slate-400 truncate max-w-xs">{asset.name}</p>
+                          <p className="text-xs text-[#A7A4B8] truncate max-w-xs">{asset.name}</p>
                         </div>
                       </div>
 
                       {/* Right: Key Price Metrics */}
                       <div className="flex items-center gap-4 text-right justify-between sm:justify-end">
                         <div>
-                          <p className="text-[10px] text-slate-400 font-mono uppercase">ราคาปัจจุบัน</p>
+                          <p className="text-[10px] text-[#A7A4B8] font-mono uppercase">ราคาปัจจุบัน</p>
                           <p className="font-mono font-bold text-sm text-white">
                             ${asset.currentPrice.toLocaleString()}
                           </p>
                         </div>
                         <div>
-                          <p className="text-[10px] text-slate-400 font-mono uppercase">จุดสูงสุด (Peak)</p>
+                          <p className="text-[10px] text-[#A7A4B8] font-mono uppercase">จุดสูงสุด (Peak)</p>
                           {isEditing ? (
                             <div className="flex items-center gap-1">
                               <input
                                 type="number"
                                 value={customPeakInput}
                                 onChange={(e) => setCustomPeakInput(e.target.value)}
-                                className="w-20 bg-[#0F1117] border border-[#f9df7b] rounded px-1 py-0.5 text-xs font-mono text-white"
+                                className="w-20 bg-[#0F1117] border border-[#FFB86B] rounded px-1 py-0.5 text-xs font-mono text-white"
                                 placeholder={String(asset.peakPrice)}
                                 autoFocus
                               />
                               <button
                                 type="button"
                                 onClick={() => handleSavePeak(asset.symbol)}
-                                className="p-1 bg-[#f9df7b] text-black rounded text-[10px]"
+                                className="p-1 bg-[#FFB86B] text-black rounded text-[10px]"
                               >
                                 ✓
                               </button>
                             </div>
                           ) : (
                             <div className="flex items-center justify-end gap-1 group">
-                              <p className="font-mono font-bold text-sm text-slate-300">
+                              <p className="font-mono font-bold text-sm text-[#ECEAF4]">
                                 ${asset.peakPrice.toLocaleString()}
                               </p>
                               <button
@@ -646,7 +646,7 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
                                   setEditingSymbol(asset.symbol);
                                   setCustomPeakInput(String(asset.peakPrice));
                                 }}
-                                className="text-slate-500 hover:text-white transition-colors"
+                                className="text-[#8B88A0] hover:text-white transition-colors"
                                 title="แก้ไขจุดพีคเปรียบเทียบ"
                               >
                                 <Edit2 className="w-3 h-3" />
@@ -655,14 +655,14 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
                           )}
                         </div>
                         <div>
-                          <p className="text-[10px] text-slate-400 font-mono uppercase">Drawdown</p>
+                          <p className="text-[10px] text-[#A7A4B8] font-mono uppercase">Drawdown</p>
                           <p
                             className={`font-mono font-black text-sm sm:text-base ${
                               asset.currentDrawdownPct <= thresholds.critical
-                                ? 'text-[#f9df7b]'
+                                ? 'text-[#FFB86B]'
                                 : asset.currentDrawdownPct <= thresholds.warning
-                                ? 'text-amber-400'
-                                : 'text-emerald-400'
+                                ? 'text-[#FFB86B]'
+                                : 'text-[#7EE0B5]'
                             }`}
                           >
                             {asset.currentDrawdownPct}%
@@ -675,21 +675,21 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
                     <div className="pt-2.5 grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
                       {/* Drawdown Progress Bar with Threshold Markers (Col 1-5) */}
                       <div className="md:col-span-5 space-y-1">
-                        <div className="flex justify-between text-[10px] font-mono text-slate-400">
+                        <div className="flex justify-between text-[10px] font-mono text-[#A7A4B8]">
                           <span>ระยะย่อตัวจากจุดพีค</span>
                           <span>ลดลง -${asset.declineAmount.toLocaleString()}</span>
                         </div>
-                        <div className="h-2 w-full bg-[#1A1D29] rounded-full overflow-hidden relative border border-[#2A2E45]">
+                        <div className="h-2 w-full bg-[#141725] rounded-full overflow-hidden relative border border-white/[0.07]">
                           {/* Fill Bar */}
                           <div
                             className={`h-full transition-all duration-500 rounded-full ${
                               asset.status === 'EXTREME'
-                                ? 'bg-[#f9df7b]'
+                                ? 'bg-[#FFB86B]'
                                 : asset.status === 'CRITICAL'
-                                ? 'bg-rose-500'
+                                ? 'bg-[#F4A6A6]'
                                 : asset.status === 'WARNING'
-                                ? 'bg-amber-500'
-                                : 'bg-emerald-500'
+                                ? 'bg-[#FFB86B]'
+                                : 'bg-[#7EE0B5]'
                             }`}
                             style={{ width: `${Math.min(100, Math.abs(asset.currentDrawdownPct) * 2)}%` }}
                           />
@@ -698,7 +698,7 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
 
                       {/* Mini Underwater Curve SVG (Col 6-8) */}
                       <div className="md:col-span-4 flex items-center gap-2">
-                        <div className="w-full h-8 bg-[#0F1117] rounded-lg border border-[#2A2E45]/70 px-1 py-0.5 flex items-center">
+                        <div className="w-full h-8 bg-[#0F1117] rounded-lg border border-white/[0.07]/70 px-1 py-0.5 flex items-center">
                           <svg className="w-full h-full overflow-visible" viewBox="0 0 140 30" preserveAspectRatio="none">
                             {/* 0% baseline */}
                             <line x1="0" y1="2" x2="140" y2="2" stroke="#475569" strokeWidth="0.8" strokeDasharray="2,2" />
@@ -716,7 +716,7 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
                             {/* Line */}
                             <polyline
                               fill="none"
-                              stroke={isBreached ? '#f9df7b' : '#10B981'}
+                              stroke={isBreached ? '#FFB86B' : '#7EE0B5'}
                               strokeWidth="1.5"
                               points={asset.underwaterCurve
                                 .map((val, idx) => {
@@ -732,8 +732,8 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
 
                       {/* Required Rebound Recovery (Col 9-12) */}
                       <div className="md:col-span-3 text-right flex items-center justify-between md:justify-end gap-1.5 text-xs font-mono">
-                        <span className="text-[10px] text-slate-400">คืนทุนต้องขึ้น:</span>
-                        <span className="font-bold text-amber-400 flex items-center gap-0.5">
+                        <span className="text-[10px] text-[#A7A4B8]">คืนทุนต้องขึ้น:</span>
+                        <span className="font-bold text-[#FFB86B] flex items-center gap-0.5">
                           <ArrowUpRight className="w-3.5 h-3.5" />
                           +{asset.recoveryNeededPct}%
                         </span>
@@ -747,23 +747,23 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
         </div>
 
         {/* Modal Footer with Actions */}
-        <div className="px-4 sm:px-6 py-3 border-t border-[#2A2E45]/70 flex items-center justify-between bg-[#141824] flex-wrap gap-2">
-          <div className="text-xs text-slate-400 font-mono flex items-center gap-1.5">
+        <div className="px-4 sm:px-6 py-3 border-t border-white/[0.07]/70 flex items-center justify-between bg-[#141725] flex-wrap gap-2">
+          <div className="text-xs text-[#A7A4B8] font-mono flex items-center gap-1.5">
             <span>เกณฑ์เตือนปัจจุบัน:</span>
-            <span className="text-amber-400 font-bold">Warning {thresholds.warning}%</span>
+            <span className="text-[#FFB86B] font-bold">Warning {thresholds.warning}%</span>
             <span>·</span>
-            <span className="text-rose-400 font-bold">Critical {thresholds.critical}%</span>
+            <span className="text-[#F4A6A6] font-bold">Critical {thresholds.critical}%</span>
             <span>·</span>
-            <span className="text-[#f9df7b] font-bold">Extreme {thresholds.extreme}%</span>
+            <span className="text-[#FFB86B] font-bold">Extreme {thresholds.extreme}%</span>
           </div>
 
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={handleCopyReport}
-              className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 text-xs font-mono text-slate-200 flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 text-xs font-mono text-[#ECEAF4] flex items-center gap-1.5 transition-colors cursor-pointer"
             >
-              {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+              {copied ? <Check className="w-3.5 h-3.5 text-[#7EE0B5]" /> : <Copy className="w-3.5 h-3.5" />}
               <span>{copied ? 'คัดลอกแล้ว!' : 'คัดลอกรายงาน'}</span>
             </button>
 
@@ -771,7 +771,7 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
               <button
                 type="button"
                 onClick={handleSendToChat}
-                className="px-3 py-1.5 rounded-xl bg-[#00FF66]/20 hover:bg-[#00FF66]/30 border border-[#00FF66]/50 text-xs font-mono font-bold text-[#00FF66] flex items-center gap-1.5 transition-colors cursor-pointer"
+                className="px-3 py-1.5 rounded-xl bg-[#7EE0B5]/20 hover:bg-[#7EE0B5]/30 border border-[#7EE0B5]/50 text-xs font-mono font-bold text-[#7EE0B5] flex items-center gap-1.5 transition-colors cursor-pointer"
                 title="ส่งรายงาน Drawdown เข้าห้อง AI Deep Analyze เพื่อขอแผนแก้พอร์ต"
               >
                 {sentToChat ? <Check className="w-3.5 h-3.5" /> : <Send className="w-3.5 h-3.5" />}
@@ -782,7 +782,7 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-1.5 rounded-xl bg-[#f9df7b] hover:bg-[#f9df7b] text-black font-bold text-xs font-mono transition-colors cursor-pointer shadow-xs"
+              className="px-4 py-1.5 rounded-xl bg-[#FFB86B] hover:bg-[#FFB86B] text-black font-bold text-xs font-mono transition-colors cursor-pointer shadow-xs"
             >
               ปิด
             </button>

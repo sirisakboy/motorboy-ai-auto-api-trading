@@ -24,10 +24,10 @@ export const ForexCard: React.FC<ForexCardProps> = ({
   // Flash styling matching CryptoCard
   const flashBg =
     forex.flash === 'UP'
-      ? 'bg-[#22C55E]/20'
+      ? 'bg-[#7EE0B5]/20'
       : forex.flash === 'DOWN'
-      ? 'bg-[#f9df7b]/20'
-      : 'bg-[#1A1D29]';
+      ? 'bg-[#FFB86B]/20'
+      : 'bg-[#141725]';
 
   // Currency decimal formatting (4 decimals for pairs under 10 like EUR/USD, 2 for JPY/THB)
   const formatPrice = (val: number) => {
@@ -49,13 +49,13 @@ export const ForexCard: React.FC<ForexCardProps> = ({
   return (
     <div
       onClick={onSelect}
-      className={`w-full rounded-[18px] ${flashBg} border border-[#2A2E45] p-4 transition-colors duration-400 cursor-pointer hover:border-[#7C6CFF]/50 active:scale-[0.99]`}
+      className={`w-full rounded-[18px] ${flashBg} border border-white/[0.07] p-4 transition-colors duration-400 cursor-pointer hover:border-[#7C6CFF]/50 active:scale-[0.99]`}
       data-testid={`forex_card_${forex.pair.replace('/', '_').toLowerCase()}`}
     >
       {/* Header Row */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2.5 min-w-0">
-          <div className="w-9 h-9 rounded-full bg-[#0F1117] border border-[#2A2E45] flex items-center justify-center text-xs font-bold text-[#A5B4FC]">
+          <div className="w-9 h-9 rounded-full bg-[#0F1117] border border-white/[0.07] flex items-center justify-center text-xs font-bold text-[#A89FFF]">
             {base}
           </div>
           <div className="min-w-0">
@@ -63,24 +63,24 @@ export const ForexCard: React.FC<ForexCardProps> = ({
               <span className="font-bold text-white text-base leading-tight truncate">
                 {forex.pair}
               </span>
-              <span className="text-[#9CA3AF] text-xs shrink-0">
+              <span className="text-[#A7A4B8] text-xs shrink-0">
                 {base}/{quote}
               </span>
-              <span className="text-[10px] bg-[#6366F1]/20 text-[#A5B4FC] border border-[#6366F1]/40 px-1.5 py-0.2 rounded font-mono shrink-0">
+              <span className="text-[10px] bg-[#A89FFF]/20 text-[#A89FFF] border border-[#A89FFF]/40 px-1.5 py-0.2 rounded font-mono shrink-0">
                 FX
               </span>
               <span
                 className={`text-[10px] font-bold px-1.5 py-0.2 rounded border ${
                   forex.isLive === false
-                    ? 'bg-[#F59E0B]/15 border-[#F59E0B]/40 text-[#FBBF24]'
-                    : 'bg-[#22C55E]/15 border-[#22C55E]/40 text-[#4ADE80]'
+                    ? 'bg-[#FFB86B]/15 border-[#FFB86B]/40 text-[#FFB86B]'
+                    : 'bg-[#7EE0B5]/15 border-[#7EE0B5]/40 text-[#7EE0B5]'
                 }`}
                 title={forex.updatedAt ? `อัปเดต: ${forex.updatedAt}` : forex.isLive === false ? 'เรทล่าสุด (ออฟไลน์)' : 'เรท live'}
               >
                 {forex.isLive === false ? '○ STALE' : '● LIVE'}
               </span>
             </div>
-            <p className="text-[#909AAB] text-[11px] leading-tight mt-0.5 truncate">
+            <p className="text-[#A7A4B8] text-[11px] leading-tight mt-0.5 truncate">
               {currentSignal?.sources?.join(' • ') || 'open.er-api • Frankfurter • Bloomberg'}
             </p>
           </div>
@@ -93,7 +93,7 @@ export const ForexCard: React.FC<ForexCardProps> = ({
               e.stopPropagation();
               onToggleWatchlist(forex.pair);
             }}
-            className="p-2 text-[#909AAB] hover:text-[#7C6CFF] transition-colors rounded-full"
+            className="p-2 text-[#A7A4B8] hover:text-[#7C6CFF] transition-colors rounded-full"
             aria-label="Toggle Watchlist"
             data-testid={`watchlist_btn_${forex.pair}`}
           >
@@ -101,7 +101,7 @@ export const ForexCard: React.FC<ForexCardProps> = ({
               className={`w-5 h-5 ${
                 isWatchlisted
                   ? 'fill-[#7C6CFF] text-[#7C6CFF]'
-                  : 'text-[#909AAB]'
+                  : 'text-[#A7A4B8]'
               }`}
             />
           </button>
@@ -109,8 +109,8 @@ export const ForexCard: React.FC<ForexCardProps> = ({
           <span
             className={`px-2 py-0.5 rounded-xl text-xs font-bold border flex items-center space-x-1 ${
               isLong
-                ? 'bg-[#22C55E]/15 border-[#22C55E]/40 text-[#4ADE80]'
-                : 'bg-[#f9df7b]/15 border-[#f9df7b]/40 text-[#f9df7b]'
+                ? 'bg-[#7EE0B5]/15 border-[#7EE0B5]/40 text-[#7EE0B5]'
+                : 'bg-[#FFB86B]/15 border-[#FFB86B]/40 text-[#FFB86B]'
             }`}
           >
             {isLong ? (
@@ -125,10 +125,10 @@ export const ForexCard: React.FC<ForexCardProps> = ({
 
       {/* Timeframe & Confidence */}
       <div className="mt-2.5 flex flex-wrap items-center justify-between gap-1">
-        <span className="text-xs font-medium text-[#A5B4FC]">
+        <span className="text-xs font-medium text-[#A89FFF]">
           {currentSignal?.timeframe || 'สวิงเทรด 4H/1D'} • {currentSignal?.probability || 78}% มั่นใจ
         </span>
-        <span className="text-[10px] text-[#9CA3AF]">
+        <span className="text-[10px] text-[#A7A4B8]">
           Forex Pip Spread: มาตรฐาน
         </span>
       </div>
@@ -140,7 +140,7 @@ export const ForexCard: React.FC<ForexCardProps> = ({
         </span>
         <span
           className={`text-base font-extrabold ${
-            isPositive ? 'text-[#22C55E]' : 'text-[#f9df7b]'
+            isPositive ? 'text-[#7EE0B5]' : 'text-[#FFB86B]'
           }`}
         >
           {isPositive ? '+' : ''}{forex.change.toFixed(2)}%
@@ -150,10 +150,10 @@ export const ForexCard: React.FC<ForexCardProps> = ({
       {/* Status & Reason Pill */}
       {currentSignal && (
         <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-          <div className="bg-[#0F1117] border border-[#2A2E45] rounded-lg px-2 py-1 text-[11px] text-[#9CA3AF]">
+          <div className="bg-[#0F1117] border border-white/[0.07] rounded-lg px-2 py-1 text-[11px] text-[#A7A4B8]">
             {currentSignal.statusText}
           </div>
-          <div className="bg-[#6366F1]/15 border border-[#6366F1]/30 rounded-lg px-2 py-1 text-[11px] text-[#A5B4FC]">
+          <div className="bg-[#A89FFF]/15 border border-[#A89FFF]/30 rounded-lg px-2 py-1 text-[11px] text-[#A89FFF]">
             {currentSignal.reason} • {currentSignal.etfFlow}
           </div>
         </div>
@@ -162,12 +162,12 @@ export const ForexCard: React.FC<ForexCardProps> = ({
       {/* Support & Resistance (แนวรับ / แนวต้าน) Quick View */}
       {displaySupport && displayResistance && (
         <div className="mt-2.5 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-          <div className="bg-[#10B981]/10 border border-[#10B981]/25 rounded-lg px-2.5 py-1.5 flex items-center justify-between">
-            <span className="text-[#34D399] text-[11px] font-medium">แนวรับ (Support)</span>
+          <div className="bg-[#7EE0B5]/10 border border-[#7EE0B5]/25 rounded-lg px-2.5 py-1.5 flex items-center justify-between">
+            <span className="text-[#7EE0B5] text-[11px] font-medium">แนวรับ (Support)</span>
             <span className="text-white font-mono font-bold text-[11px]">{displaySupport}</span>
           </div>
-          <div className="bg-[#f9df7b]/10 border border-[#f9df7b]/25 rounded-lg px-2.5 py-1.5 flex items-center justify-between">
-            <span className="text-[#f9df7b] text-[11px] font-medium">แนวต้าน (Resistance)</span>
+          <div className="bg-[#FFB86B]/10 border border-[#FFB86B]/25 rounded-lg px-2.5 py-1.5 flex items-center justify-between">
+            <span className="text-[#FFB86B] text-[11px] font-medium">แนวต้าน (Resistance)</span>
             <span className="text-white font-mono font-bold text-[11px]">{displayResistance}</span>
           </div>
         </div>
@@ -177,10 +177,10 @@ export const ForexCard: React.FC<ForexCardProps> = ({
       {displaySl && displayTp && (
         <div className="mt-2.5 flex flex-wrap items-center justify-between text-xs gap-2">
           <div className="flex items-center space-x-3">
-            <span className="font-semibold text-[#f9df7b]">
+            <span className="font-semibold text-[#FFB86B]">
               SL: {displaySl}
             </span>
-            <span className="font-semibold text-[#22C55E]">
+            <span className="font-semibold text-[#7EE0B5]">
               TP: {displayTp}
             </span>
           </div>
@@ -191,18 +191,18 @@ export const ForexCard: React.FC<ForexCardProps> = ({
       )}
 
       {/* Tags & AI Similarity */}
-      <div className="mt-2 pt-2 border-t border-[#2A2E45]/50 flex items-center justify-between text-[11px]">
+      <div className="mt-2 pt-2 border-t border-white/[0.07]/50 flex items-center justify-between text-[11px]">
         <div className="flex items-center space-x-1 overflow-x-auto">
           {(currentSignal?.tags || ['Major FX', 'Central Bank', 'Macro']).map((tag) => (
             <span
               key={tag}
-              className="bg-[#2A2E45] text-[#9CA3AF] rounded px-1.5 py-0.5 text-[10px] whitespace-nowrap"
+              className="bg-[#222640] text-[#A7A4B8] rounded px-1.5 py-0.5 text-[10px] whitespace-nowrap"
             >
               {tag}
             </span>
           ))}
         </div>
-        <span className="font-medium text-[#A5B4FC] shrink-0 ml-2">
+        <span className="font-medium text-[#A89FFF] shrink-0 ml-2">
           Momentum {currentSignal?.similarity || 88}%
         </span>
       </div>

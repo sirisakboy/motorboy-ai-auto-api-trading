@@ -13,6 +13,7 @@
  *   · ถ้าเป็นโปรเจคหาเงิน → Art Track 01–03 · โปรเจคใช้เงิน → Track 04–06
  */
 
+import { FACE_ID } from './core';
 import type { BookId, MoodId, PoseId } from './types';
 
 /* ------------------------------------------------------------------ colours */
@@ -24,20 +25,20 @@ export const RUST_MODERN_COLORS = {
    * แดงไม่ใช่สีแบรนด์อีกต่อไป และห้ามใช้แดงแสบตาเป็นสีหลัก.
    */
   brandAccent: '#7C6CFF',
-  /** แดง — เตือน/ขาดทุน/อันตรายเท่านั้น (ไม่ใช่สีแบรนด์) */
-  dangerRed: '#FF0033',
+  /** พีช — SHORT/ระวัง (Brand Book: ห้ามใช้แดงสด #FF0000, แดงทำให้ตกใจ) */
+  dangerRed: '#F4A6A6',
   /** ม่วง — แอ็กเซนต์, AI, ไล่สี */
-  violet: '#8A2BE2',
+  violet: '#A89FFF',
   /** ฟ้านีออน — ไอคอน ECU / AI / ลิงก์ (และเส้นขอบปุ่ม AI) */
-  neonBlue: '#00E5FF',
+  neonBlue: '#4CC9F0',
   /** เขียวนีออน — สถานะดี, สำเร็จ, ชาร์จ */
-  neonGreen: '#39FF14',
+  neonGreen: '#7EE0B5',
   /** สนิม — กรอบ, พื้นหลังอู่, คราบ */
   rust: '#8A4B2A',
   rustLight: '#C97B2A',
   /** โลหะเทา — พื้นผิวโลหะ, การ์ด, แถบ */
-  metal: '#9AA0A8',
-  metalDark: '#2A2E45',
+  metal: '#A7A4B8',
+  metalDark: '#222640',
   /** พื้น Paper (เล่ม 1 หาเงิน) */
   paper: '#F7F5F0',
   /** พื้น Midnight (เล่ม 2 ใช้เงิน) */
@@ -65,17 +66,26 @@ export const CALM_BRAND = {
   surface: '#0F1117',
   /** พื้น Paper (light) */
   paperSurface: '#F7F5F0',
-  /** เขียว/เหลือง/แดง — ใช้เชิงความหมายเท่านั้น */
-  success: '#10B981',
-  warning: '#F59E0B',
-  danger: '#EF4444',
-  neutral: '#9AA0A8',
+  /** พื้นการ์ด */
+  surfaceCard: '#1C1F2E',
+  /** พื้นการ์ดยกขึ้น */
+  surfaceRaised: '#222640',
+  /** ลาเวนเดอร์อ่อน — ตัวหนังสือเน้น ลิงก์ */
+  lavenderSoft: '#A89FFF',
+  /** เขียว/เหลือง/พีช — ใช้เชิงความหมายเท่านั้น (LONG / WAIT / SHORT) */
+  success: '#7EE0B5',
+  warning: '#FFB86B',
+  danger: '#F4A6A6',
+  neutral: '#A7A4B8',
+  /** ฟ้าใส — ข้อมูล ปฏิทิน */
+  info: '#4CC9F0',
 } as const;
 
-/** Calm motion: ไม่กระพริบ ไม่เด้ง — hover 200ms, เปลี่ยนหน้า 320ms, reduced-motion 120ms */
+/** Calm motion: ไม่กระพริบ ไม่เด้ง — hover 180ms, เปลี่ยนหน้า 320ms, หน่วงค่า 600ms */
 export const CALM_MOTION = {
-  hoverMs: 200,
+  hoverMs: 180,
   pageMs: 320,
+  slowMs: 600,
   reducedMotionMs: 120,
   blinking: false,
 } as const;
@@ -85,7 +95,7 @@ export const CALM_MOTION = {
 export const RUST_MODERN_LAYOUT = {
   topBarHeight: 64,
   grid: 8,
-  radius: 12,
+  radius: 20,
   primaryButton: 48,
   secondaryButton: 40,
   feedLimit: 12,
@@ -101,11 +111,11 @@ export const RUST_MODERN_TYPE = {
 
 export const RUST_MODERN_LINES = {
   /** กรอบโลหะ 2px */
-  card: '2px solid #2A2E45',
+  card: '1px solid rgba(255,255,255,0.07)',
   /** ขอบสนิม 1px ที่มุมการ์ด */
   rustCorner: '1px solid #C97B2A',
-  /** เส้นนีออน 1px สำหรับปุ่ม AI */
-  aiNeon: '1px solid #00E5FF',
+  /** ปุ่ม AI ใช้ขอบลาเวนเดอร์ 1px (Book: ตัด Glow/นีออน) */
+  aiNeon: '1px solid #7C6CFF',
 } as const;
 
 export const RUST_MODERN_SHADOWS = {
@@ -115,7 +125,7 @@ export const RUST_MODERN_SHADOWS = {
   rustSheen: 0,
   card: '0 8px 8px rgba(0, 0, 0, 0.35)',
   /** ปุ่มหลัก — เงานุ่มของลาเวนเดอร์ (ไม่ใช่เงาแดงกระพริบ) */
-  primaryButton: '0 6px 18px rgba(124, 108, 255, 0.28)',
+  primaryButton: '0 8px 30px rgba(124, 108, 255, 0.25)',
 } as const;
 
 /** อัตราส่วนพื้นผิวรวมทั้งระบบ: โลหะ 70% + สนิม 20% + นีออน 10% */
@@ -238,22 +248,44 @@ export function moodForPose(pose: PoseId): MoodId {
  * The spec ships a copy-paste `:root` block. Exported as a plain string so a
  * project can opt in by injecting it — nothing is injected automatically.
  */
-export const RUST_MODERN_CSS = `/* MOTORBOY MASCOT + UI - Calm System v2.0 (Rust x Modern art tracks) */
+export const RUST_MODERN_CSS = `/* MOTORBOY — Calm System v2.0 tokens (Brand Book 16 · Tokens as Code) */
 :root {
-  --mb-brand: ${RUST_MODERN_COLORS.brandAccent};
-  --mb-brand-ink: ${CALM_BRAND.inkOnAccent};
-  --mb-danger: ${RUST_MODERN_COLORS.dangerRed};
-  --mb-violet: ${RUST_MODERN_COLORS.violet};
-  --mb-neon-blue: ${RUST_MODERN_COLORS.neonBlue};
-  --mb-neon-green: ${RUST_MODERN_COLORS.neonGreen};
-  --mb-rust: ${RUST_MODERN_COLORS.rustLight};
-  --mb-rust-dark: ${RUST_MODERN_COLORS.rust};
-  --mb-metal: ${RUST_MODERN_COLORS.metal};
-  --mb-paper: ${RUST_MODERN_COLORS.paper};
-  --mb-midnight: ${RUST_MODERN_COLORS.midnight};
-  --mb-face-id: MB-33-MASTER-001; /* NEVER CHANGE */
-  --mb-texture: metal-gloss ${TEXTURE_RATIO.metal}% + rust ${TEXTURE_RATIO.rust}% + neon ${TEXTURE_RATIO.neon}%;
-  --mb-radius: ${RUST_MODERN_LAYOUT.radius}px;
+  /* Background */
+  --mb-bg-top: ${CALM_BRAND.surface};
+  --mb-bg-bottom: #171A26;
+  --mb-bg-paper: ${CALM_BRAND.paperSurface};
+  --mb-surface: ${CALM_BRAND.surfaceCard};
+  --mb-surface-raised: #222640;
+  --mb-surface-sunken: #141725;
+  --mb-line: rgba(255,255,255,0.07);
+  /* Text */
+  --mb-text: #ECEAF4;
+  --mb-text-muted: ${CALM_BRAND.neutral};
+  --mb-text-faint: #8B88A0;
+  --mb-text-light: ${CALM_BRAND.surfaceCard};
+  /* Brand */
+  --mb-lavender: ${CALM_BRAND.primary};
+  --mb-lavender-soft: ${CALM_BRAND.lavenderSoft};
+  --mb-sky: ${CALM_BRAND.info};
+  --mb-amber: ${CALM_BRAND.warning};
+  --mb-mint: ${CALM_BRAND.success};
+  --mb-peach: ${CALM_BRAND.danger};
+  /* Motion */
+  --mb-ease-calm: cubic-bezier(.22,.8,.3,1);
+  --mb-t-quick: ${CALM_MOTION.hoverMs}ms;
+  --mb-t-base: ${CALM_MOTION.pageMs}ms;
+  --mb-t-slow: ${CALM_MOTION.slowMs}ms;
+  --mb-t-ambient: 20s;
+  /* Radius + shadow */
+  --mb-radius-card: ${RUST_MODERN_LAYOUT.radius}px;
+  --mb-radius-button: 14px;
+  --mb-radius-chip: 999px;
+  --mb-shadow-card: 0 8px 30px rgba(0,0,0,.25);
+  /* Gradients */
+  --mb-grad-primary: linear-gradient(135deg,#8E80FF,#4CC9F0);
+  --mb-grad-hero: linear-gradient(160deg,rgba(124,108,255,.22),rgba(76,201,240,.10) 60%,transparent);
+  /* Layout + identity */
   --mb-topbar: ${RUST_MODERN_LAYOUT.topBarHeight}px;
   --mb-grid: ${RUST_MODERN_LAYOUT.grid}px;
+  --mb-face-id: ${FACE_ID}; /* NEVER CHANGE */
 }`;

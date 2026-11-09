@@ -224,14 +224,14 @@ describe('L2 ADAPTER — namespaces, assets, mount decision', () => {
 describe('v4.4 RUST x MODERN — design tokens (encoded, not imposed)', () => {
   it('carries the exact spec palette', () => {
     expect(RUST_MODERN_COLORS.brandAccent).toBe('#7C6CFF');
-    expect(RUST_MODERN_COLORS.dangerRed).toBe('#FF0033');
-    expect(RUST_MODERN_COLORS.violet).toBe('#8A2BE2');
-    expect(RUST_MODERN_COLORS.neonBlue).toBe('#00E5FF');
-    expect(RUST_MODERN_COLORS.neonGreen).toBe('#39FF14');
+    expect(RUST_MODERN_COLORS.dangerRed).toBe('#F4A6A6');
+    expect(RUST_MODERN_COLORS.violet).toBe('#A89FFF');
+    expect(RUST_MODERN_COLORS.neonBlue).toBe('#4CC9F0');
+    expect(RUST_MODERN_COLORS.neonGreen).toBe('#7EE0B5');
     expect(RUST_MODERN_COLORS.rust).toBe('#8A4B2A');
     expect(RUST_MODERN_COLORS.rustLight).toBe('#C97B2A');
-    expect(RUST_MODERN_COLORS.metal).toBe('#9AA0A8');
-    expect(RUST_MODERN_COLORS.metalDark).toBe('#2A2E45');
+    expect(RUST_MODERN_COLORS.metal).toBe('#A7A4B8');
+    expect(RUST_MODERN_COLORS.metalDark).toBe('#222640');
     expect(RUST_MODERN_COLORS.paper).toBe('#F7F5F0');
     expect(RUST_MODERN_COLORS.midnight).toBe('#0F1117');
     expect(RUST_MODERN_COLORS.lavender).toBe('#7C6CFF');
@@ -242,17 +242,17 @@ describe('v4.4 RUST x MODERN — design tokens (encoded, not imposed)', () => {
     expect(TEXTURE_RATIO.metal + TEXTURE_RATIO.rust + TEXTURE_RATIO.neon).toBe(100);
   });
 
-  it('keeps the layout contract (TopBar 64, grid 8, card 12, buttons 48/40, feed 12)', () => {
+  it('keeps the layout contract (TopBar 64, grid 8, card 20, buttons 48/40, feed 12)', () => {
     expect(RUST_MODERN_LAYOUT).toMatchObject({
       topBarHeight: 64,
       grid: 8,
-      radius: 12,
+      radius: 20,
       primaryButton: 48,
       secondaryButton: 40,
       feedLimit: 12,
     });
-    expect(RUST_MODERN_LINES.card).toContain('#2A2E45');
-    expect(RUST_MODERN_LINES.aiNeon).toContain('#00E5FF');
+    expect(RUST_MODERN_LINES.card).toContain('rgba(255,255,255,0.07)');
+    expect(RUST_MODERN_LINES.aiNeon).toContain('#7C6CFF'); // AI = lavender, not neon
     expect(RUST_MODERN_LINES.rustCorner).toContain('#C97B2A');
     expect(RUST_MODERN_SHADOWS.glossySheen).toBe(0.4);
     expect(RUST_MODERN_SHADOWS.rustSheen).toBe(0);
@@ -306,9 +306,9 @@ describe('v4.4 RUST x MODERN — design tokens (encoded, not imposed)', () => {
   });
 
   it('exposes the copy-paste CSS block but injects nothing', () => {
-    expect(RUST_MODERN_CSS).toContain('--mb-brand: #7C6CFF');
+    expect(RUST_MODERN_CSS).toContain('--mb-lavender: #7C6CFF');
     expect(RUST_MODERN_CSS).toContain(`--mb-face-id: ${FACE_ID}`); // never changes
-    expect(RUST_MODERN_CSS).toContain('--mb-radius: 12px');
+    expect(RUST_MODERN_CSS).toContain('--mb-radius-card: 20px');
     expect(typeof document).toBe('object');
     expect(document.documentElement.getAttribute('style')).toBeFalsy();
   });
@@ -321,15 +321,15 @@ describe('L3 SKIN — editable, per project, never touches core', () => {
     // The mascot adapts to this product: same accent as App.tsx / index.css,
     // not a second red borrowed from the master brand.
     expect(palette.primary).toBe('#7C6CFF');
-    expect(palette.bull).toBe('#00E676');
-    expect(palette.bear).toBe('#FF5252');
-    expect(palette.signal).toBe('#00E5FF');
+    expect(palette.bull).toBe('#7EE0B5');
+    expect(palette.bear).toBe('#F4A6A6');
+    expect(palette.signal).toBe('#4CC9F0');
   });
 
   it('keeps the V4.1 master brand available for the other projects', () => {
     // Rust x Modern master brand is archived as data; the Calm System v2.0
     // lavender now drives the UI (see CALM_BRAND in tokens.ts).
-    expect(MASTER_BRAND).toEqual({ black: '#000000', red: '#FF0033' });
+    expect(MASTER_BRAND).toEqual({ black: '#000000', red: '#F4A6A6' });
     expect(CALM_BRAND.primary).toBe('#7C6CFF');
     expect(CALM_BRAND.inkOnAccent).toBe('#0F1117');
   });

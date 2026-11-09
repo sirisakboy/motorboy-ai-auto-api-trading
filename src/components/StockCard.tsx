@@ -26,17 +26,17 @@ export const StockCard: React.FC<StockCardProps> = ({
   });
 
   return (
-    <div className="w-full rounded-[18px] bg-[#1A1D29] border border-[#2A2E45] p-4 transition-transform duration-150 active:scale-[0.99]">
+    <div className="w-full rounded-[18px] bg-[#141725] border border-white/[0.07] p-4 transition-transform duration-150 active:scale-[0.99]">
       <div className="flex flex-wrap sm:flex-nowrap items-start sm:items-center justify-between gap-2">
         <div className="flex items-center space-x-2.5 min-w-0">
-          <div className="w-9 h-9 shrink-0 rounded-full bg-[#0F1117] border border-[#2A2E45] flex items-center justify-center text-sm font-bold text-[#A5B4FC]">
+          <div className="w-9 h-9 shrink-0 rounded-full bg-[#0F1117] border border-white/[0.07] flex items-center justify-center text-sm font-bold text-[#A89FFF]">
             {stock.symbol.charAt(0)}
           </div>
           <div className="min-w-0">
             <h3 className="text-white font-bold text-[15px] leading-tight truncate">
               {stock.symbol} • {stock.name}
             </h3>
-            <p className="text-[#909AAB] text-[11px] mt-0.5 leading-tight truncate">
+            <p className="text-[#A7A4B8] text-[11px] mt-0.5 leading-tight truncate">
               {stock.schedule} • {marketStatusText} • {countdown}
             </p>
           </div>
@@ -47,8 +47,8 @@ export const StockCard: React.FC<StockCardProps> = ({
             <span
               className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md border ${
                 stock.isLive
-                  ? 'bg-[#22C55E]/15 border-[#22C55E]/40 text-[#4ADE80]'
-                  : 'bg-[#F59E0B]/15 border-[#F59E0B]/40 text-[#FBBF24]'
+                  ? 'bg-[#7EE0B5]/15 border-[#7EE0B5]/40 text-[#7EE0B5]'
+                  : 'bg-[#FFB86B]/15 border-[#FFB86B]/40 text-[#FFB86B]'
               }`}
               title={stock.updatedAt ? `อัปเดตเมื่อ: ${stock.updatedAt}` : 'ใช้ราคาสำรอง (ยังไม่ได้ดึงข้อมูล Live)'}
             >
@@ -60,7 +60,7 @@ export const StockCard: React.FC<StockCardProps> = ({
           </div>
           <div
             className={`text-sm font-extrabold ${
-              isPositive ? 'text-[#22C55E]' : 'text-[#f9df7b]'
+              isPositive ? 'text-[#7EE0B5]' : 'text-[#FFB86B]'
             }`}
           >
             {isPositive ? '+' : ''}{stock.change.toFixed(2)}%
@@ -69,18 +69,18 @@ export const StockCard: React.FC<StockCardProps> = ({
       </div>
 
       {stock.symbol === 'SET' && (
-        <div className="mt-3 w-full h-[54px] bg-[#0F1117] rounded-xl border border-[#2A2E45] px-3 py-1.5 flex items-center justify-between">
+        <div className="mt-3 w-full h-[54px] bg-[#0F1117] rounded-xl border border-white/[0.07] px-3 py-1.5 flex items-center justify-between">
           <svg className="w-[140px] h-9 overflow-visible" viewBox="0 0 140 36">
             <path
               d="M 5,25 Q 42,4 70,14 Q 105,22 135,9"
               fill="none"
-              stroke="#6366F1"
+              stroke="#A89FFF"
               strokeWidth="2.5"
               strokeLinecap="round"
             />
             <circle cx="70" cy="14" r="4.5" fill="#7C6CFF" />
           </svg>
-          <span className="text-[#909AAB] text-[11px]">
+          <span className="text-[#A7A4B8] text-[11px]">
             {stock.isLive
               ? 'กราฟแสดงข้อมูลแบบเรียลไทม์'
               : 'ตลาดปิดหรือออฟไลน์ • ใช้ราคาสำรอง'}
