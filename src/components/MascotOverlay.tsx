@@ -11,7 +11,9 @@ import {
   Activity,
 } from 'lucide-react';
 import { useMascotStore, type MascotState } from '../services/mascotService';
-import { fetchMascotLine } from '../services/mascotAiService';
+import { useMascotFeed } from '../mascot/feed';
+import { useMascotAutoPilot } from '../mascot/observer';
+import { canReachServer, fetchMascotLine } from '../services/mascotAiService';
 import type { CryptoCoin, TradingSignal } from '../types';
 import type { EndingResult, EndingType, Ohlcv, PoseId } from '../mascot/types';
 import { FACE_ID, MASCOT_FACE_ATTR, MASCOT_ROOT_ATTR, countMountedFaces } from '../mascot/core';
@@ -32,10 +34,10 @@ import {
 } from '../mascot/journal';
 import {
   AUTO_HIDE_AFTER_SPEAK_MS,
-  AVOID_DISTANCE_PX,
   NEVER_BLOCK_SELECTOR,
-  distanceToRect,
   knock,
+  ghostOpacity,
+  isNearProtected,
   onboardingTarget,
   resolvePose,
   shouldKnock,
@@ -90,11 +92,19 @@ const ENDING_LABEL: Record<EndingType, { short: string; icon: React.ReactNode }>
 };
 
 export interface MascotOverlayProps {
+  /**
+   * Every prop is optional. Leave them out and the mascot reads the published
+   * snapshot from `mascot/feed.ts` instead — `<MascotOverlay />` on its own is a
+   * complete, self-driving mascot. Passing a prop still wins, which is what the
+   * tests use to pin an exact market.
+   */
   cryptoList?: CryptoCoin[];
   signals?: TradingSignal[];
   useThb?: boolean;
   usdThbRate?: number;
   geminiApiKey?: string;
+  /** Skip the built-in volatility / drawdown observer (tests, demos). */
+  disableAutoPilot?: boolean;
   /** Market analysed for endings (Binance symbol). Defaults to the first tile. */
   endingSymbol?: string;
   /** Disable the candle feed (tests / offline demo). */
@@ -104,16 +114,27 @@ export interface MascotOverlayProps {
 }
 
 export const MascotOverlay: React.FC<MascotOverlayProps> = ({
-  cryptoList = [],
-  signals = [],
-  useThb = false,
-  usdThbRate = 36.45,
-  geminiApiKey = '',
+  cryptoList: cryptoListProp,
+  signals: signalsProp,
+  useThb: useThbProp,
+  usdThbRate: usdThbRateProp,
+  geminiApiKey: geminiApiKeyProp,
   endingSymbol,
   disableEndingsFeed = false,
+  disableAutoPilot = false,
   onOpenChat,
 }) => {
   const { state, message } = useMascotStore();
+  const feed = useMascotFeed();
+  // Props win, feed fills the gaps, constants are the last resort.
+  const cryptoList = cryptoListProp ?? feed.cryptoList;
+  const signals = signalsProp ?? feed.signals;
+  const useThb = useThbProp ?? feed.useThb;
+  const usdThbRate = usdThbRateProp ?? feed.usdThbRate ?? 36.45;
+  const geminiApiKey = geminiApiKeyProp ?? feed.apiKey;
+
+  // The mascot runs its own detector; the dashboard only publishes data.
+  useMascotAutoPilot(!disableAutoPilot);
   const skin = TRADING_SKIN;
   const palette = skin.palette;
   const mascot = resolveMascot();
@@ -176,6 +197,8 @@ export const MascotOverlay: React.FC<MascotOverlayProps> = ({
     let cancelled = false;
 
     const run = async () => {
+      // No point polling candles for a tab nobody is looking at.
+      if (typeof document !== 'undefined' && document.hidden) return;
       const feed = await fetchEndingsCandles(symbol, '1h', 120);
       if (cancelled || !feed) return;
       setCandles(feed);
@@ -200,6 +223,8 @@ export const MascotOverlay: React.FC<MascotOverlayProps> = ({
 
   /* -------------------------------------------------------- Gemini speech */
   const requestLine = useCallback(async (force: boolean) => {
+    // Offline: the canned line is already on screen, do not spin a loader.
+    if (!canReachServer()) return null;
     setIsLoadingLine(true);
     try {
       const line = await fetchMascotLine({ state: stateRef.current, force, ...ctxRef.current });
@@ -248,12 +273,10 @@ export const MascotOverlay: React.FC<MascotOverlayProps> = ({
         const protectedEl = (el as HTMLElement | null)?.closest?.(
           NEVER_BLOCK_SELECTOR
         ) as HTMLElement | null;
-        let hit = false;
-        if (protectedEl && typeof protectedEl.getBoundingClientRect === 'function') {
-          hit =
-            distanceToRect({ x: event.clientX, y: event.clientY }, protectedEl.getBoundingClientRect()) <=
-            AVOID_DISTANCE_PX;
-        }
+        const hit =
+          !!protectedEl &&
+          typeof protectedEl.getBoundingClientRect === 'function' &&
+          isNearProtected({ x: event.clientX, y: event.clientY }, protectedEl.getBoundingClientRect());
         if (hit !== last) {
           last = hit;
           setNearInteractive(hit);
@@ -348,6 +371,8 @@ export const MascotOverlay: React.FC<MascotOverlayProps> = ({
     startY: number;
     originX: number;
     originY: number;
+    lastX: number;
+    lastY: number;
     pointerId: number;
   } | null>(null);
 
@@ -386,6 +411,8 @@ export const MascotOverlay: React.FC<MascotOverlayProps> = ({
       startY: event.clientY,
       originX: origin.x,
       originY: origin.y,
+      lastX: event.clientX,
+      lastY: event.clientY,
       pointerId: event.pointerId,
     };
     try {
@@ -396,6 +423,7 @@ export const MascotOverlay: React.FC<MascotOverlayProps> = ({
     setDragging(true);
   };
 
+  const dragFrame = useRef(0);
   const onDragMove = (event: React.PointerEvent<HTMLButtonElement>) => {
     const drag = dragRef.current;
     if (!drag) return;
@@ -404,13 +432,32 @@ export const MascotOverlay: React.FC<MascotOverlayProps> = ({
     // 4px of slop so a tap on a touch screen is not read as a drag.
     if (!draggedRef.current && Math.hypot(dx, dy) < 4) return;
     draggedRef.current = true;
+    drag.lastX = event.clientX;
+    drag.lastY = event.clientY;
     setLastActivityAt(Date.now());
-    setPos(clampToViewport({ x: drag.originX + dx, y: drag.originY + dy }));
+    // One state update per frame: pointermove fires far more often than the
+    // browser paints, and every update re-renders the speech bubble too.
+    if (dragFrame.current) return;
+    dragFrame.current = window.requestAnimationFrame(() => {
+      dragFrame.current = 0;
+      const active = dragRef.current;
+      if (!active) return;
+      setPos(
+        clampToViewport({
+          x: active.originX + (active.lastX - active.startX),
+          y: active.originY + (active.lastY - active.startY),
+        })
+      );
+    });
   };
 
   const onDragEnd = (event: React.PointerEvent<HTMLButtonElement>) => {
     const drag = dragRef.current;
     dragRef.current = null;
+    if (dragFrame.current) {
+      window.cancelAnimationFrame(dragFrame.current);
+      dragFrame.current = 0;
+    }
     setDragging(false);
     if (!drag) return;
     try {
@@ -419,10 +466,14 @@ export const MascotOverlay: React.FC<MascotOverlayProps> = ({
       // ignore
     }
     if (draggedRef.current) {
-      setPos((current) => {
-        if (current) saveMascotPosition(current);
-        return current;
+      // Always commit the final point: a fast drag can end before the next
+      // animation frame, and then the last frame's position would be lost.
+      const final = clampToViewport({
+        x: drag.originX + (drag.lastX - drag.startX),
+        y: drag.originY + (drag.lastY - drag.startY),
       });
+      setPos(final);
+      saveMascotPosition(final);
     }
   };
 
@@ -506,9 +557,8 @@ export const MascotOverlay: React.FC<MascotOverlayProps> = ({
       {...rootAttrs}
     >
       <div
-        className={`flex items-end gap-1 ${bubbleFlip ? 'flex-row-reverse' : ''} ${
-          nearInteractive && !dragging ? 'opacity-60' : 'opacity-100'
-        } transition-opacity duration-300`}
+        className={`flex items-end gap-1 ${bubbleFlip ? 'flex-row-reverse' : ''} transition-opacity duration-300`}
+        style={{ opacity: nearInteractive && !dragging ? ghostOpacity(true) : ghostOpacity(false) }}
       >
         {showBubble && (
           <div

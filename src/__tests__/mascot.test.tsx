@@ -12,6 +12,7 @@ import {
 } from '../services/mascotAiService';
 import { CRYPTO_INITIAL, generateRealSignals } from '../services/apiClient';
 import { loadJournal, loadMascotPosition, saveMascotSettings } from '../mascot/journal';
+import { publishMascotFeed, resetMascotFeed } from '../mascot/feed';
 import { clearEndingsCache } from '../mascot/endings';
 
 const DEFAULT_MESSAGE = 'สวัสดีครับ ผมมอเตอร์บอย พร้อมเป็น Co-Pilot ให้คุณแล้ว!';
@@ -33,6 +34,7 @@ function setMascotState(state: MascotState, message?: string) {
 
 beforeEach(() => {
   resetMascotAiCooldown();
+  resetMascotFeed();
   useMascotStore.setState({ state: 'IDLE', message: DEFAULT_MESSAGE });
   localStorage.clear();
   clearEndingsCache(); // the 60s feed cache would leak candles between tests
@@ -83,6 +85,33 @@ describe('MascotOverlay — never blocks the UI', () => {
     fireEvent.click(screen.getByRole('button', { name: /น้องมอเตอร์บอย/ }));
     fireEvent.click(screen.getByRole('button', { name: 'ซ่อน' }));
     expect(screen.queryByTestId('mascot-overlay')).toBeNull();
+  });
+});
+
+describe('MascotOverlay — independent, self-driving mascot', () => {
+  it('reacts to the published feed with no props at all', async () => {
+    publishMascotFeed({
+      cryptoList: [
+        { symbol: 'BTC', name: 'Bitcoin', price: 100, change: -14.5 },
+        { symbol: 'ETH', name: 'Ethereum', price: 50, change: 2 },
+        { symbol: 'XRP', name: 'XRP', price: 1, change: 1 },
+      ] as never,
+    });
+
+    render(<MascotOverlay disableEndingsFeed />);
+
+    await waitFor(() => expect(useMascotStore.getState().state).toBe('KILL_SWITCH_ACTIVE'));
+    expect(screen.getByRole('status').textContent).toContain('หยุดเทรดชั่วคราว');
+  });
+
+  it('still lets an explicit prop pin the market (tests, demos)', () => {
+    publishMascotFeed({
+      cryptoList: [{ symbol: 'BTC', name: 'Bitcoin', price: 100, change: -14.5 }] as never,
+    });
+
+    render(<MascotOverlay disableEndingsFeed disableAutoPilot />);
+
+    expect(useMascotStore.getState().state).toBe('IDLE');
   });
 });
 

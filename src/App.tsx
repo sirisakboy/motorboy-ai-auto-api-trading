@@ -67,6 +67,7 @@ import { DrawdownAlertBanner } from './components/DrawdownAlertBanner';
 import { DrawdownMonitorModal } from './components/DrawdownMonitorModal';
 import { MascotOverlay } from './components/MascotOverlay';
 import { useMascotStore } from './services/mascotService';
+import { publishMascotFeed } from './mascot/feed';
 import {
   buildDrawdownAssets,
   computePortfolioDrawdownSummary,
@@ -287,27 +288,11 @@ export const App: React.FC = () => {
       drawdownThresholds.soundEnabled
     ) {
       playDrawdownAlertChime('CRITICAL');
-      useMascotStore.getState().setMascotState('KILL_SWITCH_ACTIVE');
+      // The mascot's own observer raises KILL_SWITCH_ACTIVE from the breach
+      // count published to mascot/feed.ts — one owner for that decision.
     }
     prevBreachedCountRef.current = criticalCount;
   }, [criticalOrExtremeAssets.length, drawdownThresholds.soundEnabled]);
-
-  // Mascot: Volatility Monitor (SIDEWAYS / VOLATILITY_SPIKE)
-  useEffect(() => {
-    const activeMascotState = useMascotStore.getState().state;
-    if (activeMascotState !== 'IDLE' && activeMascotState !== 'SIDEWAYS') return;
-
-    const avgChange = cryptoList.reduce((acc, c) => acc + Math.abs(c.change), 0) / cryptoList.length;
-    const maxChange = Math.max(...cryptoList.map(c => Math.abs(c.change)));
-
-    if (maxChange > 10) {
-      useMascotStore.getState().setMascotState('KILL_SWITCH_ACTIVE', 'ตลาดผันผวนรุนแรงมากครับ — พักก่อน อย่าเพิ่งเข้าไม้ใหม่');
-    } else if (avgChange < 0.2) {
-      useMascotStore.getState().setMascotState('SIDEWAYS');
-    } else if (activeMascotState === 'SIDEWAYS' && avgChange >= 0.2) {
-      useMascotStore.getState().resetToIdle();
-    }
-  }, [cryptoList]);
 
   const handleSendDrawdownToChat = async (reportText: string) => {
     try {
@@ -708,6 +693,29 @@ export const App: React.FC = () => {
     () => getLiveUsdThb(forexRates),
     [forexRates]
   );
+
+  // Mascot: the dashboard only publishes what it knows; the mascot decides what
+  // to do about it (see mascot/feed.ts + mascot/observer.ts).
+  useEffect(() => {
+    publishMascotFeed({
+      cryptoList,
+      signals,
+      useThb,
+      usdThbRate,
+      apiKey: geminiApiKey,
+      drawdownBreaches: criticalOrExtremeAssets.length,
+      worstDrawdownPct: portfolioDrawdownSummary.worstDrawdownPct,
+    });
+  }, [
+    cryptoList,
+    signals,
+    useThb,
+    usdThbRate,
+    geminiApiKey,
+    criticalOrExtremeAssets.length,
+    portfolioDrawdownSummary.worstDrawdownPct,
+  ]);
+
 
   // Publish the same rate to the formatters so every ฿ amount on screen —
   // ticker, cards, detail modals, history — converts with one number.
@@ -1855,14 +1863,9 @@ export const App: React.FC = () => {
           )}
 
       {/* Floating AI mascot — pointer-events-none wrapper, never blocks the UI */}
-      <MascotOverlay
-        cryptoList={cryptoList}
-        signals={signals}
-        useThb={useThb}
-        usdThbRate={usdThbRate}
-        geminiApiKey={geminiApiKey}
-        onOpenChat={() => setShowChat(true)}
-      />
+      {/* No data props: the mascot subscribes to the published feed, so it can
+          be mounted on any surface and still see live market context. */}
+      <MascotOverlay onOpenChat={() => setShowChat(true)} />
     </>
   );
 };
