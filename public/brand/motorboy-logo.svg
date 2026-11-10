@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 404 100" role="img"
+     aria-label="MotorBoy">
+  <!-- MotorBoy horizontal lockup v1 — mark + wordmark.
+       The wordmark is set with `textLength`, so the lockup always occupies the
+       same box whatever font the viewer has; outline it before sending to print. -->
+  <defs>
+    <linearGradient id="mb-lav-lockup" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8E80FF"/>
+      <stop offset="1" stop-color="#7C6CFF"/>
+    </linearGradient>
+  </defs>
+
+  <g>
+    <rect width="100" height="100" rx="27" fill="url(#mb-lav-lockup)"/>
+    <path d="M18 82V20H31L50 56L69 20H82V82H67V44L50 74L33 44V82Z" fill="#0F1117"/>
+  </g>
+
+  <text x="124" y="57" fill="#ECEAF4" font-family="Inter, 'Segoe UI', system-ui, -apple-system, sans-serif"
+        font-size="58" font-weight="900" letter-spacing="-1.5" textLength="280"
+        lengthAdjust="spacingAndGlyphs">MOTORBOY</text>
+  <text x="126" y="86" fill="#8E80FF" font-family="Inter, 'Segoe UI', system-ui, -apple-system, sans-serif"
+        font-size="17" font-weight="800" letter-spacing="4.5" textLength="278"
+        lengthAdjust="spacingAndGlyphs">RACING · TECH · AI</text>
+</svg>

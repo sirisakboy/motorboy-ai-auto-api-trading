@@ -144,21 +144,31 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="max-w-7xl mx-auto px-2 sm:px-4 h-16 flex items-center justify-between gap-1">
         {/* MotorBoy AI-TH Logo & Brand */}
         <div className="flex items-center space-x-1.5 sm:space-x-2.5 min-w-0">
-          <div className="w-8 h-8 sm:w-9 sm:h-9 shrink-0 rounded-lg sm:rounded-xl bg-gradient-to-br from-[#7C6CFF] to-[#8E80FF] p-[1.5px] shadow-[0_0_15px_rgba(124,108,255,0.45)]">
-            <div className="w-full h-full bg-[#0F1117] rounded-[6.5px] sm:rounded-[10px] flex items-center justify-center text-sm sm:text-base">
-              <span role="img" aria-label="motorcycle">🏍️</span>
-            </div>
-          </div>
+          {/* App mark: fixed 32/36px square, same footprint as the old emblem, so
+              nothing in the row shifts. Vector, so it stays crisp on any DPI. */}
+          <img
+            src="/brand/motorboy-mark.svg"
+            alt=""
+            width={36}
+            height={36}
+            className="w-8 h-8 sm:w-9 sm:h-9 shrink-0 rounded-lg sm:rounded-xl shadow-[0_4px_16px_rgba(124,108,255,0.35)]"
+          />
 
           <div className="min-w-0">
-            <div className="flex items-center space-x-1.5 flex-wrap sm:flex-nowrap">
-              <span className="font-black text-xs sm:text-base tracking-tight bg-gradient-to-r from-[#7C6CFF] to-[#8E80FF] text-transparent bg-clip-text">
+            <div className="flex items-baseline gap-1.5 min-w-0">
+              <span
+                className={`font-black text-xs sm:text-base tracking-tight leading-none ${
+                  isDark ? 'text-[#ECEAF4]' : 'text-[#0F172A]'
+                }`}
+              >
                 MOTORBOY
               </span>
-              <span className={`font-black text-xs sm:text-base tracking-tight ${isDark ? 'text-white' : 'text-[#0F172A]'}`}>
+              <span className="font-black text-xs sm:text-base tracking-tight leading-none text-[#8E80FF]">
                 AI-TH
               </span>
-              <span className="bg-gradient-to-r from-[#7C6CFF]/20 to-[#8E80FF]/20 border border-[#7C6CFF]/40 text-[#7C6CFF] text-[8px] sm:text-[9px] font-extrabold px-1.5 py-0.5 rounded-md">
+              {/* the chip needs ~62px; below 640px it moved the row around, so it
+                  only appears when there is room for it */}
+              <span className="hidden sm:inline-flex items-center bg-[#7C6CFF]/15 border border-[#7C6CFF]/40 text-[#8E80FF] text-[9px] font-extrabold px-1.5 py-0.5 rounded-md shrink-0">
                 HYBRID PRO
               </span>
             </div>
