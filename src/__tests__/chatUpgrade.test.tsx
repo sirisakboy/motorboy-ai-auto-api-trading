@@ -108,6 +108,20 @@ describe('ChatModal upgrade', () => {
     expect(localStorage.getItem('motorboy_chat_tone')).toBe('expert');
   });
 
+  it('prefills a question carried from the mascot and does NOT send it', async () => {
+    render(<ChatModal {...baseProps} initialQuestion="ขอดู BTC หน่อย" />);
+    const box = document.getElementById('motorboy-chat-input') as HTMLTextAreaElement;
+    expect(box.value).toBe('ขอดู BTC หน่อย');
+    // The user still presses enter — a prefilled draft is a suggestion.
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(streamChatReply).not.toHaveBeenCalled();
+  });
+
+  it('leaves the composer empty when there is no seed', () => {
+    render(<ChatModal {...baseProps} />);
+    expect((document.getElementById('motorboy-chat-input') as HTMLTextAreaElement).value).toBe('');
+  });
+
   it('sends a suggestion, streams the answer and stores it with metadata', async () => {
     render(<ChatModal {...baseProps} />);
 

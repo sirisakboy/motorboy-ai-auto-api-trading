@@ -135,3 +135,50 @@ chars and `marketBrief` at 600, guarded `JSON.parse`, `400 missing_text` /
 
 Tests: `src/__tests__/mascotActions.test.ts` (18 — accept/reject/dispatch/copy)
 and `src/__tests__/mascotCommand.test.tsx` (6 — end-to-end through the bubble).
+
+## 7. Context events — "น้องทักเอง"
+
+`src/mascot/announce.ts` is a second, tiny channel next to the market feed: a
+context event that is *not* market data ("เพิ่มเข้า watchlist แล้ว", "อ่านข่าว
+จบแล้ว") asks the mascot to say one line and forget it.
+
+| Rule | Why |
+| --- | --- |
+| one line at a time, 8 s throttle | a queue would play stale congratulations out of order |
+| the same line inside 30 s is dropped | idempotent UI events fire more than once (scroll, re-render) |
+| 140-character cap | it is a bubble, not an article |
+| never persisted | a reload must not replay yesterday's "ยินดีด้วย" |
+| `quietMode` keeps the text but does not open the bubble | quiet mode is a promise |
+
+Wired so far: **watchlist add/remove** (`App.tsx → handleToggleWatchlist`) and
+**reading a news analysis to the end** (`NewsDetailModal` scroll-to-bottom).
+There is no 404 surface in this SPA, so that one stays on the wish list.
+
+The overlay clears `aiLine` when the announcement auto-hides, so a greeting from
+ten minutes ago never hides the live market line.
+
+## 8. Chat hand-off
+
+`open_chat { question }` does not just open `ChatModal` — it **prefills the
+composer** with the sentence the user already typed to the mascot and focuses it.
+It never auto-sends: the user is still the one who asks. Both the header button
+and the mascot go through one `openChat(question?)` in `App.tsx`; closing the
+modal clears the seed.
+
+## 9. Engine off ≠ sad
+
+`KILL_SWITCH_ACTIVE` used to borrow the SL umbrella pose, which read as "the
+trade went wrong" when the truth is "I switched myself off". It now reads as
+**parked**: the character is desaturated (`grayscale(.85) brightness(.8)`), the
+drift animation stops, and a small **พักเครื่อง** tag sits under the feet. The
+label is `พักเครื่อง — kill switch ทำงาน`. `SL_RESPECTED` and `RISK_REJECT` keep
+the umbrella, because those really are losses/refusals. No new `PoseId` was
+added, so the eight-pose spec and every downstream skin/mood table stay intact.
+
+## 10. Favicon
+
+`public/favicon.svg` was still the old Trading-Engine chart mark. It is now the
+in-product mark (lavender tile + ink M), and `index.html` also points
+`apple-touch-icon` at `brand/motorboy-mark-512.png`. The shapes must stay
+identical to `public/brand/motorboy-mark.svg` — edit the brand file first, then
+copy.

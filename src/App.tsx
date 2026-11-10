@@ -69,6 +69,7 @@ import { MascotOverlay } from './components/MascotOverlay';
 import { useMascotStore } from './services/mascotService';
 import { publishMascotFeed } from './mascot/feed';
 import { registerMascotActionHandlers, type MascotMarket } from './mascot/actions';
+import { announceMascot } from './mascot/announce';
 import {
   buildDrawdownAssets,
   computePortfolioDrawdownSummary,
@@ -204,6 +205,8 @@ export const App: React.FC = () => {
   const [showGmail, setShowGmail] = useState<boolean>(false);
   const [showCalendar, setShowCalendar] = useState<boolean>(false);
   const [showChat, setShowChat] = useState<boolean>(false);
+  // A question carried from the mascot into the chat composer (never auto-sent).
+  const [chatSeed, setChatSeed] = useState<string>('');
   const [showRiskCalc, setShowRiskCalc] = useState<boolean>(false);
   const [showDrawdownModal, setShowDrawdownModal] = useState<boolean>(false);
   const [drawdownDismissed, setDrawdownDismissed] = useState<boolean>(false);
@@ -718,6 +721,12 @@ export const App: React.FC = () => {
   ]);
 
 
+  /** One door to the chat: the mascot and the header both come through here. */
+  const openChat = useCallback((question?: string) => {
+    setChatSeed(question?.trim() ?? '');
+    setShowChat(true);
+  }, []);
+
   // The mascot may navigate, filter and open panels — it may never trade.
   // Handlers live here because this component owns tabs, search and modals;
   // the mascot only ever publishes a feed and asks for a verb.
@@ -753,9 +762,12 @@ export const App: React.FC = () => {
         setSearchQuery(action.query);
       },
       open_news: () => setShowNewsModal(true),
-      open_chat: () => setShowChat(true),
+      open_chat: (action) => {
+        if (action.name !== 'open_chat') return;
+        openChat(action.question);
+      },
     });
-  }, []);
+  }, [openChat]);
 
   // Publish the same rate to the formatters so every ฿ amount on screen —
   // ticker, cards, detail modals, history — converts with one number.
@@ -879,6 +891,10 @@ export const App: React.FC = () => {
 
   // Handlers with Firestore Cloud Sync
   const handleToggleWatchlist = (symbol: string) => {
+    const wasWatched = watchlist.has(symbol);
+    announceMascot(
+      wasWatched ? `เอาออก ${symbol} แล้วครับ` : `เพิ่ม ${symbol} เข้า watchlist ให้แล้วครับ`
+    );
     setWatchlist((prev) => {
       const next = new Set(prev);
       if (next.has(symbol)) {
@@ -1071,7 +1087,7 @@ export const App: React.FC = () => {
         onOpenSettings={() => setShowSettings(true)}
         onOpenGmail={() => setShowGmail(true)}
         onOpenCalendar={() => setShowCalendar(true)}
-        onOpenChat={() => setShowChat(true)}
+        onOpenChat={() => openChat()}
         onOpenRiskCalc={() => setShowRiskCalc(true)}
         onOpenDrawdown={() => setShowDrawdownModal(true)}
         onOpenAtsMatrix={() => setShowAtsMatrixModal(true)}
@@ -1666,7 +1682,11 @@ export const App: React.FC = () => {
           {showChat && (
             <ChatModal
               isOpen={showChat}
-              onClose={() => setShowChat(false)}
+              onClose={() => {
+                setShowChat(false);
+                setChatSeed('');
+              }}
+              initialQuestion={chatSeed}
               user={user}
               cryptoList={cryptoList}
               forexRates={forexRates}
@@ -1905,7 +1925,7 @@ export const App: React.FC = () => {
       {/* Floating AI mascot — pointer-events-none wrapper, never blocks the UI */}
       {/* No data props: the mascot subscribes to the published feed, so it can
           be mounted on any surface and still see live market context. */}
-      <MascotOverlay onOpenChat={() => setShowChat(true)} />
+      <MascotOverlay onOpenChat={() => openChat()} />
     </>
   );
 };

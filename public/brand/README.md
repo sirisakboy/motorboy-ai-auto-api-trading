@@ -11,6 +11,7 @@ one for **external** material taken from the owner's master identity sheet.
 | `motorboy-mark-mono.svg` | 100 × 100 (vector) | same shape in `currentColor`, for any surface |
 | `motorboy-mark-512.png` | 512 × 512 | store / app icon |
 | `motorboy-mark-64.png` | 64 × 64 | favicon / small contexts |
+| `public/favicon.svg` (copy) | 100 × 100 | served at `/favicon.svg` — keep byte-shape identical to the mark |
 | `motorboy-logo.svg` | 404 × 100 (vector) | horizontal lockup: mark + `MOTORBOY` + `RACING · TECH · AI` |
 
 Why it fits:

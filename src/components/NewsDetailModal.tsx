@@ -33,6 +33,7 @@ import {
   analyzeLongTermProjectWithGemini,
 } from '../services/geminiService';
 import { useModalA11y } from '../hooks/useModalA11y';
+import { announceMascot } from '../mascot/announce';
 
 interface NewsDetailModalProps {
   article: NewsArticle | null;
@@ -293,7 +294,14 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
         </div>
 
         {/* Content Body */}
-        <div className="p-5 overflow-y-auto space-y-5 flex-1">
+        <div
+          className="p-5 overflow-y-auto space-y-5 flex-1"
+          onScroll={(event) => {
+            const el = event.currentTarget;
+            if (el.scrollHeight - el.scrollTop - el.clientHeight > 32) return;
+            announceMascot(`อ่านครบแล้วครับ — ข่าว “${article.title.slice(0, 60)}”`);
+          }}
+        >
           {/* Quick External Link bar */}
           <div className="flex items-center justify-between p-3 rounded-xl bg-[#1C1F2E] border border-[#222640] text-xs">
             <div className="flex items-center gap-2 text-[#ECEAF4] truncate pr-2">

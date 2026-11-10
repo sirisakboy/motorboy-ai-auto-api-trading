@@ -16,6 +16,7 @@ import { useMascotAutoPilot } from '../mascot/observer';
 import { canReachServer, fetchMascotLine } from '../services/mascotAiService';
 import { sendMascotCommand } from '../services/mascotActionService';
 import { describeMascotAction, dispatchMascotAction } from '../mascot/actions';
+import { useMascotAnnouncements } from '../mascot/announce';
 import type { CryptoCoin, TradingSignal } from '../types';
 import type { EndingResult, EndingType, Ohlcv, PoseId } from '../mascot/types';
 import { FACE_ID, MASCOT_FACE_ATTR, MASCOT_ROOT_ATTR, countMountedFaces } from '../mascot/core';
@@ -70,7 +71,7 @@ const STATE_LABEL_TH: Record<string, string> = {
   TP_CELEBRATE: 'ถึงเป้า TP แล้ว',
   SL_RESPECTED: 'คัต SL ตามวินัย',
   RISK_REJECT: 'เสี่ยงเกินกำหนด',
-  KILL_SWITCH_ACTIVE: 'หยุดเทรดชั่วคราว',
+  KILL_SWITCH_ACTIVE: 'พักเครื่อง — kill switch ทำงาน',
   SIDEWAYS: 'ตลาดนิ่ง พักก่อน',
   ONBOARDING: 'ยินดีต้อนรับ',
 };
@@ -150,6 +151,7 @@ export const MascotOverlay: React.FC<MascotOverlayProps> = ({
   const [isLoadingLine, setIsLoadingLine] = useState(false);
   const [command, setCommand] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const announcement = useMascotAnnouncements((store) => store.current);
   const [ending, setEnding] = useState<EndingResult | null>(null);
   const [candles, setCandles] = useState<Ohlcv[] | null>(null);
   const [lastActivityAt, setLastActivityAt] = useState(() => Date.now());
@@ -159,6 +161,9 @@ export const MascotOverlay: React.FC<MascotOverlayProps> = ({
   const isActive = ACTIVE_STATES.includes(state);
   const isCritical =
     state === 'KILL_SWITCH_ACTIVE' || state === 'RISK_REJECT' || ending?.type === 'BEAR_END';
+  // Engine off is not "sad", it is "parked": the character reads as switched
+  // off (no colour, no drift) instead of borrowing the SL umbrella pose.
+  const isEngineOff = state === 'KILL_SWITCH_ACTIVE';
 
   /* --------------------------------------- live market context kept in a ref */
   const ctxRef = useRef({ cryptoList, signals, useThb, usdThbRate, geminiApiKey });
@@ -280,6 +285,20 @@ export const MascotOverlay: React.FC<MascotOverlayProps> = ({
     },
     [command, isSending]
   );
+
+  /* ------------------------------- context events ("น้องทักเอง") */
+  // One line, one time: the bubble opens, says it, and goes back to live data.
+  useEffect(() => {
+    if (!announcement) return;
+    setAiLine(announcement.text);
+    if (settings.quietMode) return; // quiet mode keeps the line for the next tap
+    setExpanded(true);
+    const timer = window.setTimeout(() => {
+      setExpanded(false);
+      setAiLine(null); // don't let a 20-minute-old greeting hide the market line
+    }, AUTO_HIDE_AFTER_SPEAK_MS + 4000);
+    return () => window.clearTimeout(timer);
+  }, [announcement?.id]);
 
   /* ------------------------------------------------ expand / auto-collapse */
   useEffect(() => {
@@ -783,10 +802,12 @@ export const MascotOverlay: React.FC<MascotOverlayProps> = ({
           onClick={onCharacterClick}
           onKeyDown={onCharacterKeyDown}
           aria-label={`น้องมอเตอร์บอย — ${stateLabel}. ลากเพื่อย้าย กดเพื่อเปิดกล่องข้อความ`}
-          title={`${visual.emoji} ${visual.caption} · ลากเพื่อย้าย`}
+          title={
+            isEngineOff ? '🏍️ พักเครื่อง — kill switch ทำงาน · ลากเพื่อย้าย' : `${visual.emoji} ${visual.caption} · ลากเพื่อย้าย`
+          }
           className={`pointer-events-auto touch-none select-none rounded-full outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0F1117] ${
             dragging ? 'cursor-grabbing' : 'cursor-grab'
-          } ${dragging ? '' : 'animate-mascot-drift'}`}
+          } ${dragging || isEngineOff ? '' : 'animate-mascot-drift'}`}
           style={{ height: artHeight, ['--tw-ring-color' as string]: accent }}
         >
           <span className="relative block h-full">
@@ -797,10 +818,28 @@ export const MascotOverlay: React.FC<MascotOverlayProps> = ({
                 aria-hidden="true"
                 draggable={false}
                 className="pointer-events-none h-full w-auto drop-shadow-[0_10px_22px_rgba(0,0,0,0.55)]"
+                style={
+                  isEngineOff
+                    ? { filter: 'grayscale(0.85) brightness(0.8)', transition: 'filter 400ms ease' }
+                    : { transition: 'filter 400ms ease' }
+                }
               />
             ) : (
               <span className="text-2xl" aria-hidden="true">
                 {visual.emoji}
+              </span>
+            )}
+            {isEngineOff && (
+              <span
+                className="pointer-events-none absolute -bottom-1.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border px-1.5 py-[1px] text-[8px] font-bold tracking-wide"
+                style={{
+                  borderColor: `${palette.border}`,
+                  color: '#A7A4B8',
+                  backgroundColor: `${palette.surface}E6`,
+                }}
+                aria-hidden="true"
+              >
+                พักเครื่อง
               </span>
             )}
             <span

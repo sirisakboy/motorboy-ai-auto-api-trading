@@ -101,7 +101,8 @@ describe('MascotOverlay — independent, self-driving mascot', () => {
     render(<MascotOverlay disableEndingsFeed />);
 
     await waitFor(() => expect(useMascotStore.getState().state).toBe('KILL_SWITCH_ACTIVE'));
-    expect(screen.getByRole('status').textContent).toContain('หยุดเทรดชั่วคราว');
+    expect(screen.getByRole('status').textContent).toContain('พักเครื่อง'); // the engine-off label
+    expect(screen.getByRole('status').textContent).toContain('พักก่อน'); // …and the observer's own line
   });
 
   it('still lets an explicit prop pin the market (tests, demos)', () => {
@@ -195,9 +196,23 @@ describe('MascotOverlay — state driven by the shared mascot store', () => {
     act(() => setMascotState('KILL_SWITCH_ACTIVE'));
 
     const status = screen.getByRole('status');
-    expect(status.textContent).toContain('หยุดเทรดชั่วคราว');
+    expect(status.textContent).toContain('พักเครื่อง');
     // skin-defined bear colour, applied inline because it depends on state
     expect(status.style.borderColor.replace(/\s/g, '')).toBe('rgb(244,166,166)');
+  });
+
+  it('reads as parked (not sad) when the engine is off', () => {
+    const { container } = render(<MascotOverlay />);
+    act(() => setMascotState('KILL_SWITCH_ACTIVE'));
+
+    const character = screen.getByRole('button', { name: /น้องมอเตอร์บอย/ });
+    // switched off: no drift animation, the character is desaturated…
+    expect(character.className).not.toContain('animate-mascot-drift');
+    const img = container.querySelector('img');
+    expect(img?.style.filter).toContain('grayscale');
+    // …and a small "พักเครื่อง" tag replaces the SL-umbrella reading
+    expect(character.textContent).toContain('พักเครื่อง');
+    expect(character.getAttribute('title')).toContain('kill switch');
   });
 
   it('shows the GOD SPEED flourish while executing', () => {

@@ -45,6 +45,11 @@ export interface ChatModalProps {
   geminiApiKey?: string;
   onOpenAtsMatrix?: () => void;
   onOpenSettings?: () => void;
+  /**
+   * A sentence the mascot already collected ("ขอดู BTC"). Dropped into the
+   * composer and focused, never auto-sent — the user stays the one who asks.
+   */
+  initialQuestion?: string;
 }
 
 const TONE_STORAGE_KEY = 'motorboy_chat_tone';
@@ -84,6 +89,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({
   geminiApiKey = '',
   onOpenAtsMatrix,
   onOpenSettings,
+  initialQuestion,
 }) => {
   const engineStatus = getAiEngineStatus(geminiApiKey);
 
@@ -129,6 +135,20 @@ export const ChatModal: React.FC<ChatModalProps> = ({
     const unsub = subscribeRoomMessages(GLOBAL_ROOM_ID, setMessages);
     return () => unsub();
   }, [isOpen]);
+
+  // Hand-off from the mascot: put the sentence in the box and focus it. The
+  // user still presses enter — a prefilled draft is a suggestion, not a send.
+  useEffect(() => {
+    if (!isOpen || !initialQuestion) return;
+    setDraft(initialQuestion);
+    setError(null);
+    const timer = window.setTimeout(() => {
+      const el = document.getElementById('motorboy-chat-input') as HTMLTextAreaElement | null;
+      el?.focus();
+      el?.setSelectionRange(el.value.length, el.value.length);
+    }, 60);
+    return () => window.clearTimeout(timer);
+  }, [isOpen, initialQuestion]);
 
   useEffect(() => {
     try {
