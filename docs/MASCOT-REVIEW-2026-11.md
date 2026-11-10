@@ -81,9 +81,57 @@ alert) — those are user-visible actions, not ambient detection.
   branch in the overlay is dead. Either wire a "ซ่อนถาวร" control with a way back
   (settings), or drop the field. Left as-is because it is part of the persisted
   settings shape asserted by `mascotCore.test.ts`.
-- **Function calling** (`change_asset`, `filter_stocks`, `open_news`) — the real
-  "mascot controls the dashboard" step. Needs a tool schema on the server route
-  plus an action dispatcher; the feed/observer split is the prerequisite, and it
-  is now in place.
 - **Pose vocabulary**: `KILL_SWITCH_ACTIVE` and `RISK_REJECT` both map to the
   umbrella pose (`SAD_SL`). A dedicated "engine off" pose would read better.
+
+## 6. Function calling — "สั่งงานน้องได้"
+
+The bubble now has one input. You type a sentence ("ขอดูบิทคอยน์หน่อย"), the
+server turns it into **one whitelisted verb**, the dashboard performs it, and the
+mascot answers in Thai.
+
+```
+bubble input ─▶ POST /api/gemini/mascot-action ─▶ Gemini (+ MASCOT_ACTION_CATALOG)
+                                   │                      │ JSON only
+                                   │              { reply, action }
+                                   ▼                      ▼
+                     parseMascotAction()  ──▶ dispatchMascotAction()
+                     (server)                 (client, one handler each)
+                                                       │
+                             change_asset / filter_stocks / open_news / open_chat
+```
+
+| Verb | Arguments | What it does |
+| --- | --- | --- |
+| `change_asset` | `symbol` (validated `^[A-Za-z0-9./_-]{1,15}$`), `market?` | switches to that market's tab and puts the ticker in the one shared search box |
+| `filter_stocks` | `query` (≤40), `market?` | same, but with a free-text filter |
+| `open_news` | `topic?` (≤60) | opens the news modal |
+| `open_chat` | `question?` | opens the full chat panel |
+
+Design guarantees, in the order they hold:
+
+1. **The model never touches the DOM.** It can only ask for a name from
+   `MASCOT_ACTION_CATALOG`; anything else is `null`.
+2. **Arguments are validated twice** — once on the server before the response
+   leaves, once on the client in `sendMascotCommand`, because a server is still
+   a network hop. Symbols are never truncated (a cut-down ticker is a different
+   ticker), extra fields (`amount`, `side`, `leverage`) are dropped, unknown
+   markets are dropped, over-long queries are cut to 40 characters.
+3. **No trading verbs exist.** There is no `place_order`, no `confirm`, nothing
+   that touches an order or a balance. A hallucinated `place_order` is discarded
+   and the user still sees the reply — covered by
+   `src/__tests__/mascotCommand.test.tsx`.
+4. **No handler, no action.** `dispatchMascotAction` returns `false` when nobody
+   registered that verb (e.g. the mascot rendered outside `App`), and never
+   throws into the overlay.
+5. **Registration is the seam.** `App.tsx` registers four handlers in one effect
+   and unregisters on unmount; the mascot itself imports no store, no tab state,
+   no modal state — same rule as the feed.
+
+Server route: `POST /api/gemini/mascot-action` (`server.ts`), `temperature 0.4`,
+`maxOutputTokens 220`, `responseMimeType: application/json`, `text` capped at 200
+chars and `marketBrief` at 600, guarded `JSON.parse`, `400 missing_text` /
+`400 missing_gemini_key`, `502 empty_gemini_response` / `502 mascot_action_failed`.
+
+Tests: `src/__tests__/mascotActions.test.ts` (18 — accept/reject/dispatch/copy)
+and `src/__tests__/mascotCommand.test.tsx` (6 — end-to-end through the bubble).

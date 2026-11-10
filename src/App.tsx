@@ -68,6 +68,7 @@ import { DrawdownMonitorModal } from './components/DrawdownMonitorModal';
 import { MascotOverlay } from './components/MascotOverlay';
 import { useMascotStore } from './services/mascotService';
 import { publishMascotFeed } from './mascot/feed';
+import { registerMascotActionHandlers, type MascotMarket } from './mascot/actions';
 import {
   buildDrawdownAssets,
   computePortfolioDrawdownSummary,
@@ -716,6 +717,45 @@ export const App: React.FC = () => {
     portfolioDrawdownSummary.worstDrawdownPct,
   ]);
 
+
+  // The mascot may navigate, filter and open panels — it may never trade.
+  // Handlers live here because this component owns tabs, search and modals;
+  // the mascot only ever publishes a feed and asks for a verb.
+  useEffect(() => {
+    const tabForMarket = (market?: MascotMarket): number | null => {
+      switch (market) {
+        case 'crypto':
+          return 0;
+        case 'forex':
+          return 1;
+        case 'th':
+          return 2;
+        case 'us':
+          return 3;
+        case 'index':
+          return 4;
+        default:
+          return null;
+      }
+    };
+
+    return registerMascotActionHandlers({
+      change_asset: (action) => {
+        if (action.name !== 'change_asset') return;
+        const tab = tabForMarket(action.market);
+        if (tab !== null) setSelectedTab(tab);
+        setSearchQuery(action.symbol);
+      },
+      filter_stocks: (action) => {
+        if (action.name !== 'filter_stocks') return;
+        const tab = tabForMarket(action.market);
+        if (tab !== null) setSelectedTab(tab);
+        setSearchQuery(action.query);
+      },
+      open_news: () => setShowNewsModal(true),
+      open_chat: () => setShowChat(true),
+    });
+  }, []);
 
   // Publish the same rate to the formatters so every ฿ amount on screen —
   // ticker, cards, detail modals, history — converts with one number.

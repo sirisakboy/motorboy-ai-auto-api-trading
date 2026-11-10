@@ -14,6 +14,8 @@ import { useMascotStore, type MascotState } from '../services/mascotService';
 import { useMascotFeed } from '../mascot/feed';
 import { useMascotAutoPilot } from '../mascot/observer';
 import { canReachServer, fetchMascotLine } from '../services/mascotAiService';
+import { sendMascotCommand } from '../services/mascotActionService';
+import { describeMascotAction, dispatchMascotAction } from '../mascot/actions';
 import type { CryptoCoin, TradingSignal } from '../types';
 import type { EndingResult, EndingType, Ohlcv, PoseId } from '../mascot/types';
 import { FACE_ID, MASCOT_FACE_ATTR, MASCOT_ROOT_ATTR, countMountedFaces } from '../mascot/core';
@@ -146,6 +148,8 @@ export const MascotOverlay: React.FC<MascotOverlayProps> = ({
   const [nearInteractive, setNearInteractive] = useState(false);
   const [aiLine, setAiLine] = useState<string | null>(null);
   const [isLoadingLine, setIsLoadingLine] = useState(false);
+  const [command, setCommand] = useState('');
+  const [isSending, setIsSending] = useState(false);
   const [ending, setEnding] = useState<EndingResult | null>(null);
   const [candles, setCandles] = useState<Ohlcv[] | null>(null);
   const [lastActivityAt, setLastActivityAt] = useState(() => Date.now());
@@ -249,6 +253,33 @@ export const MascotOverlay: React.FC<MascotOverlayProps> = ({
       cancelled = true;
     };
   }, [state, requestLine]);
+
+  /* ---------------------------------------- typed commands ("สั่งงานได้") */
+  const submitCommand = useCallback(
+    async (event: React.FormEvent) => {
+      event.preventDefault();
+      const text = command.trim();
+      if (!text || isSending) return;
+
+      setIsSending(true);
+      try {
+        const result = await sendMascotCommand({ text, ...ctxRef.current });
+        if (!result) {
+          setAiLine('ขอโทษครับ ตอนนี้ผมต่อเซิร์ฟเวอร์ไม่ได้ ลองอีกครั้งนะ');
+          return;
+        }
+        const handled = dispatchMascotAction(result.action);
+        setAiLine(
+          result.reply ||
+            (result.action && handled ? describeMascotAction(result.action) : 'รับทราบครับ')
+        );
+        if (handled) setCommand('');
+      } finally {
+        setIsSending(false);
+      }
+    },
+    [command, isSending]
+  );
 
   /* ------------------------------------------------ expand / auto-collapse */
   useEffect(() => {
@@ -662,6 +693,27 @@ export const MascotOverlay: React.FC<MascotOverlayProps> = ({
                 ชี้จุดเริ่มให้หน่อย
               </button>
             )}
+
+            <form onSubmit={submitCommand} className="mt-2 flex items-center gap-1">
+              <input
+                value={command}
+                onChange={(event) => setCommand(event.target.value)}
+                maxLength={200}
+                placeholder="บอกผมมา… เช่น ดู BTC"
+                aria-label="สั่งงานน้องมอเตอร์บอย"
+                className="min-w-0 flex-1 rounded-md border bg-[#141725] px-2 py-1 text-[10px] text-[#ECEAF4] placeholder:text-[#8B88A0] focus:outline-none focus:ring-1"
+                style={{ borderColor: palette.border, ['--tw-ring-color' as string]: palette.primary }}
+              />
+              <button
+                type="submit"
+                disabled={isSending || command.trim().length === 0}
+                aria-label="ส่งคำสั่ง"
+                className="rounded-md border px-2 py-1 text-[10px] font-bold disabled:opacity-40 transition-colors"
+                style={{ borderColor: `${palette.primary}66`, color: palette.primary }}
+              >
+                {isSending ? '…' : 'ส่ง'}
+              </button>
+            </form>
 
             <div className="mt-2 flex items-center justify-between gap-2">
               <button
