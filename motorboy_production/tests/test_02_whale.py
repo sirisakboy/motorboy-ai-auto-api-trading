@@ -121,6 +121,14 @@ class TestWhaleInput(unittest.TestCase):
         self.assertEqual(whale.canonical_asset_type("index"), "gold_index")
         self.assertEqual(whale.canonical_asset_type("thai_stock"), "stock")
 
+    def test_app_tab_names_map_to_the_five_presets(self):
+        """ชื่อแท็บจริงของแอป (crypto/forex/th/us/indices) ต้องใช้ได้ทันที"""
+        self.assertEqual(whale.canonical_asset_type("crypto"), "crypto")
+        self.assertEqual(whale.canonical_asset_type("forex"), "forex")
+        self.assertEqual(whale.canonical_asset_type("th"), "stock")
+        self.assertEqual(whale.canonical_asset_type("us"), "stock")
+        self.assertEqual(whale.canonical_asset_type("indices"), "gold_index")
+
     def test_symbol_is_not_part_of_the_logic(self):
         mock = whale.sample_mock("forex", "bull")
         a = whale.analyze_flow("EURUSD", "forex", mock)

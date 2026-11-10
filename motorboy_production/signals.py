@@ -31,8 +31,17 @@ _ASSET_ALIASES: Mapping[str, str] = {
     "crypto_meme": "crypto",
     "coin": "crypto",
     "stock": "stock",
+    # แท็บจริงของแอปนี้: หุ้นไทย / หุ้นนอก -> stock (สเปกมี preset เดียวชื่อ stock)
+    "th": "stock",
+    "thai": "stock",
     "thai_stock": "stock",
+    "thai_stocks": "stock",
+    "th_stock": "stock",
+    "us": "stock",
     "us_stock": "stock",
+    "us_stocks": "stock",
+    "foreign": "stock",
+    "foreign_stocks": "stock",
     "equity": "stock",
     "forex": "forex",
     "fx": "forex",
@@ -40,6 +49,8 @@ _ASSET_ALIASES: Mapping[str, str] = {
     "gold": "gold_index",
     "gold_index": "gold_index",
     "index": "gold_index",
+    # แท็บดัชนีของแอปนี้อยู่ในกลุ่มเดียวกับทองตามสเปกข้อ 5
+    "indices": "gold_index",
     "commodity": "gold_index",
 }
 

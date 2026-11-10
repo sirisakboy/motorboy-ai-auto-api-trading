@@ -56,13 +56,18 @@ except Exception:  # pragma: no cover - fusion_core อาจมี helper พ�
             "crypto_major": "crypto",
             "crypto_meme": "crypto",
             "stock": "stock",
+            "th": "stock",  # แท็บหุ้นไทยของแอป
             "thai_stock": "stock",
+            "thai_stocks": "stock",
+            "us": "stock",  # แท็บหุ้นนอกของแอป
             "us_stock": "stock",
+            "foreign_stocks": "stock",
             "forex": "forex",
             "fx": "forex",
             "gold": "gold_index",
             "gold_index": "gold_index",
             "index": "gold_index",
+            "indices": "gold_index",
         }.get(key, "default")
 
     DEFAULT_ASSET_TYPE = "default"
@@ -587,7 +592,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument(
         "--asset_type",
         default=DEFAULT_ASSET_TYPE,
-        help="crypto | stock | forex | gold_index (ไม่ระบุ = default)",
+        help="crypto | forex | th | us | indices (หรือ stock / gold_index ; ไม่ระบุ = default)",
     )
     parser.add_argument(
         "--bias",
