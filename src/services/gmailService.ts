@@ -416,11 +416,11 @@ export function buildTradingReportEmailHtml(
   const rowsHtml = topSignals
     .map((s) => {
       const isLong = s.type === 'LONG';
-      const color = isLong ? '#10B981' : '#f9df7b';
+      const color = isLong ? '#7EE0B5' : '#FFB86B';
       const typeBg = isLong ? '#ECFDF5' : '#FEF2F2';
       const changeStr = s.change >= 0 ? `+${s.change.toFixed(2)}%` : `${s.change.toFixed(2)}%`;
       return `
-        <tr style="border-bottom: 1px solid #E5E7EB;">
+        <tr style="border-bottom: 1px solid #ECEAF4;">
           <td style="padding: 10px 12px; font-weight: bold; font-size: 14px;">${s.symbol}</td>
           <td style="padding: 10px 12px;">
             <span style="display: inline-block; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; color: ${color}; background-color: ${typeBg};">
@@ -429,8 +429,8 @@ export function buildTradingReportEmailHtml(
           </td>
           <td style="padding: 10px 12px; font-weight: 600;">$${s.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })}</td>
           <td style="padding: 10px 12px; color: ${color}; font-weight: 600;">${changeStr}</td>
-          <td style="padding: 10px 12px; font-size: 12px; color: #4B5563;">SL: $${s.sl.toFixed(2)} | TP: $${s.tp.toFixed(2)}</td>
-          <td style="padding: 10px 12px; font-size: 12px; color: #6B7280;">${s.similarity}%</td>
+          <td style="padding: 10px 12px; font-size: 12px; color: #8B88A0;">SL: $${s.sl.toFixed(2)} | TP: $${s.tp.toFixed(2)}</td>
+          <td style="padding: 10px 12px; font-size: 12px; color: #8B88A0;">${s.similarity}%</td>
         </tr>
       `;
     })
@@ -446,16 +446,16 @@ export function buildTradingReportEmailHtml(
         <title>${subject}</title>
       </head>
       <body style="margin: 0; padding: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #F9FAFB; color: #111827;">
-        <div style="max-width: 640px; margin: 0 auto; background: #FFFFFF; border: 1px solid #E5E7EB; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+        <div style="max-width: 640px; margin: 0 auto; background: #FFFFFF; border: 1px solid #ECEAF4; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
           <!-- Header -->
           <div style="background: #0F1117; padding: 24px; color: #FFFFFF; border-bottom: 3px solid #7C6CFF;">
-            <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #A5B4FC; font-weight: 700;">
+            <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #A89FFF; font-weight: 700;">
               AI MotorBoy AI-TH • Gmail Alert Hub
             </div>
             <h1 style="margin: 8px 0 4px 0; font-size: 20px; font-weight: 800; color: #FFFFFF;">
               รายงานสรุปสัญญาณซื้อขาย Multi-Asset
             </h1>
-            <p style="margin: 0; font-size: 12px; color: #9CA3AF;">
+            <p style="margin: 0; font-size: 12px; color: #A7A4B8;">
               ส่งไปยัง ${userEmail} • อัปเดตเมื่อ ${now}
             </p>
           </div>
@@ -476,10 +476,10 @@ export function buildTradingReportEmailHtml(
               สัญญาณเด่นล่าสุด (${topSignals.length} รายการ)
             </h2>
 
-            <div style="overflow-x: auto; border: 1px solid #E5E7EB; border-radius: 10px;">
+            <div style="overflow-x: auto; border: 1px solid #ECEAF4; border-radius: 10px;">
               <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
                 <thead>
-                  <tr style="background: #F9FAFB; border-bottom: 1px solid #E5E7EB; color: #6B7280; font-size: 11px; text-transform: uppercase;">
+                  <tr style="background: #F9FAFB; border-bottom: 1px solid #ECEAF4; color: #8B88A0; font-size: 11px; text-transform: uppercase;">
                     <th style="padding: 10px 12px;">สินทรัพย์</th>
                     <th style="padding: 10px 12px;">ทิศทาง</th>
                     <th style="padding: 10px 12px;">ราคา</th>
@@ -495,7 +495,7 @@ export function buildTradingReportEmailHtml(
             </div>
 
             <!-- Footer note -->
-            <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #E5E7EB; font-size: 11px; color: #9CA3AF; line-height: 1.5;">
+            <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #ECEAF4; font-size: 11px; color: #A7A4B8; line-height: 1.5;">
               <p style="margin: 0 0 4px 0;">
                 * การลงทุนมีความเสี่ยง ข้อมูลในอีเมลนี้เป็นการคำนวณโมเมนตัมและระดับ Stop Loss / Take Profit ทางเทคนิคเพื่อการศึกษาและติดตามเท่านั้น
               </p>

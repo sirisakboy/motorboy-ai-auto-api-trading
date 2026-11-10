@@ -40,7 +40,7 @@ function getDefaultMessage(state: MascotState): string {
     case 'TP_CELEBRATE': return 'เรียบร้อย! Take Profit ตามเป้า วินัยดีเยี่ยมครับ';
     case 'SL_RESPECTED': return 'เจ็บแต่จบครับ SL ครั้งนี้เพื่อรักษาทุนก้อนใหญ่ไว้';
     case 'RISK_REJECT': return 'เบรกก่อนจิ! ความเสี่ยงเกิน 2% ผมไม่แนะนำให้เข้าไม้นี้นะ';
-    case 'KILL_SWITCH_ACTIVE': return '🛑 อันตราย! Drawdown หนักเกินไป ผมขอสั่งหยุดเทรดชั่วคราวครับ';
+    case 'KILL_SWITCH_ACTIVE': return 'Drawdown หนักเกินไปครับ ผมขอหยุดเทรดชั่วคราวก่อน';
     case 'SIDEWAYS': return 'ตลาดนิ่งเกินไป พักสายตาไปหาอะไรดื่มก่อนไหมครับ?';
     case 'ONBOARDING': return 'ยินดีต้อนรับสู่ MotorBoy AI-TH มาเริ่มตั้งค่าพอร์ตกันครับ';
     default: return 'สวัสดีครับ ผมมอเตอร์บอย พร้อมเป็น Co-Pilot ให้คุณแล้ว!';

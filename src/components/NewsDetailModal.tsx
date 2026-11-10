@@ -32,6 +32,8 @@ import {
   analyzeNewsWithGemini,
   analyzeLongTermProjectWithGemini,
 } from '../services/geminiService';
+import { useModalA11y } from '../hooks/useModalA11y';
+import { announceMascot } from '../mascot/announce';
 
 interface NewsDetailModalProps {
   article: NewsArticle | null;
@@ -110,6 +112,7 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
     }
   };
 
+  const dialogRef = useModalA11y({ onClose, enabled: !!article });
   if (!article) return null;
 
   const handleCopySummary = () => {
@@ -181,22 +184,26 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
 
   const sentimentIcon =
     analysis?.sentiment === 'BULLISH' ? (
-      <TrendingUp className="w-5 h-5 text-[#22C55E]" />
+      <TrendingUp className="w-5 h-5 text-[#7EE0B5]" />
     ) : analysis?.sentiment === 'BEARISH' ? (
-      <TrendingDown className="w-5 h-5 text-[#f9df7b]" />
+      <TrendingDown className="w-5 h-5 text-[#FFB86B]" />
     ) : (
-      <Minus className="w-5 h-5 text-[#94A3B8]" />
+      <Minus className="w-5 h-5 text-[#A7A4B8]" />
     );
 
   const sentimentBg =
     analysis?.sentiment === 'BULLISH'
-      ? 'bg-[#22C55E]/10 border-[#22C55E]/30 text-[#22C55E]'
+      ? 'bg-[#7EE0B5]/10 border-[#7EE0B5]/30 text-[#7EE0B5]'
       : analysis?.sentiment === 'BEARISH'
-      ? 'bg-[#f9df7b]/10 border-[#f9df7b]/30 text-[#f9df7b]'
-      : 'bg-[#94A3B8]/10 border-[#94A3B8]/30 text-[#94A3B8]';
+      ? 'bg-[#FFB86B]/10 border-[#FFB86B]/30 text-[#FFB86B]'
+      : 'bg-[#A7A4B8]/10 border-[#A7A4B8]/30 text-[#A7A4B8]';
 
   return (
     <div
+      ref={dialogRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label="วิเคราะห์ข่าวและผลกระทบตลาด"
       id="news-analysis-modal-backdrop"
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/75 backdrop-blur-sm overflow-y-auto"
       onClick={(e) => {
@@ -205,24 +212,24 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
     >
       <div
         id="news-analysis-modal-container"
-        className="w-full sm:max-w-2xl bg-[#131722] border-t sm:border border-[#2A2E39] rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] sm:my-8 flex flex-col"
+        className="w-full sm:max-w-2xl bg-[#141725] border-t sm:border border-[#222640] rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] sm:my-8 flex flex-col"
       >
         {/* Header */}
-        <div className="p-5 border-b border-[#2A2E39] flex items-start justify-between bg-gradient-to-r from-[#1E222D] to-[#131722]">
+        <div className="p-5 border-b border-[#222640] flex items-start justify-between bg-gradient-to-r from-[#1C1F2E] to-[#141725]">
           <div className="flex-1 pr-4">
             <div className="flex items-center gap-2 mb-2 flex-wrap">
               {isProjectArticle ? (
-                <span className="inline-flex items-center gap-1.5 bg-[#F59E0B]/20 border border-[#F59E0B]/40 text-[#FBBF24] text-xs font-semibold px-2.5 py-0.5 rounded-full">
+                <span className="inline-flex items-center gap-1.5 bg-[#FFB86B]/20 border border-[#FFB86B]/40 text-[#FFB86B] text-xs font-semibold px-2.5 py-0.5 rounded-full">
                   <Building2 className="w-3.5 h-3.5" />
                   โครงการก่อสร้าง & ขยายกิจการ
                 </span>
               ) : isMitrade ? (
-                <span className="inline-flex items-center gap-1.5 bg-[#F59E0B]/20 border border-[#F59E0B]/40 text-[#FBBF24] text-xs font-semibold px-2.5 py-0.5 rounded-full">
+                <span className="inline-flex items-center gap-1.5 bg-[#FFB86B]/20 border border-[#FFB86B]/40 text-[#FFB86B] text-xs font-semibold px-2.5 py-0.5 rounded-full">
                   <Globe className="w-3.5 h-3.5" />
                   Mitrade Insights
                 </span>
               ) : isMsn ? (
-                <span className="inline-flex items-center gap-1.5 bg-[#0284C7]/20 border border-[#0284C7]/40 text-[#38BDF8] text-xs font-semibold px-2.5 py-0.5 rounded-full">
+                <span className="inline-flex items-center gap-1.5 bg-[#4CC9F0]/20 border border-[#4CC9F0]/40 text-[#4CC9F0] text-xs font-semibold px-2.5 py-0.5 rounded-full">
                   <Globe className="w-3.5 h-3.5" />
                   MSN Money ประเทศไทย
                 </span>
@@ -232,13 +239,13 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
                   Yahoo ข่าวโลก (World News)
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1.5 bg-[#7C6CFF]/20 border border-[#7C6CFF]/40 text-[#A5B4FC] text-xs font-semibold px-2.5 py-0.5 rounded-full">
+                <span className="inline-flex items-center gap-1.5 bg-[#7C6CFF]/20 border border-[#7C6CFF]/40 text-[#A89FFF] text-xs font-semibold px-2.5 py-0.5 rounded-full">
                   <BarChart3 className="w-3.5 h-3.5" />
                   {article.source}
                 </span>
               )}
-              <span className="text-xs text-[#94A3B8]">• {article.time}</span>
-              <span className="inline-flex items-center gap-1 bg-[#22C55E]/15 text-[#4ADE80] text-[11px] font-medium px-2 py-0.5 rounded-full">
+              <span className="text-xs text-[#A7A4B8]">• {article.time}</span>
+              <span className="inline-flex items-center gap-1 bg-[#7EE0B5]/15 text-[#7EE0B5] text-[11px] font-medium px-2 py-0.5 rounded-full">
                 <Sparkles className="w-3 h-3" />
                 AI วิเคราะห์ความแม่นยำสูง
               </span>
@@ -249,22 +256,24 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
           </div>
           <button
             id="close-news-modal-btn"
+            type="button"
+            aria-label="ปิดหน้าต่างวิเคราะห์ข่าว"
             onClick={onClose}
-            className="text-[#94A3B8] hover:text-white p-1.5 rounded-lg hover:bg-[#2A2E39] transition-colors shrink-0"
+            className="text-[#A7A4B8] hover:text-white p-1.5 rounded-lg hover:bg-[#222640] transition-colors shrink-0"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Tab Switcher: Market Sentiment vs. Long-Term Capex & Project */}
-        <div className="flex border-b border-[#2A2E39] bg-[#171B26] px-5 pt-2 gap-2 text-xs">
+        <div className="flex border-b border-[#222640] bg-[#171B26] px-5 pt-2 gap-2 text-xs">
           <button
             type="button"
             onClick={() => handleTabChange('MARKET_SENTIMENT')}
             className={`pb-2.5 px-3 font-semibold transition-all border-b-2 flex items-center gap-1.5 ${
               activeTab === 'MARKET_SENTIMENT'
                 ? 'text-[#7C6CFF] border-[#7C6CFF]'
-                : 'text-[#94A3B8] border-transparent hover:text-white'
+                : 'text-[#A7A4B8] border-transparent hover:text-white'
             }`}
           >
             <BarChart3 className="w-3.5 h-3.5" />
@@ -275,8 +284,8 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
             onClick={() => handleTabChange('LONG_TERM_PROJECT')}
             className={`pb-2.5 px-3 font-semibold transition-all border-b-2 flex items-center gap-1.5 ${
               activeTab === 'LONG_TERM_PROJECT'
-                ? 'text-[#F59E0B] border-[#F59E0B]'
-                : 'text-[#94A3B8] border-transparent hover:text-white'
+                ? 'text-[#FFB86B] border-[#FFB86B]'
+                : 'text-[#A7A4B8] border-transparent hover:text-white'
             }`}
           >
             <Building2 className="w-3.5 h-3.5" />
@@ -285,11 +294,18 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
         </div>
 
         {/* Content Body */}
-        <div className="p-5 overflow-y-auto space-y-5 flex-1">
+        <div
+          className="p-5 overflow-y-auto space-y-5 flex-1"
+          onScroll={(event) => {
+            const el = event.currentTarget;
+            if (el.scrollHeight - el.scrollTop - el.clientHeight > 32) return;
+            announceMascot(`อ่านครบแล้วครับ — ข่าว “${article.title.slice(0, 60)}”`);
+          }}
+        >
           {/* Quick External Link bar */}
-          <div className="flex items-center justify-between p-3 rounded-xl bg-[#1E222D] border border-[#2A2E39] text-xs">
-            <div className="flex items-center gap-2 text-[#CBD5E1] truncate pr-2">
-              <span className="text-[#94A3B8]">แหล่งที่มา:</span>
+          <div className="flex items-center justify-between p-3 rounded-xl bg-[#1C1F2E] border border-[#222640] text-xs">
+            <div className="flex items-center gap-2 text-[#ECEAF4] truncate pr-2">
+              <span className="text-[#A7A4B8]">แหล่งที่มา:</span>
               <span className="font-semibold text-white truncate">
                 {article.source}
               </span>
@@ -299,7 +315,7 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
               href={article.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 text-[#38BDF8] hover:text-[#7DD3FC] font-medium transition-colors shrink-0 bg-[#0284C7]/15 hover:bg-[#0284C7]/25 px-3 py-1.5 rounded-lg border border-[#0284C7]/30"
+              className="inline-flex items-center gap-1.5 text-[#4CC9F0] hover:text-[#7DD3FC] font-medium transition-colors shrink-0 bg-[#4CC9F0]/15 hover:bg-[#4CC9F0]/25 px-3 py-1.5 rounded-lg border border-[#4CC9F0]/30"
             >
               <span>{isMsn ? 'เปิดอ่านบน MSN Money' : 'อ่านข่าวต้นฉบับ'}</span>
               <ExternalLink className="w-3.5 h-3.5" />
@@ -310,12 +326,12 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
           {loading && (
             <div className="py-12 flex flex-col items-center justify-center space-y-3">
               <RefreshCw className="w-8 h-8 text-[#7C6CFF] animate-spin" />
-              <p className="text-sm text-[#CBD5E1] font-medium">
+              <p className="text-sm text-[#ECEAF4] font-medium">
                 {activeTab === 'LONG_TERM_PROJECT'
                   ? 'Gemini AI กำลังประเมินเศรษฐศาสตร์โครงการก่อสร้างและขยายกิจการระยะยาว...'
                   : 'Gemini AI กำลังประมวลผลและวิเคราะห์ข่าวอย่างแม่นยำที่สุด...'}
               </p>
-              <span className="text-xs text-[#94A3B8]">
+              <span className="text-xs text-[#A7A4B8]">
                 {activeTab === 'LONG_TERM_PROJECT'
                   ? 'คำนวณระยะเวลาคืนทุน (Payback Period), คาดการณ์ผลตอบแทน IRR และความได้เปรียบทางธุรกิจ (Moat)'
                   : 'กำลังตรวจสอบผลกระทบต่อ SET Index, อัตราแลกเปลี่ยน และสภาพคล่อง'}
@@ -329,84 +345,84 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
               {/* Project Capex & Verdict Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {/* Capex & Timeline */}
-                <div className="p-3.5 rounded-xl bg-[#1E222D] border border-[#2A2E39] flex flex-col justify-between">
-                  <div className="flex items-center justify-between text-xs text-[#94A3B8]">
+                <div className="p-3.5 rounded-xl bg-[#1C1F2E] border border-[#222640] flex flex-col justify-between">
+                  <div className="flex items-center justify-between text-xs text-[#A7A4B8]">
                     <span>งบลงทุน (CAPEX)</span>
-                    <Briefcase className="w-4 h-4 text-[#FBBF24]" />
+                    <Briefcase className="w-4 h-4 text-[#FFB86B]" />
                   </div>
                   <div className="mt-2">
                     <span className="text-lg font-black text-white">
                       {projectAnalysis.capexValue}
                     </span>
                   </div>
-                  <span className="text-[11px] text-[#94A3B8] mt-1 flex items-center gap-1">
+                  <span className="text-[11px] text-[#A7A4B8] mt-1 flex items-center gap-1">
                     <Clock className="w-3 h-3" />
                     {projectAnalysis.constructionTimeline}
                   </span>
                 </div>
 
                 {/* Long-Term Verdict */}
-                <div className="p-3.5 rounded-xl bg-[#1E222D] border border-[#2A2E39] flex flex-col justify-between">
-                  <div className="flex items-center justify-between text-xs text-[#94A3B8]">
+                <div className="p-3.5 rounded-xl bg-[#1C1F2E] border border-[#222640] flex flex-col justify-between">
+                  <div className="flex items-center justify-between text-xs text-[#A7A4B8]">
                     <span>คำแนะนำระยะยาว (1-5 ปี)</span>
-                    <TrendingUp className="w-4 h-4 text-[#22C55E]" />
+                    <TrendingUp className="w-4 h-4 text-[#7EE0B5]" />
                   </div>
                   <div className="mt-2">
                     <span
                       className={`inline-block px-2.5 py-1 rounded-lg text-xs font-bold border ${
                         projectAnalysis.longTermVerdict === 'STRONG_ACCUMULATE' ||
                         projectAnalysis.longTermVerdict === 'ACCUMULATE'
-                          ? 'bg-[#22C55E]/15 border-[#22C55E]/40 text-[#4ADE80]'
-                          : 'bg-[#F59E0B]/15 border-[#F59E0B]/40 text-[#FBBF24]'
+                          ? 'bg-[#7EE0B5]/15 border-[#7EE0B5]/40 text-[#7EE0B5]'
+                          : 'bg-[#FFB86B]/15 border-[#FFB86B]/40 text-[#FFB86B]'
                       }`}
                     >
                       {projectAnalysis.longTermVerdictTh}
                     </span>
                   </div>
-                  <span className="text-[11px] text-[#94A3B8] mt-1">
+                  <span className="text-[11px] text-[#A7A4B8] mt-1">
                     ความเชื่อมั่น AI: {projectAnalysis.confidenceScore}%
                   </span>
                 </div>
 
                 {/* Payback & Projected ROI */}
-                <div className="p-3.5 rounded-xl bg-[#1E222D] border border-[#2A2E39] flex flex-col justify-between">
-                  <div className="flex items-center justify-between text-xs text-[#94A3B8]">
+                <div className="p-3.5 rounded-xl bg-[#1C1F2E] border border-[#222640] flex flex-col justify-between">
+                  <div className="flex items-center justify-between text-xs text-[#A7A4B8]">
                     <span>ผลตอบแทน & จุดคุ้มทุน</span>
-                    <PiggyBank className="w-4 h-4 text-[#38BDF8]" />
+                    <PiggyBank className="w-4 h-4 text-[#4CC9F0]" />
                   </div>
                   <div className="mt-2">
-                    <span className="text-sm font-bold text-[#38BDF8]">
+                    <span className="text-sm font-bold text-[#4CC9F0]">
                       {projectAnalysis.roiProjection}
                     </span>
                   </div>
-                  <span className="text-[11px] text-[#94A3B8] mt-1">
+                  <span className="text-[11px] text-[#A7A4B8] mt-1">
                     ระยะเวลาคืนทุน: {projectAnalysis.paybackPeriod}
                   </span>
                 </div>
               </div>
 
               {/* Economic Moat & Competitive Advantage */}
-              <div className="p-4 rounded-xl bg-[#1E222D] border border-[#2A2E39]">
-                <h4 className="text-xs font-semibold text-[#A5B4FC] uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+              <div className="p-4 rounded-xl bg-[#1C1F2E] border border-[#222640]">
+                <h4 className="text-xs font-semibold text-[#A89FFF] uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
                   <Layers className="w-3.5 h-3.5" />
                   ความได้เปรียบเชิงการแข่งขันของบริษัทหลังขยายโครงการ (Economic Moat)
                 </h4>
-                <p className="text-sm text-[#E2E8F0] leading-relaxed">
+                <p className="text-sm text-[#ECEAF4] leading-relaxed">
                   {projectAnalysis.economicMoat}
                 </p>
               </div>
 
               {/* Long-term Strategy Recommendation */}
-              <div className="p-4 rounded-xl bg-gradient-to-br from-[#1E222D] to-[#171B26] border border-[#F59E0B]/40 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-[#F59E0B]/10 rounded-full blur-2xl pointer-events-none" />
-                <h4 className="text-xs font-bold text-[#FBBF24] uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                  <Sparkles className="w-4 h-4 text-[#FBBF24]" />
+              <div className="p-4 rounded-xl bg-gradient-to-br from-[#1C1F2E] to-[#171B26] border border-[#FFB86B]/40 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-[#FFB86B]/10 rounded-full blur-2xl pointer-events-none" />
+                <h4 className="text-xs font-bold text-[#FFB86B] uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                  <Sparkles className="w-4 h-4 text-[#FFB86B]" />
                   กลยุทธ์การสะสมหุ้นและจังหวะลงทุนระยะยาว (Investment Strategy)
                 </h4>
                 <p className="text-sm font-medium text-white leading-relaxed">
                   {projectAnalysis.strategyAdvice}
                 </p>
-                <div className="mt-3 pt-3 border-t border-[#2A2E39] flex items-center justify-between text-xs text-[#94A3B8] flex-wrap gap-2">
+                <div className="mt-3 pt-3 border-t border-[#222640] flex items-center justify-between text-xs text-[#A7A4B8] flex-wrap gap-2">
                   <span>
                     กรอบเวลาการถือครอง:{' '}
                     <strong className="text-white">
@@ -423,8 +439,8 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
               </div>
 
               {/* Long-term Growth Drivers */}
-              <div className="p-4 rounded-xl bg-[#1E222D] border border-[#2A2E39]">
-                <h4 className="text-xs font-semibold text-[#22C55E] uppercase tracking-wider mb-2 flex items-center gap-1.5">
+              <div className="p-4 rounded-xl bg-[#1C1F2E] border border-[#222640]">
+                <h4 className="text-xs font-semibold text-[#7EE0B5] uppercase tracking-wider mb-2 flex items-center gap-1.5">
                   <TrendingUp className="w-3.5 h-3.5" />
                   ปัจจัยขับเคลื่อนมูลค่ากิจการระยะยาว (Long-Term Value Drivers)
                 </h4>
@@ -432,9 +448,9 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
                   {projectAnalysis.coreDrivers.map((driver, idx) => (
                     <li
                       key={idx}
-                      className="text-xs text-[#CBD5E1] flex items-start gap-2"
+                      className="text-xs text-[#ECEAF4] flex items-start gap-2"
                     >
-                      <span className="text-[#22C55E] font-bold">✓</span>
+                      <span className="text-[#7EE0B5] font-bold">✓</span>
                       <span>{driver}</span>
                     </li>
                   ))}
@@ -442,12 +458,12 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
               </div>
 
               {/* Strategic Risk */}
-              <div className="p-4 rounded-xl bg-[#1E222D] border border-[#2A2E39]">
-                <h4 className="text-xs font-semibold text-[#f9df7b] uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+              <div className="p-4 rounded-xl bg-[#1C1F2E] border border-[#222640]">
+                <h4 className="text-xs font-semibold text-[#FFB86B] uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
                   <AlertTriangle className="w-3.5 h-3.5" />
                   ความเสี่ยงเชิงกลยุทธ์และการก่อสร้างที่ต้องติดตาม
                 </h4>
-                <p className="text-xs text-[#E2E8F0] leading-relaxed">
+                <p className="text-xs text-[#ECEAF4] leading-relaxed">
                   {projectAnalysis.strategicRisk}
                 </p>
               </div>
@@ -460,30 +476,30 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
               {/* Primary Score & Impact Matrix */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {/* Accuracy Score */}
-                <div className="p-3.5 rounded-xl bg-[#1E222D] border border-[#2A2E39] flex flex-col justify-between">
-                  <div className="flex items-center justify-between text-xs text-[#94A3B8]">
+                <div className="p-3.5 rounded-xl bg-[#1C1F2E] border border-[#222640] flex flex-col justify-between">
+                  <div className="flex items-center justify-between text-xs text-[#A7A4B8]">
                     <span>ระดับความแม่นยำ AI</span>
-                    <ShieldCheck className="w-4 h-4 text-[#22C55E]" />
+                    <ShieldCheck className="w-4 h-4 text-[#7EE0B5]" />
                   </div>
                   <div className="mt-2 flex items-baseline gap-1">
                     <span className="text-2xl font-black text-white">
                       {analysis.accuracyScore}%
                     </span>
-                    <span className="text-xs text-[#22C55E] font-medium">
+                    <span className="text-xs text-[#7EE0B5] font-medium">
                       (High Confidence)
                     </span>
                   </div>
-                  <div className="w-full bg-[#131722] h-1.5 rounded-full mt-2 overflow-hidden">
+                  <div className="w-full bg-[#141725] h-1.5 rounded-full mt-2 overflow-hidden">
                     <div
-                      className="bg-gradient-to-r from-[#22C55E] to-[#38BDF8] h-full rounded-full"
+                      className="bg-gradient-to-r from-[#7EE0B5] to-[#4CC9F0] h-full rounded-full"
                       style={{ width: `${analysis.accuracyScore}%` }}
                     />
                   </div>
                 </div>
 
                 {/* Sentiment & Direction */}
-                <div className="p-3.5 rounded-xl bg-[#1E222D] border border-[#2A2E39] flex flex-col justify-between">
-                  <div className="flex items-center justify-between text-xs text-[#94A3B8]">
+                <div className="p-3.5 rounded-xl bg-[#1C1F2E] border border-[#222640] flex flex-col justify-between">
+                  <div className="flex items-center justify-between text-xs text-[#A7A4B8]">
                     <span>ทิศทางผลกระทบ</span>
                     {sentimentIcon}
                   </div>
@@ -494,7 +510,7 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
                       {analysis.sentimentLabelTh}
                     </span>
                   </div>
-                  <span className="text-[11px] text-[#94A3B8] mt-2">
+                  <span className="text-[11px] text-[#A7A4B8] mt-2">
                     กรอบเวลา:{' '}
                     {analysis.impactHorizon === 'SHORT_TERM'
                       ? 'ระยะสั้น (Intraday)'
@@ -503,19 +519,19 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
                 </div>
 
                 {/* Market Impact Level */}
-                <div className="p-3.5 rounded-xl bg-[#1E222D] border border-[#2A2E39] flex flex-col justify-between">
-                  <div className="flex items-center justify-between text-xs text-[#94A3B8]">
+                <div className="p-3.5 rounded-xl bg-[#1C1F2E] border border-[#222640] flex flex-col justify-between">
+                  <div className="flex items-center justify-between text-xs text-[#A7A4B8]">
                     <span>ผลกระทบต่อตลาด</span>
-                    <Flame className="w-4 h-4 text-[#F59E0B]" />
+                    <Flame className="w-4 h-4 text-[#FFB86B]" />
                   </div>
                   <div className="mt-2 flex items-center gap-2">
                     <span
                       className={`px-2.5 py-1 rounded-lg text-xs font-black ${
                         analysis.marketImpact === 'HIGH'
-                          ? 'bg-[#f9df7b]/20 text-[#f9df7b] border border-[#f9df7b]/40'
+                          ? 'bg-[#FFB86B]/20 text-[#FFB86B] border border-[#FFB86B]/40'
                           : analysis.marketImpact === 'MEDIUM'
-                          ? 'bg-[#F59E0B]/20 text-[#FBBF24] border border-[#F59E0B]/40'
-                          : 'bg-[#10B981]/20 text-[#34D399] border border-[#10B981]/40'
+                          ? 'bg-[#FFB86B]/20 text-[#FFB86B] border border-[#FFB86B]/40'
+                          : 'bg-[#7EE0B5]/20 text-[#7EE0B5] border border-[#7EE0B5]/40'
                       }`}
                     >
                       {analysis.marketImpact === 'HIGH'
@@ -525,23 +541,23 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
                         : 'จำกัด (LOW)'}
                     </span>
                   </div>
-                  <span className="text-[11px] text-[#94A3B8] mt-2">
+                  <span className="text-[11px] text-[#A7A4B8] mt-2">
                     ความเสี่ยงมหภาค: {analysis.keyMetrics.macroRisk}
                   </span>
                 </div>
               </div>
 
               {/* Affected Markets */}
-              <div className="p-4 rounded-xl bg-[#1E222D] border border-[#2A2E39]">
-                <h4 className="text-xs font-semibold text-[#94A3B8] uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                  <Globe className="w-3.5 h-3.5 text-[#38BDF8]" />
+              <div className="p-4 rounded-xl bg-[#1C1F2E] border border-[#222640]">
+                <h4 className="text-xs font-semibold text-[#A7A4B8] uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                  <Globe className="w-3.5 h-3.5 text-[#4CC9F0]" />
                   สินทรัพย์และตลาดที่ได้รับผลกระทบโดยตรง
                 </h4>
                 <div className="flex flex-wrap gap-2">
                   {analysis.affectedMarkets.map((market: any, idx: number) => (
                     <span
                       key={idx}
-                      className="bg-[#131722] border border-[#2A2E39] text-white text-xs px-2.5 py-1 rounded-lg font-medium"
+                      className="bg-[#141725] border border-[#222640] text-white text-xs px-2.5 py-1 rounded-lg font-medium"
                     >
                       {market}
                     </span>
@@ -550,37 +566,37 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
               </div>
 
               {/* Core Takeaway */}
-              <div className="p-4 rounded-xl bg-[#1E222D] border border-[#2A2E39]">
-                <h4 className="text-xs font-semibold text-[#94A3B8] uppercase tracking-wider mb-1.5">
+              <div className="p-4 rounded-xl bg-[#1C1F2E] border border-[#222640]">
+                <h4 className="text-xs font-semibold text-[#A7A4B8] uppercase tracking-wider mb-1.5">
                   📌 สรุปใจความสำคัญของข่าว
                 </h4>
-                <p className="text-sm text-[#E2E8F0] leading-relaxed">
+                <p className="text-sm text-[#ECEAF4] leading-relaxed">
                   {analysis.coreTakeaway}
                 </p>
               </div>
 
               {/* Deep Market Implication */}
-              <div className="p-4 rounded-xl bg-[#1E222D] border border-[#2A2E39]">
-                <h4 className="text-xs font-semibold text-[#94A3B8] uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+              <div className="p-4 rounded-xl bg-[#1C1F2E] border border-[#222640]">
+                <h4 className="text-xs font-semibold text-[#A7A4B8] uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
                   <BarChart3 className="w-3.5 h-3.5 text-[#7C6CFF]" />
                   การวิเคราะห์ผลกระทบต่อโครงสร้างราคาและ Fund Flow
                 </h4>
-                <p className="text-sm text-[#CBD5E1] leading-relaxed">
+                <p className="text-sm text-[#ECEAF4] leading-relaxed">
                   {analysis.marketImplication}
                 </p>
               </div>
 
               {/* Trading Strategy Recommendation */}
-              <div className="p-4 rounded-xl bg-gradient-to-br from-[#1E222D] to-[#171B26] border border-[#7C6CFF]/40 relative overflow-hidden">
+              <div className="p-4 rounded-xl bg-gradient-to-br from-[#1C1F2E] to-[#171B26] border border-[#7C6CFF]/40 relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-[#7C6CFF]/10 rounded-full blur-2xl pointer-events-none" />
-                <h4 className="text-xs font-bold text-[#A5B4FC] uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                  <Sparkles className="w-4 h-4 text-[#A5B4FC]" />
+                <h4 className="text-xs font-bold text-[#A89FFF] uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                  <Sparkles className="w-4 h-4 text-[#A89FFF]" />
                   กลยุทธ์การเทรดที่แนะนำอย่างแม่นยำที่สุด (Actionable Strategy)
                 </h4>
                 <p className="text-sm font-medium text-white leading-relaxed">
                   {analysis.tradingStrategyAdvice}
                 </p>
-                <div className="mt-3 pt-3 border-t border-[#2A2E39] flex items-center justify-between text-xs text-[#94A3B8]">
+                <div className="mt-3 pt-3 border-t border-[#222640] flex items-center justify-between text-xs text-[#A7A4B8]">
                   <span>
                     คำแนะนำสถานะ:{' '}
                     <strong className="text-white">
@@ -598,8 +614,8 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
 
               {/* Risk Factors */}
               {analysis.riskFactors && analysis.riskFactors.length > 0 && (
-                <div className="p-4 rounded-xl bg-[#1E222D] border border-[#2A2E39]">
-                  <h4 className="text-xs font-semibold text-[#f9df7b] uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                <div className="p-4 rounded-xl bg-[#1C1F2E] border border-[#222640]">
+                  <h4 className="text-xs font-semibold text-[#FFB86B] uppercase tracking-wider mb-2 flex items-center gap-1.5">
                     <AlertTriangle className="w-3.5 h-3.5" />
                     ปัจจัยเสี่ยงที่ต้องจับตา (Risk Watchlist)
                   </h4>
@@ -607,9 +623,9 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
                     {analysis.riskFactors.map((risk: any, idx: number) => (
                       <li
                         key={idx}
-                        className="text-xs text-[#CBD5E1] flex items-start gap-2"
+                        className="text-xs text-[#ECEAF4] flex items-start gap-2"
                       >
-                        <span className="text-[#f9df7b] font-bold">•</span>
+                        <span className="text-[#FFB86B] font-bold">•</span>
                         <span>{risk}</span>
                       </li>
                     ))}
@@ -621,12 +637,12 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
         </div>
 
         {/* Modal Footer Actions */}
-        <div className="p-4 border-t border-[#2A2E39] bg-[#1E222D] flex items-center justify-between flex-wrap gap-2">
+        <div className="p-4 border-t border-[#222640] bg-[#1C1F2E] flex items-center justify-between flex-wrap gap-2">
           <button
             id="re-analyze-news-btn"
             onClick={() => runAnalysis(article, activeTab)}
             disabled={loading}
-            className="px-3 py-2 rounded-xl text-xs font-medium text-[#CBD5E1] hover:text-white hover:bg-[#2A2E39] border border-[#2A2E39] flex items-center gap-1.5 transition-colors disabled:opacity-50"
+            className="px-3 py-2 rounded-xl text-xs font-medium text-[#ECEAF4] hover:text-white hover:bg-[#222640] border border-[#222640] flex items-center gap-1.5 transition-colors disabled:opacity-50"
           >
             <RefreshCw
               className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`}
@@ -642,12 +658,12 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
                 loading ||
                 (activeTab === 'LONG_TERM_PROJECT' ? !projectAnalysis : !analysis)
               }
-              className="px-3 py-2 rounded-xl text-xs font-medium text-[#CBD5E1] hover:text-white hover:bg-[#2A2E39] border border-[#2A2E39] flex items-center gap-1.5 transition-colors disabled:opacity-50"
+              className="px-3 py-2 rounded-xl text-xs font-medium text-[#ECEAF4] hover:text-white hover:bg-[#222640] border border-[#222640] flex items-center gap-1.5 transition-colors disabled:opacity-50"
             >
               {copied ? (
                 <>
-                  <Check className="w-3.5 h-3.5 text-[#22C55E]" />
-                  <span className="text-[#22C55E]">คัดลอกแล้ว</span>
+                  <Check className="w-3.5 h-3.5 text-[#7EE0B5]" />
+                  <span className="text-[#7EE0B5]">คัดลอกแล้ว</span>
                 </>
               ) : (
                 <>
@@ -667,7 +683,7 @@ export const NewsDetailModal: React.FC<NewsDetailModalProps> = ({
                   isSaving ||
                   (activeTab === 'LONG_TERM_PROJECT' ? !projectAnalysis : !analysis)
                 }
-                className="px-4 py-2 rounded-xl text-xs font-semibold bg-[#7C6CFF] hover:bg-[#6D5DFF] text-white flex items-center gap-1.5 transition-colors shadow-md shadow-[#7C6CFF]/20 disabled:opacity-50"
+                className="px-4 py-2 rounded-xl text-xs font-semibold bg-[#7C6CFF] hover:bg-[#6D5DFF] text-[#0F1117] flex items-center gap-1.5 transition-colors shadow-md shadow-[#7C6CFF]/20 disabled:opacity-50"
               >
                 {saved ? (
                   <>

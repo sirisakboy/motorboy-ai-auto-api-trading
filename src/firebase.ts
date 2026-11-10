@@ -14,56 +14,33 @@ googleProvider.setCustomParameters({ prompt: 'select_account' });
 export const workspaceGoogleProvider = new GoogleAuthProvider();
 workspaceGoogleProvider.setCustomParameters({ prompt: 'consent' });
 
+/**
+ * Google Workspace scopes — kept to the minimum the app actually calls.
+ *
+ * Previously this provider asked for `https://mail.google.com/` (full mailbox),
+ * gmail.settings.sharing, gmail.insert, every add-on scope and 25 Google Chat
+ * admin scopes. None of them were used, and requesting them means the app can
+ * never pass Google OAuth verification and a leaked token owns the mailbox.
+ *
+ * What the code really calls (grep `googleapis.com`):
+ *   · users.getProfile, messages.list, messages.get        → gmail.readonly
+ *   · messages.send                                        → gmail.send
+ *   · messages.trash                                       → gmail.modify
+ *   · calendar/v3/calendars/primary/events GET + POST      → calendar.events
+ */
 export const GMAIL_SCOPES = [
-  'https://mail.google.com/',
-  'https://www.googleapis.com/auth/gmail.addons.current.action.compose',
-  'https://www.googleapis.com/auth/gmail.addons.current.message.action',
-  'https://www.googleapis.com/auth/gmail.addons.current.message.metadata',
-  'https://www.googleapis.com/auth/gmail.addons.current.message.readonly',
-  'https://www.googleapis.com/auth/gmail.compose',
-  'https://www.googleapis.com/auth/gmail.insert',
-  'https://www.googleapis.com/auth/gmail.labels',
-  'https://www.googleapis.com/auth/gmail.metadata',
-  'https://www.googleapis.com/auth/gmail.modify',
   'https://www.googleapis.com/auth/gmail.readonly',
   'https://www.googleapis.com/auth/gmail.send',
-  'https://www.googleapis.com/auth/gmail.settings.basic',
-  'https://www.googleapis.com/auth/gmail.settings.sharing',
+  'https://www.googleapis.com/auth/gmail.modify',
 ];
 
-export const CALENDAR_SCOPES = [
-  'https://www.googleapis.com/auth/calendar.readonly',
-  'https://www.googleapis.com/auth/calendar.events.readonly',
-  'https://www.googleapis.com/auth/calendar.events',
-];
+export const CALENDAR_SCOPES = ['https://www.googleapis.com/auth/calendar.events'];
 
-export const CHAT_SCOPES = [
-  'https://www.googleapis.com/auth/chat.admin.delete',
-  'https://www.googleapis.com/auth/chat.admin.memberships',
-  'https://www.googleapis.com/auth/chat.admin.memberships.readonly',
-  'https://www.googleapis.com/auth/chat.admin.spaces',
-  'https://www.googleapis.com/auth/chat.admin.spaces.readonly',
-  'https://www.googleapis.com/auth/chat.customemojis',
-  'https://www.googleapis.com/auth/chat.customemojis.readonly',
-  'https://www.googleapis.com/auth/chat.delete',
-  'https://www.googleapis.com/auth/chat.memberships',
-  'https://www.googleapis.com/auth/chat.memberships.app',
-  'https://www.googleapis.com/auth/chat.memberships.readonly',
-  'https://www.googleapis.com/auth/chat.messages',
-  'https://www.googleapis.com/auth/chat.messages.create',
-  'https://www.googleapis.com/auth/chat.messages.reactions',
-  'https://www.googleapis.com/auth/chat.messages.reactions.create',
-  'https://www.googleapis.com/auth/chat.messages.reactions.readonly',
-  'https://www.googleapis.com/auth/chat.messages.readonly',
-  'https://www.googleapis.com/auth/chat.spaces',
-  'https://www.googleapis.com/auth/chat.spaces.create',
-  'https://www.googleapis.com/auth/chat.spaces.readonly',
-  'https://www.googleapis.com/auth/chat.users.readstate',
-  'https://www.googleapis.com/auth/chat.users.readstate.readonly',
-  'https://www.googleapis.com/auth/chat.users.sections',
-  'https://www.googleapis.com/auth/chat.users.sections.readonly',
-  'https://www.googleapis.com/auth/chat.users.spacesettings',
-];
+/**
+ * Google Chat is not used anywhere in the app. Kept as an empty export so
+ * existing imports/tests keep compiling; do not re-add scopes without code.
+ */
+export const CHAT_SCOPES: string[] = [];
 
 GMAIL_SCOPES.forEach((scope) => {
   workspaceGoogleProvider.addScope(scope);

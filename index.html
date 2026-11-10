@@ -2,6 +2,10 @@
 <html lang="th">
   <head>
     <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/brand/motorboy-mark-512.png" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#0F1117" />
     <script>
       (function() {
         if (typeof window !== 'undefined') {
@@ -93,7 +97,6 @@
         }
       })();
     </script>
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Trading Engine Pro</title>
     <meta name="description" content="Real-time Multi-Asset Trading Engine & Signal Analysis with live crypto, forex, stocks, Gmail trading alerts hub, and AI analytics." />
@@ -101,9 +104,15 @@
     <meta property="og:description" content="Real-time Multi-Asset Trading Engine & Signal Analysis with live crypto, forex, stocks, Gmail trading alerts hub, and AI analytics." />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <!-- Inter + Noto Sans Thai (body) · Kanit (display) · JetBrains Mono (numbers/code).
+         Declared once here instead of an @import inside index.css so the CSS
+         parser is not blocked on a third-party stylesheet. -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Kanit:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
   </head>
-  <body class="bg-[#0F1117] text-white min-h-screen">
+  <body class="min-h-screen">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

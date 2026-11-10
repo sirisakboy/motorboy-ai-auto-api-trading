@@ -2,64 +2,326 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* ============================================================================
+   MOTORBOY CALM SYSTEM v2.0 — design tokens
+   Source: MotorBoy-Studio-AI-TH Brand Book v2.0 (8 Nov 2026), section 16
+   "Tokens as Code". This :root block is the single source of truth and mirrors
+   the book 1:1 (--mb- prefix so the tokens never collide with a library).
+
+   Rules from the book that must survive any refactor:
+     · หนึ่งเล่ม หนึ่งระบบ — ห้ามสร้างสีใหม่เอง ต้องอัปเดตเล่มก่อน
+     · ห้ามใช้แดงสด #FF0000 — ใช้พีช (#F4A6A6) แทน เพราะแดงทำให้ตกใจ
+     · ตัวหนังสือบนปุ่มลาเวนเดอร์ = #0F1117 (ขาวบน #7C6CFF ได้แค่ 3.9:1)
+     · สัญญาณทุกตัวต้องมีไอคอน + คำ ไม่พึ่งสีอย่างเดียว (ผู้ใช้ตาบอดสี)
+     · prefers-reduced-motion → ปิดแอนิเมชัน เหลือแค่เฟด 120ms
+   ============================================================================ */
 :root {
-  /* MotorBoy Studio AI-TH Brand Tokens */
-  --mb-color-primary: #FF2D55;        /* Neon Crimson Red */
-  --mb-color-secondary: #A855F7;      /* Cyber Purple */
-  --mb-color-accent: #3B82F6;         /* Electric Cyan Blue */
-  --mb-color-success: #10B981;        /* Profit Green */
-  --mb-color-warning: #F59E0B;        /* Caution Amber */
-  --mb-color-danger: #EF4444;         /* Risk / Kill Switch Red */
-  --mb-bg-deep: #0A0A0A;              /* Cyber Black Background */
-  --mb-bg-card: #141417;              /* Tactical Dark Surface */
-  --mb-border-circuit: #262626;
+  /* --- Background -------------------------------------------------------- */
+  --mb-bg-top: #0F1117;               /* หมึก — พื้นหลังส่วนบน */
+  --mb-bg-bottom: #171A26;            /* ค่ำ — พื้นหลังส่วนล่าง */
+  --mb-bg-paper: #F7F5F0;             /* กระดาษอุ่น — โหมดสว่าง */
+  --mb-surface: #1C1F2E;              /* พื้นการ์ด */
+  --mb-surface-raised: #222640;       /* พื้นการ์ดยกขึ้น / ปุ่มรอง */
+  --mb-surface-sunken: #141725;       /* พื้นยุบ (ช่องกรอก, หลุม) */
+  --mb-line: rgba(255, 255, 255, 0.07);
 
-  /* Neon Glow Gradients */
-  --mb-gradient-brand: linear-gradient(135deg, #FF2D55 0%, #A855F7 50%, #3B82F6 100%);
-  --mb-gradient-surface: linear-gradient(180deg, rgba(255, 45, 85, 0.05) 0%, rgba(10, 10, 10, 0.95) 100%);
+  /* --- Text -------------------------------------------------------------- */
+  --mb-text: #ECEAF4;                 /* ข้อความหลัก (ไม่ใช้ขาวล้วน) 13.7:1 */
+  --mb-text-muted: #A7A4B8;           /* คำอธิบาย เวลา แหล่งข่าว 6.7:1 */
+  --mb-text-faint: #8B88A0;           /* ข้อความรอง ต่ำสุดที่ยอมรับ 4.8:1 */
+  --mb-text-light: #1C1F2E;           /* ข้อความบนพื้นสว่าง 13.5:1 */
 
-  /* Neon Box Shadows / Bloom */
-  --mb-neon-glow-red: 0 0 15px rgba(255, 45, 85, 0.45);
-  --mb-neon-glow-purple: 0 0 15px rgba(168, 85, 247, 0.45);
-  --mb-neon-glow-blue: 0 0 15px rgba(59, 130, 246, 0.45);
+  /* --- Brand ------------------------------------------------------------- */
+  --mb-lavender: #7C6CFF;             /* ลาเวนเดอร์ — AI, ปุ่มหลัก, เน้น */
+  --mb-lavender-soft: #A89FFF;        /* ตัวหนังสือเน้น, ลิงก์ */
+  --mb-sky: #4CC9F0;                  /* ข้อมูล, ปฏิทิน, INFO */
+  --mb-amber: #FFB86B;                /* ความอบอุ่น, WAIT */
+  --mb-mint: #7EE0B5;                 /* LONG / สำเร็จ */
+  --mb-peach: #F4A6A6;                /* SHORT / ระวัง — แทนแดงเสมอ */
+
+  /* --- Motion ------------------------------------------------------------ */
+  --mb-ease-calm: cubic-bezier(0.22, 0.8, 0.3, 1);
+  --mb-t-quick: 180ms;                /* hover ปุ่ม / ชิป */
+  --mb-t-base: 320ms;                 /* เปิด sheet เปลี่ยนแท็บ */
+  --mb-t-slow: 600ms;                 /* เปลี่ยนค่าตัวเลข เปลี่ยนสี */
+  --mb-t-ambient: 20s;                /* แสงพื้นหลังเคลื่อนช้า */
+
+  /* --- Radius + shadow --------------------------------------------------- */
+  --mb-radius-card: 20px;
+  --mb-radius-button: 14px;
+  --mb-radius-chip: 999px;
+  --mb-radius-input: 12px;
+  --mb-shadow-card: 0 8px 30px rgba(0, 0, 0, 0.25);
+
+  /* --- Gradients --------------------------------------------------------- */
+  --mb-grad-primary: linear-gradient(135deg, #8E80FF, #4CC9F0);
+  --mb-grad-hero: linear-gradient(160deg, rgba(124, 108, 255, 0.22), rgba(76, 201, 240, 0.1) 60%, transparent);
+  --mb-grad-sunset: linear-gradient(180deg, rgba(255, 184, 107, 0.14), transparent 55%);
+
+  /* --- Layout ------------------------------------------------------------ */
+  --mb-topbar: 64px;                  /* TopBar 64px */
+  --mb-grid: 8px;                     /* grid 8px (8/12/16/24/32/48) */
+  --mb-btn-primary: 48px;             /* ปุ่มหลัก 48px */
+  --mb-btn-secondary: 40px;           /* ปุ่มรอง 40px */
+  --mb-face-id: MB-33-MASTER-001;     /* NEVER CHANGE — หน้าตัวละคร */
+
+  /* --- Legacy aliases (v4.4 names kept so nothing renders unstyled) -------- */
+  --mb-brand: var(--mb-lavender);
+  --mb-brand-ink: var(--mb-bg-top);
+  --mb-brand-hover: #8E80FF;
+  --mb-brand-red: var(--mb-peach);          /* red is not a brand colour any more */
+  --mb-brand-red-fill: #C98A8A;             /* filled "danger": ink #0F1117 = 6.4:1 */
+  --mb-violet: var(--mb-lavender-soft);
+  --mb-neon-blue: var(--mb-sky);
+  --mb-neon-green: var(--mb-mint);
+  --mb-rust: #C97B2A;                       /* mascot track reference only */
+  --mb-rust-dark: #8A4B2A;
+  --mb-metal: var(--mb-text-muted);
+  --mb-metal-dark: var(--mb-surface-raised);
+  --mb-paper: var(--mb-bg-paper);
+  --mb-midnight: var(--mb-bg-top);
+  --mb-bg-deep: var(--mb-bg-top);
+  --mb-bg-card: var(--mb-surface);
+  --mb-border-circuit: var(--mb-line);
+  --mb-radius: var(--mb-radius-card);
+  --mb-color-primary: var(--mb-lavender);
+  --mb-color-secondary: var(--mb-lavender-soft);
+  --mb-color-accent: var(--mb-sky);
+  --mb-color-success: var(--mb-mint);
+  --mb-color-warning: var(--mb-amber);
+  --mb-color-danger: var(--mb-peach);
+  --mb-gradient-brand: var(--mb-grad-primary);
+  --mb-gradient-surface: linear-gradient(180deg, rgba(124, 108, 255, 0.08) 0%, rgba(15, 17, 23, 0.96) 100%);
+  --mb-glow-brand: 0 8px 30px rgba(124, 108, 255, 0.25);
+  --mb-neon-glow-red: 0 8px 30px rgba(244, 166, 166, 0.22);
+  --mb-neon-glow-purple: 0 8px 30px rgba(168, 159, 255, 0.22);
+  --mb-neon-glow-blue: 0 8px 30px rgba(76, 201, 240, 0.22);
+  --mb-texture: metal-gloss 70% + rust 20% + neon 10%; /* mascot art tracks */
+}
+
+/* Tailwind v4 theme: makes the tokens usable as utilities (bg-mb-lavender,
+   text-mb-muted, rounded-mb-card…) without repeating hex values. */
+@theme {
+  --color-mb-lavender: var(--mb-lavender);
+  --color-mb-lavender-soft: var(--mb-lavender-soft);
+  --color-mb-sky: var(--mb-sky);
+  --color-mb-amber: var(--mb-amber);
+  --color-mb-mint: var(--mb-mint);
+  --color-mb-peach: var(--mb-peach);
+  --color-mb-surface: var(--mb-surface);
+  --color-mb-raised: var(--mb-surface-raised);
+  --color-mb-sunken: var(--mb-surface-sunken);
+  --color-mb-text: var(--mb-text);
+  --color-mb-muted: var(--mb-text-muted);
+  --color-mb-faint: var(--mb-text-faint);
+  --color-mb-paper: var(--mb-bg-paper);
+  /* legacy utility names kept working */
+  --color-mb-brand: var(--mb-lavender);
+  --color-mb-red: var(--mb-peach);
+  --color-mb-red-fill: var(--mb-brand-red-fill);
+  --color-mb-violet: var(--mb-lavender-soft);
+  --color-mb-neon: var(--mb-sky);
+  --color-mb-green: var(--mb-mint);
+  --color-mb-rust: var(--mb-rust);
+  --color-mb-rust-dark: var(--mb-rust-dark);
+  --color-mb-metal: var(--mb-text-muted);
+  --color-mb-metal-dark: var(--mb-surface-raised);
+  --color-mb-midnight: var(--mb-bg-top);
+
+  /* Book: การ์ด 20px · ปุ่ม 14px · ช่องกรอก 12px · ชิป 999px */
+  --radius-mb: var(--mb-radius-card);
+  --radius-mb-card: var(--mb-radius-card);
+  --radius-mb-button: var(--mb-radius-button);
+  --radius-mb-input: var(--mb-radius-input);
+  --radius-2xl: var(--mb-radius-card);
+  --radius-xl: var(--mb-radius-button);
+  --radius-lg: var(--mb-radius-input);
+
+  --font-sans: 'Inter', 'Noto Sans Thai', system-ui, -apple-system, sans-serif;
+  --font-display: 'Kanit', 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
 }
 
 .bg-motorboy-gradient {
-  background: linear-gradient(135deg, #FF2D55 0%, #A855F7 50%, #3B82F6 100%);
+  background: var(--mb-grad-primary);
 }
 
 .text-motorboy-gradient {
-  background: linear-gradient(135deg, #FF2D55 0%, #A855F7 50%, #3B82F6 100%);
+  background: var(--mb-grad-primary);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
 .border-motorboy-circuit {
-  border-color: #262626;
+  border-color: var(--mb-line);
+}
+
+/* ---------------------------------------------------------------------------
+   Calm System component layer (8 core components live in React; these are the
+   shared primitives they build on)
+   ------------------------------------------------------------------------- */
+@layer components {
+  /* การ์ด: พื้น #1C1F2E, ขอบบางมาก, เงานุ่ม 0 8px 30px, มุม 20px */
+  .mb-card {
+    position: relative;
+    background-color: var(--mb-surface);
+    border: 1px solid var(--mb-line);
+    border-radius: var(--mb-radius-card);
+    box-shadow: var(--mb-shadow-card);
+  }
+
+  /* Hero Card / Story Card — พื้นไล่เฉดนุ่มของคู่สีแบรนด์ */
+  .mb-card-hero {
+    background-image: var(--mb-grad-hero);
+    border: 1px solid var(--mb-line);
+    border-radius: var(--mb-radius-card);
+  }
+
+  /* ปุ่มหลัก: ไล่เฉด 135deg #8E80FF → #4CC9F0, ตัวหนังสือ #0F1117, มุม 14px
+     กดแล้ว scale .98 ไม่เด้ง (Brand Book 08) */
+  .mb-btn-primary {
+    min-height: var(--mb-btn-primary);
+    border-radius: var(--mb-radius-button);
+    background: var(--mb-grad-primary);
+    color: var(--mb-bg-top);
+    font-weight: 700;
+    box-shadow: var(--mb-glow-brand);
+    transition: filter var(--mb-t-quick) var(--mb-ease-calm),
+      transform var(--mb-t-quick) var(--mb-ease-calm);
+  }
+
+  .mb-btn-primary:hover:not(:disabled) {
+    filter: brightness(1.06);
+  }
+
+  .mb-btn-primary:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+
+  .mb-btn-primary:disabled {
+    opacity: 0.5;
+    box-shadow: none;
+  }
+
+  /* ปุ่มรอง: พื้นผิว #222640 ขอบบางมาก 40px */
+  .mb-btn-secondary {
+    min-height: var(--mb-btn-secondary);
+    border-radius: var(--mb-radius-button);
+    background-color: var(--mb-surface-raised);
+    border: 1px solid var(--mb-line);
+    color: var(--mb-text);
+    font-weight: 600;
+    transition: background-color var(--mb-t-quick) var(--mb-ease-calm);
+  }
+
+  /* ชิป / ป้ายสถานะ: มุม 999px และต้องมีไอคอน + คำเสมอ */
+  .mb-chip {
+    border-radius: var(--mb-radius-chip);
+    padding: 0.25rem 0.625rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .mb-input {
+    border-radius: var(--mb-radius-input);
+    background-color: var(--mb-surface-sunken);
+    border: 1px solid var(--mb-line);
+    color: var(--mb-text);
+  }
+
+  /* ปุ่ม AI: ขอบลาเวนเดอร์บางๆ (ไม่ใช่นีออน) */
+  .mb-neon-edge {
+    border: 1px solid var(--mb-lavender);
+    border-radius: var(--mb-radius-button);
+  }
+
+  /* Calm Notice: แถบพีช-ลาเวนเดอร์บางๆ (แทนแบนเนอร์แดงเต็มกว้าง) */
+  .mb-notice-calm {
+    border-radius: var(--mb-radius-input);
+    border: 1px solid rgba(244, 166, 166, 0.25);
+    background-image: linear-gradient(135deg, rgba(244, 166, 166, 0.1), rgba(124, 108, 255, 0.1));
+  }
+
+  /* ตัวเลขการเงิน: tabular-nums ตามสเปค */
+  .mb-num {
+    font-variant-numeric: tabular-nums;
+  }
 }
 
 @layer base {
+  html {
+    color-scheme: dark;
+  }
+
   body {
-    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    font-family: 'Inter', 'Noto Sans Thai', system-ui, -apple-system, sans-serif;
+    /* ไทย line-height 1.7 · EN 1.5 */
+    line-height: 1.7;
+    color: var(--mb-text);
+    background-color: var(--mb-bg-top);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     transition: background-color 0.5s ease-in-out, color 0.5s ease-in-out;
   }
 
+  /* ข้อความไทยต้องไม่ล้นการ์ด (Brand Book 05) */
+  p, span, h1, h2, h3, h4, li, td, th {
+    overflow-wrap: anywhere;
+  }
+
+  h1, h2 {
+    font-family: 'Kanit', 'Inter', system-ui, sans-serif;
+  }
+
   code, pre {
     font-family: 'JetBrains Mono', monospace;
   }
+
+  /* ลาเวนเดอร์ถูกออกแบบมาสำหรับพื้นหมึก (#0F1117, 4.9:1). บนธีมกระดาษอุ่น
+     (#F7F5F0) มันได้แค่ 3.86:1 จึงเข้มขึ้นเฉพาะข้อความ/ขอบ. */
+  :where(html:not(.dark)) .text-\[\#7C6CFF\] {
+    color: #5B4BD6;
+  }
+
+  :where(html:not(.dark)) .border-\[\#7C6CFF\] {
+    border-color: #6A58F0;
+  }
+
+  /* Calm 180ms default for interactive elements (--mb-t-quick).
+     Scoped on purpose: a blanket `* { transition-duration: 400ms }` used to
+     override every `duration-*` utility in the app. */
+  button,
+  a,
+  input,
+  select,
+  textarea,
+  summary {
+    /* explicit property list: `all` would animate layout on every hover */
+    transition-property: color, background-color, border-color, opacity;
+    transition-duration: var(--mb-t-quick);
+    transition-timing-function: var(--mb-ease-calm);
+  }
 }
 
-/* Soothing slowed-down (20-30% slower) animations to match healing nature audio */
+/* Keyboard focus must always be visible — several inputs use
+   `focus:outline-hidden`, which removed the only affordance for tab users. */
+:where(button, a, [role='button'], input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--mb-lavender);
+  outline-offset: 2px;
+}
+
+/* ---------------------------------------------------------------------------
+   Calm Motion (Brand Book 07): ขยับพร้อมกันไม่เกิน 2 อย่าง · ไม่กะพริบ ·
+   ไม่สั่น · ไม่เด้ง · ไม่มีนับถอยหลังที่เดินวินาที
+   ------------------------------------------------------------------------- */
 @keyframes calmPulse {
   0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.75; transform: scale(1.015); }
+  50% { opacity: 0.8; transform: scale(1.01); }
 }
 
-@keyframes gentleGlow {
-  0%, 100% { filter: drop-shadow(0 0 15px rgba(249, 223, 123, 0.25)); }
-  50% { filter: drop-shadow(0 0 25px rgba(249, 223, 123, 0.45)); }
+@keyframes calmBreathe {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 0.9; }
 }
 
 @keyframes calmMarquee {
@@ -67,23 +329,40 @@
   100% { transform: translateX(-50%); }
 }
 
+@keyframes calmFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes mascotDrift {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
 .animate-calm-pulse {
-  animation: calmPulse 4.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  animation: calmPulse 6s var(--mb-ease-calm) infinite;   /* หายใจ 6 วิ */
+}
+
+/* มาสคอตลอย: ขยับขึ้นลง 5px ใน 7 วิ — เบาพอที่จะไม่ดึงสายตา และหยุดสนิทเมื่อ
+   ผู้ใช้ตั้งค่า reduce motion (บล็อก prefers-reduced-motion ด้านล่างคุมไว้แล้ว) */
+.animate-mascot-drift {
+  animation: mascotDrift 7s var(--mb-ease-calm) infinite;
 }
 
 .animate-gentle-glow {
-  animation: gentleGlow 6.5s ease-in-out infinite;
+  animation: calmBreathe 6s var(--mb-ease-calm) infinite;
 }
 
 .animate-calm-marquee {
   animation: calmMarquee 42s linear infinite;
 }
 
-/* Lightweight button & interactive UI transitions */
-button, a {
-  transition-property: color, background-color, border-color, opacity;
-  transition-duration: 200ms;
+.animate-calm-fade {
+  animation: calmFadeIn var(--mb-t-base) var(--mb-ease-calm) both;
 }
+
+/* (transition defaults for interactive elements live in @layer base above —
+   keeping a second copy here made later overrides harder to reason about) */
 
 /* Custom Eye-Friendly Scrollbar */
 ::-webkit-scrollbar {
@@ -96,15 +375,28 @@ button, a {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #2D3748;
+  background: var(--mb-surface-raised);
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #FF2D55;
+  background: var(--mb-lavender);
 }
 
 ::selection {
-  background: rgba(255, 45, 85, 0.35);
-  color: #fff;
+  background: rgba(124, 108, 255, 0.35);
+  color: var(--mb-text);
+}
+
+/* Respect the OS "reduce motion" setting (WCAG 2.3.3 / Brand Book QA):
+   ปิดแอนิเมชัน เหลือแค่เฟด 120ms */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 120ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 120ms !important;
+    scroll-behavior: auto !important;
+  }
 }

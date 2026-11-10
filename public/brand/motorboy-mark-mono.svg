@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img"
+     aria-label="MotorBoy">
+  <rect width="100" height="100" rx="27" fill="currentColor" opacity="0.14"/>
+  <path d="M18 82V20H31L50 56L69 20H82V82H67V44L50 74L33 44V82Z" fill="currentColor"/>
+</svg>

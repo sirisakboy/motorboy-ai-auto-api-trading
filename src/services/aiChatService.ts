@@ -1,5 +1,6 @@
 import { CryptoCoin, ForexPair, ThaiStock, ForeignStock, StockIndex, NewsArticle } from '../types';
 import { computeAtsMatrixAnalysis, getBtcFromCryptoList } from './atsMatrixService';
+import { buildMarketBrief } from './chatStreamCore';
 
 export interface AiChatContext {
   cryptoList?: CryptoCoin[];
@@ -102,7 +103,7 @@ async function callGeminiWithMarketContext(
   context: AiChatContext,
   apiKey: string
 ): Promise<string | null> {
-  const marketBrief = buildMarketContextBrief(context);
+  const marketBrief = buildMarketBrief(context);
   try {
     const res = await fetch('/api/gemini/chat-reply', {
       method: 'POST',
@@ -119,48 +120,7 @@ async function callGeminiWithMarketContext(
 }
 
 
-function buildMarketContextBrief(ctx: AiChatContext): string {
-  const parts: string[] = [];
-  if (ctx.cryptoList && ctx.cryptoList.length > 0) {
-    const topCrypto = ctx.cryptoList
-      .slice(0, 5)
-      .map((c) => `${c.symbol}: $${c.price.toLocaleString()} (${c.change >= 0 ? '+' : ''}${c.change.toFixed(2)}%) [H:$${c.high || '-'} L:$${c.low || '-'}]`)
-      .join(', ');
-    parts.push(`- Crypto Spot: ${topCrypto}`);
-  }
-  if (ctx.forexRates && ctx.forexRates.length > 0) {
-    const topFx = ctx.forexRates
-      .slice(0, 4)
-      .map((f) => `${f.pair}: ${f.price.toFixed(4)} (${f.change >= 0 ? '+' : ''}${f.change.toFixed(2)}%)`)
-      .join(', ');
-    parts.push(`- Forex Rates: ${topFx}`);
-  }
-  if (ctx.thaiStocks && ctx.thaiStocks.length > 0) {
-    const topThai = ctx.thaiStocks
-      .slice(0, 5)
-      .map((s) => `${s.symbol}: ฿${s.price} (${s.change >= 0 ? '+' : ''}${s.change.toFixed(2)}% P/E:${s.pe}x)`)
-      .join(', ');
-    parts.push(`- Thai Stocks (SET): ${topThai}`);
-  }
-  if (ctx.foreignStocks && ctx.foreignStocks.length > 0) {
-    const topUS = ctx.foreignStocks
-      .slice(0, 5)
-      .map((s) => `${s.symbol}: $${s.price} (${s.change >= 0 ? '+' : ''}${s.change.toFixed(2)}% Sector:${s.sector})`)
-      .join(', ');
-    parts.push(`- US Equities: ${topUS}`);
-  }
-  if (ctx.stockIndices && ctx.stockIndices.length > 0) {
-    const idxBrief = ctx.stockIndices
-      .map((s) => `${s.name}: ${s.price.toLocaleString()} (${s.change >= 0 ? '+' : ''}${s.change.toFixed(2)}%)`)
-      .join(', ');
-    parts.push(`- World Indices: ${idxBrief}`);
-  }
-  if (ctx.articles && ctx.articles.length > 0) {
-    const newsTitles = ctx.articles.slice(0, 3).map((a) => a.title).join(' | ');
-    parts.push(`- Live News: ${newsTitles}`);
-  }
-  return parts.join('\n');
-}
+/** Market snapshot comes from the shared core so every AI tier sees the same numbers. */
 
 /**
  * TIER 2: High-Precision Dynamic Quant & Real-Time Technical Reasoning Engine
@@ -412,7 +372,7 @@ ${directAnswer}
 • ปริมาณซื้อขาย (Volume): $${Math.round(coin.volume || 0).toLocaleString()} USD
 
 🎯 แผน Action Plan สไตล์ MotorBoy:
-- กลยุทธ์: ${isUp ? '🏍️ Full Throttle! รอจังหวะย่อทดสอบแนวรับ S1 แล้วเข้าซื้อเกาะเทรนด์ (Buy on Dip)' : '🛑 เบรกก่อนจิ! เฝ้ารอการสร้างฐานเหนือแนวรับ S2 ห้ามสวนซื้อจนกว่าจะมีสัญญาณแท่งเทียนกลับตัว'}
+- กลยุทธ์: ${isUp ? '🏍️ Full Throttle! รอจังหวะย่อทดสอบแนวรับ S1 แล้วเข้าซื้อเกาะเทรนด์ (Buy on Dip)' : '⚠️ เบรกก่อนจิ! เฝ้ารอการสร้างฐานเหนือแนวรับ S2 ห้ามสวนซื้อจนกว่าจะมีสัญญาณแท่งเทียนกลับตัว'}
 - การคุมความเสี่ยง (Risk Guard): เสี่ยงไม่เกิน 2% ต่อไม้ อัตรา RR Ratio ไม่ต่ำกว่า 1:1.5
 
 นี่คือการวิเคราะห์ ไม่ใช่คำแนะนำการลงทุน`;

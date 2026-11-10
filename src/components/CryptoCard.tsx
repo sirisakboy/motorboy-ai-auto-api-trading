@@ -48,21 +48,21 @@ export const CryptoCard: React.FC<CryptoCardProps> = ({
   // Flash styling
   const flashBg =
     coin?.flash === 'UP'
-      ? 'bg-[#22C55E]/20'
+      ? 'bg-[#7EE0B5]/20'
       : coin?.flash === 'DOWN'
-      ? 'bg-[#f9df7b]/20'
-      : 'bg-[#1A1D29]';
+      ? 'bg-[#FFB86B]/20'
+      : 'bg-[#141725]';
 
   return (
     <div
       onClick={onSelect}
-      className={`w-full rounded-[18px] ${flashBg} border border-[#252A3A] p-4 transition-colors duration-400 cursor-pointer hover:border-[#7C6CFF]/50 active:scale-[0.99]`}
+      className={`w-full rounded-[18px] ${flashBg} border border-white/[0.07] p-4 transition-colors duration-400 cursor-pointer hover:border-[#7C6CFF]/50 active:scale-[0.99]`}
       data-testid={`signal_card_${signal.symbol.toLowerCase()}`}
     >
       {/* Header Row */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2.5 min-w-0">
-          <div className="w-9 h-9 rounded-full bg-[#0F1117] border border-[#252A3A] flex items-center justify-center text-xs font-bold text-[#A5B4FC]">
+          <div className="w-9 h-9 rounded-full bg-[#0F1117] border border-white/[0.07] flex items-center justify-center text-xs font-bold text-[#A89FFF]">
             {signal.symbol.slice(0, 3)}
           </div>
           <div className="min-w-0">
@@ -70,11 +70,11 @@ export const CryptoCard: React.FC<CryptoCardProps> = ({
               <span className="font-bold text-white text-base leading-tight truncate">
                 {signal.symbol}
               </span>
-              <span className="text-[#9CA3AF] text-xs shrink-0">
+              <span className="text-[#A7A4B8] text-xs shrink-0">
                 {signal.base}/{signal.quote}
               </span>
             </div>
-            <p className="text-[#6B7280] text-[11px] leading-tight mt-0.5 truncate">
+            <p className="text-[#A7A4B8] text-[11px] leading-tight mt-0.5 truncate">
               {signal.sources.join(' • ')}
             </p>
           </div>
@@ -87,7 +87,7 @@ export const CryptoCard: React.FC<CryptoCardProps> = ({
               e.stopPropagation();
               onToggleWatchlist(signal.symbol);
             }}
-            className="p-2 text-[#6B7280] hover:text-[#7C6CFF] transition-colors rounded-full"
+            className="p-2 text-[#A7A4B8] hover:text-[#7C6CFF] transition-colors rounded-full"
             aria-label="Toggle Watchlist"
             data-testid={`watchlist_btn_${signal.symbol}`}
           >
@@ -95,7 +95,7 @@ export const CryptoCard: React.FC<CryptoCardProps> = ({
               className={`w-5 h-5 ${
                 isWatchlisted
                   ? 'fill-[#7C6CFF] text-[#7C6CFF]'
-                  : 'text-[#6B7280]'
+                  : 'text-[#A7A4B8]'
               }`}
             />
           </button>
@@ -103,8 +103,8 @@ export const CryptoCard: React.FC<CryptoCardProps> = ({
           <span
             className={`px-2 py-0.5 rounded-xl text-xs font-bold border ${
               isLong
-                ? 'bg-[#22C55E]/15 border-[#22C55E]/40 text-[#4ADE80]'
-                : 'bg-[#f9df7b]/15 border-[#f9df7b]/40 text-[#f9df7b]'
+                ? 'bg-[#7EE0B5]/15 border-[#7EE0B5]/40 text-[#7EE0B5]'
+                : 'bg-[#FFB86B]/15 border-[#FFB86B]/40 text-[#FFB86B]'
             }`}
           >
             {signal.type}
@@ -114,7 +114,7 @@ export const CryptoCard: React.FC<CryptoCardProps> = ({
 
       {/* Timeframe & Confidence */}
       <div className="mt-2.5">
-        <span className="text-xs font-medium text-[#A5B4FC]">
+        <span className="text-xs font-medium text-[#A89FFF]">
           {signal.timeframe} • {signal.probability}% มั่นใจ
         </span>
       </div>
@@ -126,7 +126,7 @@ export const CryptoCard: React.FC<CryptoCardProps> = ({
         </span>
         <span
           className={`text-base font-extrabold ${
-            isPositive ? 'text-[#22C55E]' : 'text-[#f9df7b]'
+            isPositive ? 'text-[#7EE0B5]' : 'text-[#FFB86B]'
           }`}
         >
           {isPositive ? '+' : ''}{currentChange.toFixed(2)}%
@@ -135,10 +135,10 @@ export const CryptoCard: React.FC<CryptoCardProps> = ({
 
       {/* Status & Reason Pill */}
       <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-        <div className="bg-[#0F1117] border border-[#252A3A] rounded-lg px-2 py-1 text-[11px] text-[#9CA3AF]">
+        <div className="bg-[#0F1117] border border-white/[0.07] rounded-lg px-2 py-1 text-[11px] text-[#A7A4B8]">
           {signal.statusText}
         </div>
-        <div className="bg-[#6366F1]/15 border border-[#6366F1]/30 rounded-lg px-2 py-1 text-[11px] text-[#A5B4FC]">
+        <div className="bg-[#A89FFF]/15 border border-[#A89FFF]/30 rounded-lg px-2 py-1 text-[11px] text-[#A89FFF]">
           {signal.reason} • {signal.etfFlow}
         </div>
       </div>
@@ -146,10 +146,10 @@ export const CryptoCard: React.FC<CryptoCardProps> = ({
       {/* SL & TP Quick view + trigger */}
       <div className="mt-3 flex flex-wrap items-center justify-between text-xs gap-2">
         <div className="flex items-center space-x-3">
-          <span className="font-semibold text-[#f9df7b]">
+          <span className="font-semibold text-[#FFB86B]">
             SL: {currencyPrefix}{displaySl}
           </span>
-          <span className="font-semibold text-[#22C55E]">
+          <span className="font-semibold text-[#7EE0B5]">
             TP: {currencyPrefix}{displayTp}
           </span>
         </div>
@@ -159,18 +159,18 @@ export const CryptoCard: React.FC<CryptoCardProps> = ({
       </div>
 
       {/* Tags & AI Similarity */}
-      <div className="mt-2 pt-2 border-t border-[#252A3A]/50 flex items-center justify-between text-[11px]">
+      <div className="mt-2 pt-2 border-t border-white/[0.07]/50 flex items-center justify-between text-[11px]">
         <div className="flex items-center space-x-1">
           {signal.tags.map((tag) => (
             <span
               key={tag}
-              className="bg-[#252A3A] text-[#9CA3AF] rounded px-1.5 py-0.5 text-[10px]"
+              className="bg-[#222640] text-[#A7A4B8] rounded px-1.5 py-0.5 text-[10px]"
             >
               {tag}
             </span>
           ))}
         </div>
-        <span className="font-medium text-[#A5B4FC]">
+        <span className="font-medium text-[#A89FFF]">
           Momentum {signal.similarity}%
         </span>
       </div>

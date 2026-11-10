@@ -24,6 +24,8 @@ import {
   analyzeMarketWithGemini,
   fetchMarketSentimentScore,
 } from '../services/geminiService';
+import { useModalA11y } from '../hooks/useModalA11y';
+import { formatNumber } from '../utils';
 
 interface ForexDetailModalProps {
   forex: ForexPair | null;
@@ -51,6 +53,7 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
   const [sentiment, setSentiment] = useState<MarketSentimentScore | null>(null);
   const [isFetchingSentiment, setIsFetchingSentiment] = useState(false);
 
+  const dialogRef = useModalA11y({ onClose: onDismiss, enabled: !!forex });
   if (!forex) return null;
 
   const [base, quote] = forex.pair.includes('/')
@@ -86,13 +89,8 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
     resistance: isLong ? forex.price * 1.022 : forex.price * 1.012,
   };
 
-  const formatPrice = (val?: number) => {
-    if (val === undefined || val === null) return '-';
-    return `${val.toLocaleString(undefined, {
-      minimumFractionDigits: decimals,
-      maximumFractionDigits: decimals,
-    })} ${quote}`;
-  };
+  const formatPrice = (val?: number) =>
+    val === undefined || val === null ? '-' : `${formatNumber(val, decimals)} ${quote}`;
 
   const supportVal = activeSignal.support || (isLong ? forex.price * 0.988 : forex.price * 0.975);
   const resistanceVal = activeSignal.resistance || (isLong ? forex.price * 1.022 : forex.price * 1.012);
@@ -187,21 +185,25 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
 
   return (
     <div
+      ref={dialogRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label="รายละเอียดคู่เงิน"
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/75 backdrop-blur-xs p-0 sm:p-4 overflow-y-auto"
       onClick={onDismiss}
       data-testid="forex_detail_sheet"
     >
       <div
-        className="w-full sm:max-w-xl bg-[#1A1D29] border-t sm:border border-[#252A3A] rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 max-h-[90vh] overflow-y-auto shadow-2xl"
+        className="w-full sm:max-w-xl bg-[#141725] border-t sm:border border-white/[0.07] rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 max-h-[90vh] overflow-y-auto shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Mobile drag handle */}
-        <div className="w-10 h-1 bg-[#252A3A] rounded-full mx-auto mb-3 sm:hidden" />
+        <div className="w-10 h-1 bg-[#222640] rounded-full mx-auto mb-3 sm:hidden" />
 
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-[#252A3A] pb-4">
+        <div className="flex items-center justify-between border-b border-white/[0.07] pb-4">
           <div className="flex items-center space-x-3">
-            <div className="w-11 h-11 rounded-2xl bg-[#0F1117] border border-[#252A3A] flex items-center justify-center text-sm font-bold text-[#A5B4FC]">
+            <div className="w-11 h-11 rounded-2xl bg-[#0F1117] border border-white/[0.07] flex items-center justify-center text-sm font-bold text-[#A89FFF]">
               {base}
             </div>
 
@@ -213,20 +215,20 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
                 <span
                   className={`px-2 py-0.5 rounded-lg text-xs font-bold border ${
                     isLong
-                      ? 'bg-[#22C55E]/15 border-[#22C55E]/40 text-[#4ADE80]'
-                      : 'bg-[#f9df7b]/15 border-[#f9df7b]/40 text-[#f9df7b]'
+                      ? 'bg-[#7EE0B5]/15 border-[#7EE0B5]/40 text-[#7EE0B5]'
+                      : 'bg-[#FFB86B]/15 border-[#FFB86B]/40 text-[#FFB86B]'
                   }`}
                 >
                   {activeSignal.type}
                 </span>
-                <span className="bg-[#7C6CFF]/20 border border-[#7C6CFF]/40 text-[#A5B4FC] text-xs font-semibold px-2 py-0.5 rounded-lg">
+                <span className="bg-[#7C6CFF]/20 border border-[#7C6CFF]/40 text-[#A89FFF] text-xs font-semibold px-2 py-0.5 rounded-lg">
                   {activeSignal.probability}% มั่นใจ
                 </span>
-                <span className="bg-[#10B981]/20 border border-[#10B981]/40 text-[#34D399] text-[10px] font-bold px-1.5 py-0.5 rounded">
+                <span className="bg-[#7EE0B5]/20 border border-[#7EE0B5]/40 text-[#7EE0B5] text-[10px] font-bold px-1.5 py-0.5 rounded">
                   FOREX
                 </span>
               </div>
-              <p className="text-[#9CA3AF] text-xs mt-0.5">
+              <p className="text-[#A7A4B8] text-xs mt-0.5">
                 {displayPrice} • {forex.change >= 0 ? '+' : ''}
                 {forex.change.toFixed(2)}% • 4H / 1D Timeframe
               </p>
@@ -236,7 +238,7 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
           <button
             type="button"
             onClick={onDismiss}
-            className="w-8 h-8 rounded-full bg-[#252A3A] hover:bg-[#343B52] flex items-center justify-center text-white transition-colors cursor-pointer"
+            className="w-8 h-8 rounded-full bg-[#222640] hover:bg-[#343B52] flex items-center justify-center text-white transition-colors cursor-pointer"
             aria-label="Close"
           >
             <X className="w-4 h-4" />
@@ -244,7 +246,7 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
         </div>
 
         {/* Support & Resistance (แนวรับ / แนวต้าน) Highlight Card */}
-        <div className="mt-4 rounded-2xl bg-[#0F1117] border border-[#252A3A] p-3.5 sm:p-4 space-y-2.5">
+        <div className="mt-4 rounded-2xl bg-[#0F1117] border border-white/[0.07] p-3.5 sm:p-4 space-y-2.5">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <TrendingUp className="w-4 h-4 text-[#7C6CFF]" />
@@ -252,42 +254,42 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
                 กรอบราคาแนวรับ - แนวต้าน (Support & Resistance)
               </span>
             </div>
-            <span className="text-[10px] text-[#9CA3AF] font-mono">
+            <span className="text-[10px] text-[#A7A4B8] font-mono">
               Interbank Pivot & Swings
             </span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             {/* Support Box */}
-            <div className="bg-[#10B981]/10 border border-[#10B981]/30 rounded-xl p-3">
+            <div className="bg-[#7EE0B5]/10 border border-[#7EE0B5]/30 rounded-xl p-3">
               <div className="flex items-center justify-between">
-                <span className="text-[#34D399] text-xs font-bold flex items-center space-x-1">
-                  <span className="w-2 h-2 rounded-full bg-[#10B981]" />
+                <span className="text-[#7EE0B5] text-xs font-bold flex items-center space-x-1">
+                  <span className="w-2 h-2 rounded-full bg-[#7EE0B5]" />
                   <span>แนวรับ (Support)</span>
                 </span>
-                <span className="text-[10px] text-[#9CA3AF]">-{supDistancePercent}%</span>
+                <span className="text-[10px] text-[#A7A4B8]">-{supDistancePercent}%</span>
               </div>
               <div className="mt-1 text-white font-mono font-black text-base sm:text-lg">
                 {displaySupport}
               </div>
-              <p className="text-[10px] text-[#9CA3AF] mt-0.5">
+              <p className="text-[10px] text-[#A7A4B8] mt-0.5">
                 จุดพิจารณาตั้ง SL / รองรับแรงซื้อ
               </p>
             </div>
 
             {/* Resistance Box */}
-            <div className="bg-[#f9df7b]/10 border border-[#f9df7b]/30 rounded-xl p-3">
+            <div className="bg-[#FFB86B]/10 border border-[#FFB86B]/30 rounded-xl p-3">
               <div className="flex items-center justify-between">
-                <span className="text-[#f9df7b] text-xs font-bold flex items-center space-x-1">
-                  <span className="w-2 h-2 rounded-full bg-[#f9df7b]" />
+                <span className="text-[#FFB86B] text-xs font-bold flex items-center space-x-1">
+                  <span className="w-2 h-2 rounded-full bg-[#FFB86B]" />
                   <span>แนวต้าน (Resistance)</span>
                 </span>
-                <span className="text-[10px] text-[#9CA3AF]">+{resDistancePercent}%</span>
+                <span className="text-[10px] text-[#A7A4B8]">+{resDistancePercent}%</span>
               </div>
               <div className="mt-1 text-white font-mono font-black text-base sm:text-lg">
                 {displayResistance}
               </div>
-              <p className="text-[10px] text-[#9CA3AF] mt-0.5">
+              <p className="text-[10px] text-[#A7A4B8] mt-0.5">
                 จุดพิจารณาแบ่งทำกำไร (TP)
               </p>
             </div>
@@ -295,10 +297,10 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
         </div>
 
         {/* Market Sentiment Score Card */}
-        <div className="mt-4 rounded-2xl bg-[#0F1117] border border-[#252A3A] p-3.5 sm:p-4 space-y-3">
+        <div className="mt-4 rounded-2xl bg-[#0F1117] border border-white/[0.07] p-3.5 sm:p-4 space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <div className="w-6 h-6 rounded-lg bg-[#7C6CFF]/20 border border-[#7C6CFF]/40 flex items-center justify-center text-[#A5B4FC]">
+              <div className="w-6 h-6 rounded-lg bg-[#7C6CFF]/20 border border-[#7C6CFF]/40 flex items-center justify-center text-[#A89FFF]">
                 <Gauge className="w-3.5 h-3.5" />
               </div>
               <div>
@@ -306,7 +308,7 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
                   <span className="text-white text-xs font-bold">
                     Forex Sentiment Score
                   </span>
-                  <span className="text-[9px] bg-[#7C6CFF]/20 text-[#A5B4FC] border border-[#7C6CFF]/30 px-1.5 py-0.2 rounded-md font-mono">
+                  <span className="text-[9px] bg-[#7C6CFF]/20 text-[#A89FFF] border border-[#7C6CFF]/30 px-1.5 py-0.2 rounded-md font-mono">
                     {sentiment?.source === 'GEMINI_AI' ? 'GEMINI AI' : 'INTERBANK'}
                   </span>
                 </div>
@@ -318,14 +320,14 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
                 <span
                   className={`text-[10px] font-bold px-2 py-0.5 rounded-lg border ${
                     sentiment.score >= 76
-                      ? 'bg-[#22C55E]/15 border-[#22C55E]/40 text-[#4ADE80]'
+                      ? 'bg-[#7EE0B5]/15 border-[#7EE0B5]/40 text-[#7EE0B5]'
                       : sentiment.score >= 56
-                      ? 'bg-[#10B981]/15 border-[#10B981]/40 text-[#34D399]'
+                      ? 'bg-[#7EE0B5]/15 border-[#7EE0B5]/40 text-[#7EE0B5]'
                       : sentiment.score >= 45
-                      ? 'bg-amber-500/15 border-amber-500/40 text-amber-300'
+                      ? 'bg-[#FFB86B]/15 border-amber-500/40 text-[#FFB86B]'
                       : sentiment.score >= 25
                       ? 'bg-orange-500/15 border-orange-500/40 text-orange-400'
-                      : 'bg-[#f9df7b]/15 border-[#f9df7b]/40 text-[#f9df7b]'
+                      : 'bg-[#FFB86B]/15 border-[#FFB86B]/40 text-[#FFB86B]'
                   }`}
                 >
                   {sentiment.sentimentTextTh}
@@ -336,7 +338,7 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
                 type="button"
                 onClick={handleFetchSentiment}
                 disabled={isFetchingSentiment}
-                className="p-1.5 rounded-lg bg-[#1A1D29] hover:bg-[#252A3A] text-[#9CA3AF] hover:text-white transition-colors cursor-pointer disabled:opacity-50"
+                className="p-1.5 rounded-lg bg-[#141725] hover:bg-[#222640] text-[#A7A4B8] hover:text-white transition-colors cursor-pointer disabled:opacity-50"
                 title="รีเฟรช Sentiment ด้วย Gemini API"
               >
                 <RefreshCw
@@ -349,7 +351,7 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
           </div>
 
           {isFetchingSentiment && !sentiment ? (
-            <div className="py-4 flex items-center justify-center space-x-2 text-xs text-[#9CA3AF]">
+            <div className="py-4 flex items-center justify-center space-x-2 text-xs text-[#A7A4B8]">
               <Loader2 className="w-4 h-4 animate-spin text-[#7C6CFF]" />
               <span>กำลังดึงคะแนน Forex Sentiment จาก Gemini API...</span>
             </div>
@@ -360,21 +362,21 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
                   <span className="text-2xl sm:text-3xl font-black text-white tracking-tight">
                     {sentiment.score}
                   </span>
-                  <span className="text-xs text-[#6B7280]">/ 100</span>
-                  <span className="text-[11px] text-[#A5B4FC] font-semibold ml-1">
+                  <span className="text-xs text-[#A7A4B8]">/ 100</span>
+                  <span className="text-[11px] text-[#A89FFF] font-semibold ml-1">
                     [{sentiment.sentimentLabel.replace('_', ' ')}]
                   </span>
                 </div>
 
-                <div className="flex items-center space-x-2.5 text-[10px] text-[#9CA3AF]">
+                <div className="flex items-center space-x-2.5 text-[10px] text-[#A7A4B8]">
                   <span className="flex items-center space-x-1">
                     <span>สถาบันการเงิน:</span>
                     <strong
                       className={`font-semibold ${
                         sentiment.whaleActivity === 'ACCUMULATION'
-                          ? 'text-[#4ADE80]'
+                          ? 'text-[#7EE0B5]'
                           : sentiment.whaleActivity === 'DISTRIBUTION'
-                          ? 'text-[#f9df7b]'
+                          ? 'text-[#FFB86B]'
                           : 'text-white'
                       }`}
                     >
@@ -400,8 +402,8 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
               </div>
 
               {/* Progress bar */}
-              <div className="relative w-full h-2.5 bg-[#1A1D29] rounded-full overflow-hidden shadow-inner">
-                <div className="absolute inset-0 bg-linear-to-r from-[#f9df7b] via-amber-400 via-emerald-400 to-[#22C55E]" />
+              <div className="relative w-full h-2.5 bg-[#141725] rounded-full overflow-hidden shadow-inner">
+                <div className="absolute inset-0 bg-linear-to-r from-[#FFB86B] via-amber-400 via-emerald-400 to-[#7EE0B5]" />
                 <div
                   className="absolute top-0 bottom-0 w-2 bg-white shadow-lg rounded-full -ml-1 transition-all duration-500 border border-black/20"
                   style={{
@@ -411,7 +413,7 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
               </div>
 
               {/* Scale Labels */}
-              <div className="flex justify-between text-[9px] text-[#6B7280] font-mono">
+              <div className="flex justify-between text-[9px] text-[#A7A4B8] font-mono">
                 <span>0 (Strong Sell)</span>
                 <span>50 (Neutral)</span>
                 <span>100 (Strong Buy)</span>
@@ -419,9 +421,9 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
 
               {/* Summary Reason */}
               {sentiment.summaryReason && (
-                <div className="pt-2 border-t border-[#252A3A]/70 text-[11px] text-[#9CA3AF] leading-relaxed flex items-start space-x-1.5">
-                  <span className="text-[#A5B4FC] shrink-0">💡</span>
-                  <span className="text-[#D1D5DB]">{sentiment.summaryReason}</span>
+                <div className="pt-2 border-t border-white/[0.07]/70 text-[11px] text-[#A7A4B8] leading-relaxed flex items-start space-x-1.5">
+                  <span className="text-[#A89FFF] shrink-0">💡</span>
+                  <span className="text-[#ECEAF4]">{sentiment.summaryReason}</span>
                 </div>
               )}
             </div>
@@ -429,14 +431,14 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
         </div>
 
         {/* 4 Tabs */}
-        <div className="mt-4 flex overflow-x-auto gap-1 bg-[#0F1117] rounded-2xl p-1 border border-[#252A3A] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+        <div className="mt-4 flex overflow-x-auto gap-1 bg-[#0F1117] rounded-2xl p-1 border border-white/[0.07] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           <button
             type="button"
             onClick={() => setActiveTab('gemini')}
             className={`flex-1 px-3 py-2 text-xs font-semibold rounded-xl transition-colors whitespace-nowrap min-w-fit flex items-center justify-center space-x-1 ${
               activeTab === 'gemini'
-                ? 'bg-[#7C6CFF] text-white font-bold shadow-xs'
-                : 'text-[#9CA3AF] hover:text-white'
+                ? 'bg-[#7C6CFF] text-[#0F1117] font-bold shadow-xs'
+                : 'text-[#A7A4B8] hover:text-white'
             }`}
           >
             <Bot className="w-3.5 h-3.5" />
@@ -448,7 +450,7 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
             className={`flex-1 px-3 py-2 text-xs font-semibold rounded-xl transition-colors whitespace-nowrap min-w-fit ${
               activeTab === 'tech'
                 ? 'bg-white text-black font-bold'
-                : 'text-[#9CA3AF] hover:text-white'
+                : 'text-[#A7A4B8] hover:text-white'
             }`}
           >
             เทคนิคอล
@@ -459,7 +461,7 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
             className={`flex-1 px-3 py-2 text-xs font-semibold rounded-xl transition-colors whitespace-nowrap min-w-fit ${
               activeTab === 'risk'
                 ? 'bg-white text-black font-bold'
-                : 'text-[#9CA3AF] hover:text-white'
+                : 'text-[#A7A4B8] hover:text-white'
             }`}
           >
             SL / TP
@@ -470,7 +472,7 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
             className={`flex-1 px-3 py-2 text-xs font-semibold rounded-xl transition-colors whitespace-nowrap min-w-fit ${
               activeTab === 'ai'
                 ? 'bg-white text-black font-bold'
-                : 'text-[#9CA3AF] hover:text-white'
+                : 'text-[#A7A4B8] hover:text-white'
             }`}
           >
             Similarity
@@ -485,17 +487,17 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
               <div className="rounded-2xl bg-linear-to-r from-[#1E2235] to-[#141622] border border-[#7C6CFF]/30 p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    <Sparkles className="w-4 h-4 text-[#A5B4FC]" />
+                    <Sparkles className="w-4 h-4 text-[#A89FFF]" />
                     <span className="text-white font-bold text-xs">
                       Forex Macro & Live AI Intelligence
                     </span>
                   </div>
-                  <span className="text-[10px] bg-[#22C55E]/15 border border-[#22C55E]/30 text-[#4ADE80] px-2 py-0.5 rounded-full font-bold">
+                  <span className="text-[10px] bg-[#7EE0B5]/15 border border-[#7EE0B5]/30 text-[#7EE0B5] px-2 py-0.5 rounded-full font-bold">
                     LIVE SYNC
                   </span>
                 </div>
 
-                <p className="text-xs text-[#9CA3AF] leading-relaxed">
+                <p className="text-xs text-[#A7A4B8] leading-relaxed">
                   ประมวลผลข้อมูลคู่เงิน {forex.pair} อัตราดอกเบี้ยธนาคารกลาง ดัชนีเงินเฟ้อ CPI/GDP และระดับแนวรับแนวต้านด้วย AI Engine พร้อมบันทึกประวัติซิงค์กับบัญชี Google อัตโนมัติ
                 </p>
 
@@ -504,7 +506,7 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
                   type="button"
                   onClick={handleRunAiAnalysis}
                   disabled={isAnalyzing}
-                  className="w-full bg-[#7C6CFF] hover:bg-[#6a5ad7] text-white font-bold text-xs py-2.5 rounded-xl transition-colors flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-50"
+                  className="w-full bg-[#7C6CFF] hover:bg-[#6a5ad7] text-[#0F1117] font-bold text-xs py-2.5 rounded-xl transition-colors flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-50"
                 >
                   {isAnalyzing ? (
                     <>
@@ -522,16 +524,16 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
 
               {/* Analysis Result Box */}
               {aiResult && (
-                <div className="rounded-2xl bg-[#0F1117] border border-[#252A3A] p-4 space-y-3 animate-fade-in">
+                <div className="rounded-2xl bg-[#0F1117] border border-white/[0.07] p-4 space-y-3 animate-fade-in">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
                       <span
                         className={`text-xs font-bold px-2.5 py-0.5 rounded-md ${
                           aiResult.action === 'LONG'
-                            ? 'bg-[#22C55E]/20 text-[#4ADE80]'
+                            ? 'bg-[#7EE0B5]/20 text-[#7EE0B5]'
                             : aiResult.action === 'SHORT'
-                            ? 'bg-[#f9df7b]/20 text-[#f9df7b]'
-                            : 'bg-slate-800 text-slate-300'
+                            ? 'bg-[#FFB86B]/20 text-[#FFB86B]'
+                            : 'bg-[#222640] text-[#ECEAF4]'
                         }`}
                       >
                         {aiResult.action === 'LONG' ? (
@@ -541,36 +543,36 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
                         )}
                         สัญญาณแนะนำ: {aiResult.action}
                       </span>
-                      <span className="text-xs text-[#A5B4FC] font-semibold">
+                      <span className="text-xs text-[#A89FFF] font-semibold">
                         ความมั่นใจ {aiResult.confidence}%
                       </span>
                     </div>
 
-                    <span className="text-[10px] text-[#6B7280]">
+                    <span className="text-[10px] text-[#A7A4B8]">
                       {aiResult.source === 'GEMINI_AI' ? 'Gemini AI' : 'Technical Engine'}
                     </span>
                   </div>
 
                   {/* Summary */}
-                  <div className="text-xs text-[#D1D5DB] leading-relaxed whitespace-pre-line bg-[#1A1D29] p-3 rounded-xl border border-[#252A3A]">
+                  <div className="text-xs text-[#ECEAF4] leading-relaxed whitespace-pre-line bg-[#141725] p-3 rounded-xl border border-white/[0.07]">
                     {aiResult.summary}
                   </div>
 
                   {/* Support & Resistance AI Derived */}
                   <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div className="bg-[#1A1D29] p-2.5 rounded-xl border border-[#252A3A]">
-                      <span className="text-[#6B7280] text-[10px] block">
+                    <div className="bg-[#141725] p-2.5 rounded-xl border border-white/[0.07]">
+                      <span className="text-[#A7A4B8] text-[10px] block">
                         แนวรับ AI (Support)
                       </span>
-                      <span className="text-[#4ADE80] font-bold font-mono">
+                      <span className="text-[#7EE0B5] font-bold font-mono">
                         {formatPrice(aiResult.supportLevel)}
                       </span>
                     </div>
-                    <div className="bg-[#1A1D29] p-2.5 rounded-xl border border-[#252A3A]">
-                      <span className="text-[#6B7280] text-[10px] block">
+                    <div className="bg-[#141725] p-2.5 rounded-xl border border-white/[0.07]">
+                      <span className="text-[#A7A4B8] text-[10px] block">
                         แนวต้าน AI (Resistance)
                       </span>
-                      <span className="text-[#f9df7b] font-bold font-mono">
+                      <span className="text-[#FFB86B] font-bold font-mono">
                         {formatPrice(aiResult.resistanceLevel)}
                       </span>
                     </div>
@@ -581,11 +583,11 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
                     (aiResult.risks && aiResult.risks.length > 0)) && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                       {aiResult.keyDrivers && aiResult.keyDrivers.length > 0 && (
-                        <div className="bg-[#1A1D29] p-2.5 rounded-xl border border-[#252A3A]">
-                          <span className="text-[#34D399] font-bold text-[10px] block mb-1">
+                        <div className="bg-[#141725] p-2.5 rounded-xl border border-white/[0.07]">
+                          <span className="text-[#7EE0B5] font-bold text-[10px] block mb-1">
                             🎯 ปัจจัยขับเคลื่อน:
                           </span>
-                          <ul className="list-disc list-inside text-[#D1D5DB] text-[11px] space-y-0.5">
+                          <ul className="list-disc list-inside text-[#ECEAF4] text-[11px] space-y-0.5">
                             {aiResult.keyDrivers.map((d, i) => (
                               <li key={i}>{d}</li>
                             ))}
@@ -594,11 +596,11 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
                       )}
 
                       {aiResult.risks && aiResult.risks.length > 0 && (
-                        <div className="bg-[#1A1D29] p-2.5 rounded-xl border border-[#252A3A]">
-                          <span className="text-[#f9df7b] font-bold text-[10px] block mb-1">
+                        <div className="bg-[#141725] p-2.5 rounded-xl border border-white/[0.07]">
+                          <span className="text-[#FFB86B] font-bold text-[10px] block mb-1">
                             ⚠️ ปัจจัยเสี่ยงที่ต้องระวัง:
                           </span>
-                          <ul className="list-disc list-inside text-[#D1D5DB] text-[11px] space-y-0.5">
+                          <ul className="list-disc list-inside text-[#ECEAF4] text-[11px] space-y-0.5">
                             {aiResult.risks.map((r, i) => (
                               <li key={i}>{r}</li>
                             ))}
@@ -609,7 +611,7 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
                   )}
 
                   {aiResult.strategyAdvice && (
-                    <div className="text-[11px] text-[#9CA3AF] bg-[#1A1D29] p-2.5 rounded-xl border border-[#252A3A]">
+                    <div className="text-[11px] text-[#A7A4B8] bg-[#141725] p-2.5 rounded-xl border border-white/[0.07]">
                       <span className="text-white font-semibold block mb-0.5">
                         กลยุทธ์ที่แนะนำ:
                       </span>
@@ -618,7 +620,7 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
                   )}
 
                   {savedSuccess && (
-                    <div className="p-2 rounded-xl bg-[#22C55E]/15 border border-[#22C55E]/30 text-[#4ADE80] text-xs flex items-center justify-center space-x-1.5">
+                    <div className="p-2 rounded-xl bg-[#7EE0B5]/15 border border-[#7EE0B5]/30 text-[#7EE0B5] text-xs flex items-center justify-center space-x-1.5">
                       <CheckCircle2 className="w-3.5 h-3.5" />
                       <span>ซิงค์และบันทึกลงในประวัติบัญชี Google สำเร็จเรียบร้อย!</span>
                     </div>
@@ -631,68 +633,68 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
           {activeTab === 'tech' && (
             <div className="space-y-2.5">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <div className="bg-[#0F1117] border border-[#252A3A] rounded-xl p-3">
-                  <span className="text-[#6B7280] text-[10px] block">สถานะสัญญาณ</span>
+                <div className="bg-[#0F1117] border border-white/[0.07] rounded-xl p-3">
+                  <span className="text-[#A7A4B8] text-[10px] block">สถานะสัญญาณ</span>
                   <p className="text-white text-xs font-bold mt-0.5">{activeSignal.statusText}</p>
-                  <p className="text-[#9CA3AF] text-[10px] mt-0.5 leading-snug">
+                  <p className="text-[#A7A4B8] text-[10px] mt-0.5 leading-snug">
                     {activeSignal.reason}
                   </p>
                 </div>
 
-                <div className="bg-[#0F1117] border border-[#252A3A] rounded-xl p-3">
-                  <span className="text-[#6B7280] text-[10px] block">EMA & Momentum</span>
+                <div className="bg-[#0F1117] border border-white/[0.07] rounded-xl p-3">
+                  <span className="text-[#A7A4B8] text-[10px] block">EMA & Momentum</span>
                   <p
                     className={`text-xs font-bold mt-0.5 ${
-                      forex.change >= 0 ? 'text-[#4ADE80]' : 'text-[#f9df7b]'
+                      forex.change >= 0 ? 'text-[#7EE0B5]' : 'text-[#FFB86B]'
                     }`}
                   >
                     {forex.change >= 0 ? 'โมเมนตัมแข็งค่า (Bullish)' : 'โมเมนตัมอ่อนค่า (Bearish)'}
                   </p>
-                  <p className="text-[#9CA3AF] text-[10px] mt-0.5 leading-snug">
+                  <p className="text-[#A7A4B8] text-[10px] mt-0.5 leading-snug">
                     EMA20 / EMA50 Dynamic Bands
                   </p>
                 </div>
               </div>
 
               {/* Support & Resistance Technical Details */}
-              <div className="bg-[#0F1117] border border-[#252A3A] rounded-xl p-3 space-y-2">
+              <div className="bg-[#0F1117] border border-white/[0.07] rounded-xl p-3 space-y-2">
                 <span className="text-white text-xs font-bold block">
                   ระดับราคาทางเทคนิคที่สำคัญ (Key Forex Levels)
                 </span>
                 <div className="grid grid-cols-2 gap-2 text-xs">
-                  <div className="bg-[#1A1D29] p-2 rounded-lg">
-                    <span className="text-[#34D399] text-[10px] font-bold block">
+                  <div className="bg-[#141725] p-2 rounded-lg">
+                    <span className="text-[#7EE0B5] text-[10px] font-bold block">
                       แนวรับหลัก (Major Support):
                     </span>
                     <span className="text-white font-mono font-bold">
                       {displaySupport}
                     </span>
-                    <span className="text-[#6B7280] text-[9px] block">
+                    <span className="text-[#A7A4B8] text-[9px] block">
                       กรอบราคาต่ำสุด 90 วัน / Swing Low
                     </span>
                   </div>
-                  <div className="bg-[#1A1D29] p-2 rounded-lg">
-                    <span className="text-[#f9df7b] text-[10px] font-bold block">
+                  <div className="bg-[#141725] p-2 rounded-lg">
+                    <span className="text-[#FFB86B] text-[10px] font-bold block">
                       แนวต้านหลัก (Major Resistance):
                     </span>
                     <span className="text-white font-mono font-bold">
                       {displayResistance}
                     </span>
-                    <span className="text-[#6B7280] text-[9px] block">
+                    <span className="text-[#A7A4B8] text-[9px] block">
                       กรอบราคาสูงสุด 90 วัน / Swing High
                     </span>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-[#0F1117] border border-[#252A3A] rounded-xl p-3">
-                <span className="text-[#6B7280] text-[10px] block">
+              <div className="bg-[#0F1117] border border-white/[0.07] rounded-xl p-3">
+                <span className="text-[#A7A4B8] text-[10px] block">
                   สภาพคล่องและโฟลว์การซื้อขาย (Interbank FX Liquidity)
                 </span>
                 <p className="text-white text-xs font-bold mt-0.5">
                   {forex.pair} Liquidity Flow: {activeSignal.etfFlow}
                 </p>
-                <p className="text-[#9CA3AF] text-[10px] mt-0.5">
+                <p className="text-[#A7A4B8] text-[10px] mt-0.5">
                   ประมาณการปริมาณธุรกรรมจากสถานะราคาและทิศทางของคู่เงิน (ตัวเลขโดยประมาณ ไม่ใช่ข้อมูล Interbank จริง)
                 </p>
               </div>
@@ -700,39 +702,39 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
           )}
 
           {activeTab === 'risk' && (
-            <div className="bg-[#0F1117] border border-[#252A3A] rounded-2xl p-4 space-y-3">
+            <div className="bg-[#0F1117] border border-white/[0.07] rounded-2xl p-4 space-y-3">
               <h4 className="text-white text-xs font-bold flex items-center space-x-1.5">
-                <ShieldAlert className="w-4 h-4 text-amber-400" />
+                <ShieldAlert className="w-4 h-4 text-[#FFB86B]" />
                 <span>การบริหารความเสี่ยง • SL/TP & แนวรับ-แนวต้าน Forex</span>
               </h4>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                <div className="bg-[#f9df7b]/15 border border-[#f9df7b]/40 rounded-xl p-3">
-                  <span className="text-[#f9df7b] text-[11px] block font-medium">
+                <div className="bg-[#FFB86B]/15 border border-[#FFB86B]/40 rounded-xl p-3">
+                  <span className="text-[#FFB86B] text-[11px] block font-medium">
                     Stop Loss (SL)
                   </span>
                   <span className="text-white font-mono font-bold text-sm block mt-0.5">
                     {displaySl}
                   </span>
-                  <span className="text-[#6B7280] text-[10px] block mt-0.5">
+                  <span className="text-[#A7A4B8] text-[10px] block mt-0.5">
                     -{slPercent}% จากจุดเข้า (ใต้แนวรับ {displaySupport})
                   </span>
                 </div>
 
-                <div className="bg-[#22C55E]/15 border border-[#22C55E]/40 rounded-xl p-3">
-                  <span className="text-[#4ADE80] text-[11px] block font-medium">
+                <div className="bg-[#7EE0B5]/15 border border-[#7EE0B5]/40 rounded-xl p-3">
+                  <span className="text-[#7EE0B5] text-[11px] block font-medium">
                     Take Profit (TP)
                   </span>
                   <span className="text-white font-mono font-bold text-sm block mt-0.5">
                     {displayTp}
                   </span>
-                  <span className="text-[#6B7280] text-[10px] block mt-0.5">
+                  <span className="text-[#A7A4B8] text-[10px] block mt-0.5">
                     +{tpPercent}% เป้ากำไร (ใกล้แนวต้าน {displayResistance})
                   </span>
                 </div>
               </div>
 
-              <div className="space-y-1.5 text-xs text-[#9CA3AF] pt-1">
+              <div className="space-y-1.5 text-xs text-[#A7A4B8] pt-1">
                 <p>• คำนวณ Lot Size และ Pip Value ให้เหมาะสม ไม่เสี่ยงเกิน 1-2% ของพอร์ต</p>
                 <p>• ติดตามข่าวเศรษฐกิจ Non-Farm, CPI, ดอกเบี้ย Fed/ECB/BoJ ระวัง Spread ขยายตัว</p>
                 <p>• หากราคาหลุดตัดผ่านแนวรับหลักและชนจุด SL ให้ตัดขาดทุนทันทีตามวินัย</p>
@@ -741,16 +743,16 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
           )}
 
           {activeTab === 'ai' && (
-            <div className="bg-[#0F1117] border border-[#252A3A] rounded-2xl p-4 space-y-3">
+            <div className="bg-[#0F1117] border border-white/[0.07] rounded-2xl p-4 space-y-3">
               <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 rounded-full bg-[#7C6CFF]/20 border border-[#7C6CFF] flex items-center justify-center text-sm font-bold text-[#A5B4FC]">
+                <div className="w-12 h-12 rounded-full bg-[#7C6CFF]/20 border border-[#7C6CFF] flex items-center justify-center text-sm font-bold text-[#A89FFF]">
                   {activeSignal.similarity}%
                 </div>
                 <div>
                   <h4 className="text-white text-xs font-bold">
                     Momentum Score (โมเมนตัมเทคนิคัล)
                   </h4>
-                  <p className="text-[#6B7280] text-[11px] mt-0.5">
+                  <p className="text-[#A7A4B8] text-[11px] mt-0.5">
                     ประเมินจากขนาดการเปลี่ยนแปลงราคา 24 ชม. และแนวโน้มทิศทางของคู่เงิน (โดยประมาณ ไม่ใช่ผลลัพธ์ AI)
                   </p>
                 </div>
@@ -760,14 +762,14 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
                 {activeSignal.sources.map((src) => (
                   <div
                     key={src}
-                    className="bg-[#1A1D29] border border-[#252A3A] rounded-lg py-1.5 px-3 text-xs text-[#9CA3AF]"
+                    className="bg-[#141725] border border-white/[0.07] rounded-lg py-1.5 px-3 text-xs text-[#A7A4B8]"
                   >
                     {src}
                   </div>
                 ))}
               </div>
 
-              <p className="text-[#6B7280] text-[10px]">
+              <p className="text-[#A7A4B8] text-[10px]">
                 Tags: {activeSignal.tags.join(' • ')} • วิเคราะห์อิงระดับแนวรับ {displaySupport} / แนวต้าน {displayResistance}
               </p>
             </div>
@@ -775,11 +777,11 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
         </div>
 
         {/* Footer actions */}
-        <div className="mt-5 pt-3 border-t border-[#252A3A] flex items-center justify-between gap-3">
+        <div className="mt-5 pt-3 border-t border-white/[0.07] flex items-center justify-between gap-3">
           <button
             type="button"
             onClick={handleManualSave}
-            className="flex items-center space-x-1.5 text-xs text-[#A5B4FC] hover:text-white bg-[#0F1117] border border-[#252A3A] px-3.5 py-2 rounded-xl transition-colors cursor-pointer"
+            className="flex items-center space-x-1.5 text-xs text-[#A89FFF] hover:text-white bg-[#0F1117] border border-white/[0.07] px-3.5 py-2 rounded-xl transition-colors cursor-pointer"
           >
             <BookmarkCheck className="w-4 h-4" />
             <span>บันทึกสัญญาณนี้ลงประวัติ</span>
@@ -788,7 +790,7 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
           <button
             type="button"
             onClick={onDismiss}
-            className="text-xs bg-[#252A3A] hover:bg-[#32384D] text-white px-4 py-2 rounded-xl font-semibold transition-colors cursor-pointer"
+            className="text-xs bg-[#222640] hover:bg-[#32384D] text-white px-4 py-2 rounded-xl font-semibold transition-colors cursor-pointer"
           >
             ปิด
           </button>

@@ -164,9 +164,9 @@ export const BacktestingDashboard: React.FC<BacktestingDashboardProps> = ({
   return (
     <div className="space-y-5">
       {/* SECTION HEADER */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/[0.07]">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-[#00FF66]/15 border border-[#00FF66]/40 flex items-center justify-center text-[#00FF66] shadow-[0_0_15px_rgba(0,255,102,0.2)]">
+          <div className="w-8 h-8 rounded-lg bg-[#7EE0B5]/15 border border-[#7EE0B5]/40 flex items-center justify-center text-[#7EE0B5] shadow-[0_0_15px_rgba(0,255,102,0.2)]">
             <Cpu className="w-4 h-4" />
           </div>
           <div>
@@ -174,11 +174,11 @@ export const BacktestingDashboard: React.FC<BacktestingDashboardProps> = ({
               <h3 className="font-mono font-bold text-sm sm:text-base text-white tracking-tight">
                 ATS Backtesting Engine &amp; Strategy Lab
               </h3>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-sm bg-[#FF2D55]/15 border border-[#FF2D55]/40 text-[#FF2D55] font-bold">
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-sm bg-[#7C6CFF]/15 border border-[#7C6CFF]/40 text-[#7C6CFF] font-bold">
                 HISTORICAL SIMULATION
               </span>
             </div>
-            <p className="text-xs text-slate-400 font-mono">
+            <p className="text-xs text-[#A7A4B8] font-mono">
               จำลองกลยุทธ์ย้อนหลัง คำนวณ Win Rate, Sharpe Ratio, และ Max Drawdown พร้อม Live Status Ticker
             </p>
           </div>
@@ -190,10 +190,10 @@ export const BacktestingDashboard: React.FC<BacktestingDashboardProps> = ({
             <button
               type="button"
               onClick={handleCopyResults}
-              className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-mono text-slate-300 hover:text-white flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="px-3 py-1.5 rounded-xl bg-[#222640] hover:bg-[#222640] border border-white/[0.07] text-xs font-mono text-[#ECEAF4] hover:text-white flex items-center gap-1.5 transition-colors cursor-pointer"
               title="คัดลอกผลการทดสอบ"
             >
-              {copied ? <Check className="w-3.5 h-3.5 text-[#00FF66]" /> : <Copy className="w-3.5 h-3.5" />}
+              {copied ? <Check className="w-3.5 h-3.5 text-[#7EE0B5]" /> : <Copy className="w-3.5 h-3.5" />}
               <span className="hidden sm:inline">{copied ? 'คัดลอกแล้ว' : 'คัดลอกผล'}</span>
             </button>
           )}
@@ -202,7 +202,7 @@ export const BacktestingDashboard: React.FC<BacktestingDashboardProps> = ({
             <button
               type="button"
               onClick={handleSendToAiChat}
-              className="px-3 py-1.5 rounded-xl bg-[#FF2D55]/20 hover:bg-[#FF2D55]/30 border border-[#FF2D55]/50 text-xs font-mono font-bold text-[#FF2D55] flex items-center gap-1.5 transition-all cursor-pointer shadow-[0_0_12px_rgba(255,45,85,0.2)]"
+              className="px-3 py-1.5 rounded-xl bg-[#7C6CFF]/20 hover:bg-[#7C6CFF]/30 border border-[#7C6CFF]/50 text-xs font-mono font-bold text-[#7C6CFF] flex items-center gap-1.5 transition-all cursor-pointer shadow-[0_0_12px_rgba(124,108,255,0.2)]"
               title="ส่งผลทดสอบเข้าห้อง AI Deep Analyze เพื่อขอคำแนะนำปรับพอร์ต"
             >
               {sentToChat ? <Check className="w-3.5 h-3.5" /> : <Send className="w-3.5 h-3.5" />}
@@ -213,22 +213,22 @@ export const BacktestingDashboard: React.FC<BacktestingDashboardProps> = ({
       </div>
 
       {/* STRATEGY & ASSET CONFIGURATION BAR */}
-      <div className="p-4 rounded-xl bg-[#10141E] border border-slate-800 space-y-3.5">
+      <div className="p-4 rounded-xl bg-[#141725] border border-white/[0.07] space-y-3.5">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 text-xs font-mono">
           {/* 1. Strategy Selector */}
           <div className="space-y-1 sm:col-span-2">
-            <label className="text-slate-400 text-[11px] font-bold uppercase flex items-center gap-1">
-              <Zap className="w-3.5 h-3.5 text-[#00FF66]" />
+            <label className="text-[#A7A4B8] text-[11px] font-bold uppercase flex items-center gap-1">
+              <Zap className="w-3.5 h-3.5 text-[#7EE0B5]" />
               เลือกกลยุทธ์ (Strategy)
             </label>
             <select
               value={selectedStrategyId}
               onChange={(e) => setSelectedStrategyId(e.target.value as StrategyId)}
               disabled={isRunning}
-              className="w-full bg-[#0A0D14] border border-slate-700 rounded-lg px-3 py-2 text-white font-mono text-xs outline-none focus:border-[#00FF66] transition-colors cursor-pointer"
+              className="w-full bg-[#141725] border border-white/[0.07] rounded-lg px-3 py-2 text-white font-mono text-xs outline-none focus:border-[#7EE0B5] transition-colors cursor-pointer"
             >
               {STRATEGY_DEFINITIONS.map((def) => (
-                <option key={def.id} value={def.id} className="bg-[#10141E]">
+                <option key={def.id} value={def.id} className="bg-[#141725]">
                   {def.nameTh}
                 </option>
               ))}
@@ -237,18 +237,18 @@ export const BacktestingDashboard: React.FC<BacktestingDashboardProps> = ({
 
           {/* 2. Asset Selector */}
           <div className="space-y-1">
-            <label className="text-slate-400 text-[11px] font-bold uppercase flex items-center gap-1">
-              <Activity className="w-3.5 h-3.5 text-[#00F0FF]" />
+            <label className="text-[#A7A4B8] text-[11px] font-bold uppercase flex items-center gap-1">
+              <Activity className="w-3.5 h-3.5 text-[#4CC9F0]" />
               สินทรัพย์ (Asset)
             </label>
             <select
               value={selectedAssetSymbol}
               onChange={(e) => setSelectedAssetSymbol(e.target.value)}
               disabled={isRunning}
-              className="w-full bg-[#0A0D14] border border-slate-700 rounded-lg px-3 py-2 text-white font-mono text-xs outline-none focus:border-[#FF2D55] transition-colors cursor-pointer"
+              className="w-full bg-[#141725] border border-white/[0.07] rounded-lg px-3 py-2 text-white font-mono text-xs outline-none focus:border-[#7C6CFF] transition-colors cursor-pointer"
             >
               {AVAILABLE_ASSETS.map((a) => (
-                <option key={a.symbol} value={a.symbol} className="bg-[#10141E]">
+                <option key={a.symbol} value={a.symbol} className="bg-[#141725]">
                   {a.symbol} ({a.category})
                 </option>
               ))}
@@ -257,85 +257,85 @@ export const BacktestingDashboard: React.FC<BacktestingDashboardProps> = ({
 
           {/* 3. Timeframe */}
           <div className="space-y-1">
-            <label className="text-slate-400 text-[11px] font-bold uppercase flex items-center gap-1">
-              <Clock className="w-3.5 h-3.5 text-amber-400" />
+            <label className="text-[#A7A4B8] text-[11px] font-bold uppercase flex items-center gap-1">
+              <Clock className="w-3.5 h-3.5 text-[#FFB86B]" />
               กรอบเวลา (TF)
             </label>
             <select
               value={selectedTimeframe}
               onChange={(e) => setSelectedTimeframe(e.target.value as '1m' | '15m' | '1h' | '1d')}
               disabled={isRunning}
-              className="w-full bg-[#0A0D14] border border-slate-700 rounded-lg px-3 py-2 text-white font-mono text-xs outline-none focus:border-amber-400 transition-colors cursor-pointer"
+              className="w-full bg-[#141725] border border-white/[0.07] rounded-lg px-3 py-2 text-white font-mono text-xs outline-none focus:border-amber-400 transition-colors cursor-pointer"
             >
-              <option value="1m" className="bg-[#10141E]">1 นาที (Scalping)</option>
-              <option value="15m" className="bg-[#10141E]">15 นาที (Intraday)</option>
-              <option value="1h" className="bg-[#10141E]">1 ชั่วโมง (Swing)</option>
-              <option value="1d" className="bg-[#10141E]">1 วัน (Position)</option>
+              <option value="1m" className="bg-[#141725]">1 นาที (Scalping)</option>
+              <option value="15m" className="bg-[#141725]">15 นาที (Intraday)</option>
+              <option value="1h" className="bg-[#141725]">1 ชั่วโมง (Swing)</option>
+              <option value="1d" className="bg-[#141725]">1 วัน (Position)</option>
             </select>
           </div>
 
           {/* 4. Lookback Period */}
           <div className="space-y-1">
-            <label className="text-slate-400 text-[11px] font-bold uppercase flex items-center gap-1">
-              <Layers className="w-3.5 h-3.5 text-purple-400" />
+            <label className="text-[#A7A4B8] text-[11px] font-bold uppercase flex items-center gap-1">
+              <Layers className="w-3.5 h-3.5 text-[#A89FFF]" />
               ย้อนหลัง (Period)
             </label>
             <select
               value={selectedPeriodDays}
               onChange={(e) => setSelectedPeriodDays(Number(e.target.value))}
               disabled={isRunning}
-              className="w-full bg-[#0A0D14] border border-slate-700 rounded-lg px-3 py-2 text-white font-mono text-xs outline-none focus:border-purple-400 transition-colors cursor-pointer"
+              className="w-full bg-[#141725] border border-white/[0.07] rounded-lg px-3 py-2 text-white font-mono text-xs outline-none focus:border-purple-400 transition-colors cursor-pointer"
             >
-              <option value={30} className="bg-[#10141E]">30 วัน</option>
-              <option value={90} className="bg-[#10141E]">90 วัน (แนะนำ)</option>
-              <option value={180} className="bg-[#10141E]">180 วัน (ครึ่งปี)</option>
-              <option value={365} className="bg-[#10141E]">1 ปี (เต็มรอบ)</option>
+              <option value={30} className="bg-[#141725]">30 วัน</option>
+              <option value={90} className="bg-[#141725]">90 วัน (แนะนำ)</option>
+              <option value={180} className="bg-[#141725]">180 วัน (ครึ่งปี)</option>
+              <option value={365} className="bg-[#141725]">1 ปี (เต็มรอบ)</option>
             </select>
           </div>
 
           {/* 5. Initial Capital & Risk */}
           <div className="space-y-1">
-            <label className="text-slate-400 text-[11px] font-bold uppercase flex items-center gap-1">
-              <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
+            <label className="text-[#A7A4B8] text-[11px] font-bold uppercase flex items-center gap-1">
+              <DollarSign className="w-3.5 h-3.5 text-[#7EE0B5]" />
               เงินต้น ($)
             </label>
             <select
               value={initialCapital}
               onChange={(e) => setInitialCapital(Number(e.target.value))}
               disabled={isRunning}
-              className="w-full bg-[#0A0D14] border border-slate-700 rounded-lg px-3 py-2 text-white font-mono text-xs outline-none focus:border-emerald-400 transition-colors cursor-pointer"
+              className="w-full bg-[#141725] border border-white/[0.07] rounded-lg px-3 py-2 text-white font-mono text-xs outline-none focus:border-emerald-400 transition-colors cursor-pointer"
             >
-              <option value={5000} className="bg-[#10141E]">$5,000</option>
-              <option value={10000} className="bg-[#10141E]">$10,000</option>
-              <option value={25000} className="bg-[#10141E]">$25,000</option>
-              <option value={50000} className="bg-[#10141E]">$50,000</option>
+              <option value={5000} className="bg-[#141725]">$5,000</option>
+              <option value={10000} className="bg-[#141725]">$10,000</option>
+              <option value={25000} className="bg-[#141725]">$25,000</option>
+              <option value={50000} className="bg-[#141725]">$50,000</option>
             </select>
           </div>
 
           {/* 6. Risk per Trade */}
           <div className="space-y-1">
-            <label className="text-slate-400 text-[11px] font-bold uppercase flex items-center gap-1">
-              <Percent className="w-3.5 h-3.5 text-rose-400" />
+            <label className="text-[#A7A4B8] text-[11px] font-bold uppercase flex items-center gap-1">
+              <Percent className="w-3.5 h-3.5 text-[#F4A6A6]" />
               ความเสี่ยง/ไม้
             </label>
             <select
               value={riskPerTradePct}
               onChange={(e) => setRiskPerTradePct(Number(e.target.value))}
               disabled={isRunning}
-              className="w-full bg-[#0A0D14] border border-slate-700 rounded-lg px-3 py-2 text-white font-mono text-xs outline-none focus:border-rose-400 transition-colors cursor-pointer"
+              className="w-full bg-[#141725] border border-white/[0.07] rounded-lg px-3 py-2 text-white font-mono text-xs outline-none focus:border-rose-400 transition-colors cursor-pointer"
             >
-              <option value={1} className="bg-[#10141E]">1% (Safe)</option>
-              <option value={2} className="bg-[#10141E]">2% (แนะนำ)</option>
-              <option value={3} className="bg-[#10141E]">3% (Moderate)</option>
-              <option value={5} className="bg-[#10141E]">5% (Aggressive)</option>
+              <option value={1} className="bg-[#141725]">1% (Safe)</option>
+              <option value={2} className="bg-[#141725]">2% (แนะนำ)</option>
+              <option value={3} className="bg-[#141725]">3% (Moderate)</option>
+              <option value={5} className="bg-[#141725]">5% (Aggressive)</option>
             </select>
           </div>
         </div>
 
         {/* Strategy Description & Run Button */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-slate-800/80">
-          <p className="text-xs font-mono text-slate-300 leading-relaxed flex items-center gap-1.5">
-            <span className="text-[#00FF66] font-bold shrink-0">▶ กลยุทธ์:</span>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-white/[0.07]/80">
+          <p className="text-xs font-mono text-[#ECEAF4] leading-relaxed flex items-center gap-1.5">
+            <span className="text-[#7EE0B5] font-bold shrink-0">▶ กลยุทธ์:</span>
             <span>{strategyDef.descriptionTh}</span>
           </p>
 
@@ -345,13 +345,13 @@ export const BacktestingDashboard: React.FC<BacktestingDashboardProps> = ({
             disabled={isRunning}
             className={`px-5 py-2 rounded-xl text-xs font-mono font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shrink-0 shadow-lg ${
               isRunning
-                ? 'bg-slate-700 text-slate-400 cursor-not-allowed'
-                : 'bg-gradient-to-r from-[#FF2D55] to-[#A855F7] hover:opacity-90 text-white font-extrabold shadow-[0_0_20px_rgba(255,45,85,0.3)] hover:scale-[1.02]'
+                ? 'bg-[#222640] text-[#A7A4B8] cursor-not-allowed'
+                : 'bg-[linear-gradient(135deg,#8E80FF,#4CC9F0)] hover:brightness-105 text-[#0F1117] font-extrabold shadow-[0_6px_18px_rgba(124,108,255,0.28)]'
             }`}
           >
             {isRunning ? (
               <>
-                <RotateCcw className="w-4 h-4 animate-spin text-[#00FF66]" />
+                <RotateCcw className="w-4 h-4 animate-spin text-[#7EE0B5]" />
                 <span>กำลังประมวลผล Backtest...</span>
               </>
             ) : (
@@ -366,25 +366,25 @@ export const BacktestingDashboard: React.FC<BacktestingDashboardProps> = ({
 
       {/* LIVE STATUS TICKER (Real-Time Progress, Currently Tested Asset, Projected Completion Time) */}
       {(isRunning || progressTicker) && (
-        <div className="rounded-xl border border-[#FF2D55]/40 bg-[#0A0E18] p-4 space-y-3 relative overflow-hidden shadow-[0_0_20px_rgba(255,45,85,0.1)]">
+        <div className="rounded-xl border border-[#7C6CFF]/40 bg-[#0A0E18] p-4 space-y-3 relative overflow-hidden shadow-[0_0_20px_rgba(124,108,255,0.1)]">
           {/* Top Ticker Status Row */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-mono">
             <div className="flex items-center gap-2">
               <span
                 className={`w-2.5 h-2.5 rounded-full ${
-                  isRunning ? 'bg-[#00F0FF] animate-ping' : 'bg-[#00FF66]'
+                  isRunning ? 'bg-[#4CC9F0]' : 'bg-[#7EE0B5]'
                 }`}
               />
               <span className="font-bold text-white uppercase tracking-wider">
                 {isRunning ? '⚡ LIVE STATUS TICKER: IN PROGRESS' : '✓ BACKTEST COMPLETED'}
               </span>
-              <span className="text-slate-500">|</span>
-              <span className="text-[#00F0FF] font-bold">
+              <span className="text-[#8B88A0]">|</span>
+              <span className="text-[#4CC9F0] font-bold">
                 สินทรัพย์: {progressTicker?.currentAsset || selectedAssetSymbol}
               </span>
             </div>
 
-            <div className="flex items-center gap-3 text-slate-400 text-[11px]">
+            <div className="flex items-center gap-3 text-[#A7A4B8] text-[11px]">
               <span>
                 ความเร็ว:{' '}
                 <strong className="text-white">
@@ -392,8 +392,8 @@ export const BacktestingDashboard: React.FC<BacktestingDashboardProps> = ({
                 </strong>
               </span>
               <span>·</span>
-              <span className="text-amber-300 font-bold flex items-center gap-1">
-                <Clock className="w-3.5 h-3.5 text-amber-400" />
+              <span className="text-[#FFB86B] font-bold flex items-center gap-1">
+                <Clock className="w-3.5 h-3.5 text-[#FFB86B]" />
                 {isRunning
                   ? `เวลาที่คาดการณ์: ~${progressTicker?.estimatedRemainingSec || 1.2}s`
                   : `ใช้เวลาทั้งหมด: ${result?.executionTimeMs || 420}ms`}
@@ -404,39 +404,39 @@ export const BacktestingDashboard: React.FC<BacktestingDashboardProps> = ({
           {/* Animated Progress Bar */}
           <div className="space-y-1">
             <div className="flex justify-between text-[11px] font-mono">
-              <span className="text-slate-300 flex items-center gap-1">
-                <span className="text-[#00FF66] font-bold">
+              <span className="text-[#ECEAF4] flex items-center gap-1">
+                <span className="text-[#7EE0B5] font-bold">
                   {progressTicker?.stageLabelTh || 'ประมวลผลโมเดล'}
                 </span>
-                <span className="text-slate-500">
+                <span className="text-[#8B88A0]">
                   ({progressTicker?.processedCandles || 0} / {progressTicker?.totalCandles || 1000} แท่งเทียน)
                 </span>
               </span>
-              <span className="font-bold text-[#00F0FF]">
+              <span className="font-bold text-[#4CC9F0]">
                 {progressTicker?.percent || 0}%
               </span>
             </div>
-            <div className="w-full h-2 rounded-full bg-slate-900 overflow-hidden border border-slate-800">
+            <div className="w-full h-2 rounded-full bg-[#141725] overflow-hidden border border-white/[0.07]">
               <div
-                className="h-full bg-gradient-to-r from-[#00FF66] via-[#00F0FF] to-[#38BDF8] transition-all duration-150 rounded-full shadow-[0_0_10px_rgba(0,255,102,0.5)]"
+                className="h-full bg-gradient-to-r from-[#7EE0B5] via-[#4CC9F0] to-[#4CC9F0] transition-all duration-150 rounded-full shadow-[0_0_10px_rgba(0,255,102,0.5)]"
                 style={{ width: `${progressTicker?.percent || 0}%` }}
               />
             </div>
           </div>
 
           {/* Live Streaming Terminal Logs (Collapsible or compact) */}
-          <div className="bg-[#05070B] rounded-lg border border-slate-800/90 p-2.5 max-h-24 overflow-y-auto font-mono text-[11px] text-slate-400 space-y-1">
-            <div className="flex items-center justify-between text-[10px] text-slate-500 pb-1 border-b border-slate-800/60 uppercase">
+          <div className="bg-[#05070B] rounded-lg border border-white/[0.07]/90 p-2.5 max-h-24 overflow-y-auto font-mono text-[11px] text-[#A7A4B8] space-y-1">
+            <div className="flex items-center justify-between text-[10px] text-[#8B88A0] pb-1 border-b border-white/[0.07]/60 uppercase">
               <span className="flex items-center gap-1">
-                <Terminal className="w-3 h-3 text-[#00FF66]" />
+                <Terminal className="w-3 h-3 text-[#7EE0B5]" />
                 Live Execution Stream
               </span>
               <span>Worker Node #1</span>
             </div>
             {tickerLogs.map((log, idx) => (
               <div key={idx} className="flex items-start gap-1.5 leading-snug">
-                <span className="text-[#00FF66]">›</span>
-                <span className={idx === tickerLogs.length - 1 ? 'text-[#00F0FF] font-bold' : ''}>
+                <span className="text-[#7EE0B5]">›</span>
+                <span className={idx === tickerLogs.length - 1 ? 'text-[#4CC9F0] font-bold' : ''}>
                   {log}
                 </span>
               </div>
@@ -451,122 +451,122 @@ export const BacktestingDashboard: React.FC<BacktestingDashboardProps> = ({
         <div className="space-y-4">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {/* Metric 1: WIN RATE */}
-            <div className="p-4 rounded-xl bg-[#10141E] border border-slate-800 relative overflow-hidden group hover:border-[#00FF66]/50 transition-all">
-              <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#00FF66] to-transparent opacity-80" />
-              <div className="flex items-center justify-between text-slate-400 text-xs font-mono mb-1">
+            <div className="p-4 rounded-xl bg-[#141725] border border-white/[0.07] relative overflow-hidden group hover:border-[#7EE0B5]/50 transition-all">
+              <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#7EE0B5] to-transparent opacity-80" />
+              <div className="flex items-center justify-between text-[#A7A4B8] text-xs font-mono mb-1">
                 <span className="flex items-center gap-1">
-                  <ShieldCheck className="w-3.5 h-3.5 text-[#00FF66]" />
+                  <ShieldCheck className="w-3.5 h-3.5 text-[#7EE0B5]" />
                   WIN RATE
                 </span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded-sm bg-[#00FF66]/10 border border-[#00FF66]/30 text-[#00FF66] font-bold">
+                <span className="text-[10px] px-1.5 py-0.5 rounded-sm bg-[#7EE0B5]/10 border border-[#7EE0B5]/30 text-[#7EE0B5] font-bold">
                   {result.winningTrades}/{result.totalTrades} ชนะ
                 </span>
               </div>
-              <div className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-[#00FF66] mt-1">
+              <div className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-[#7EE0B5] mt-1">
                 {result.winRatePct}%
               </div>
-              <div className="flex items-center justify-between text-xs font-mono mt-2 pt-2 border-t border-slate-800/80 text-slate-400">
+              <div className="flex items-center justify-between text-xs font-mono mt-2 pt-2 border-t border-white/[0.07]/80 text-[#A7A4B8]">
                 <span>Losses: {result.losingTrades}</span>
-                <span className="text-[#00FF66] font-bold">W/L: {result.winLossRatio}x</span>
+                <span className="text-[#7EE0B5] font-bold">W/L: {result.winLossRatio}x</span>
               </div>
             </div>
 
             {/* Metric 2: SHARPE RATIO */}
-            <div className="p-4 rounded-xl bg-[#10141E] border border-slate-800 relative overflow-hidden group hover:border-[#FF2D55]/50 transition-all">
-              <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#FF2D55] to-transparent opacity-80" />
-              <div className="flex items-center justify-between text-slate-400 text-xs font-mono mb-1">
+            <div className="p-4 rounded-xl bg-[#141725] border border-white/[0.07] relative overflow-hidden group hover:border-[#7C6CFF]/50 transition-all">
+              <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#7C6CFF] to-transparent opacity-80" />
+              <div className="flex items-center justify-between text-[#A7A4B8] text-xs font-mono mb-1">
                 <span className="flex items-center gap-1">
-                  <Sparkles className="w-3.5 h-3.5 text-[#FF2D55]" />
+                  <Sparkles className="w-3.5 h-3.5 text-[#7C6CFF]" />
                   SHARPE RATIO
                 </span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded-sm bg-[#FF2D55]/10 border border-[#FF2D55]/30 text-[#FF2D55] font-bold">
+                <span className="text-[10px] px-1.5 py-0.5 rounded-sm bg-[#7C6CFF]/10 border border-[#7C6CFF]/30 text-[#7C6CFF] font-bold">
                   RISK-ADJUSTED
                 </span>
               </div>
-              <div className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-[#00F0FF] mt-1">
+              <div className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-[#4CC9F0] mt-1">
                 {result.sharpeRatio}
               </div>
-              <div className="flex items-center justify-between text-xs font-mono mt-2 pt-2 border-t border-slate-800/80 text-slate-400">
+              <div className="flex items-center justify-between text-xs font-mono mt-2 pt-2 border-t border-white/[0.07]/80 text-[#A7A4B8]">
                 <span>เกณฑ์มาตรฐาน: &gt;1.5</span>
-                <span className="text-[#00F0FF] font-bold">ระดับสถาบัน</span>
+                <span className="text-[#4CC9F0] font-bold">ระดับสถาบัน</span>
               </div>
             </div>
 
             {/* Metric 3: TOTAL RETURN & NET PROFIT */}
-            <div className="p-4 rounded-xl bg-[#10141E] border border-slate-800 relative overflow-hidden group hover:border-emerald-500/50 transition-all">
+            <div className="p-4 rounded-xl bg-[#141725] border border-white/[0.07] relative overflow-hidden group hover:border-emerald-500/50 transition-all">
               <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-emerald-400 to-transparent opacity-80" />
-              <div className="flex items-center justify-between text-slate-400 text-xs font-mono mb-1">
+              <div className="flex items-center justify-between text-[#A7A4B8] text-xs font-mono mb-1">
                 <span className="flex items-center gap-1">
-                  <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
+                  <TrendingUp className="w-3.5 h-3.5 text-[#7EE0B5]" />
                   TOTAL NET RETURN
                 </span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded-sm bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 font-bold">
+                <span className="text-[10px] px-1.5 py-0.5 rounded-sm bg-[#7EE0B5]/10 border border-emerald-500/30 text-[#7EE0B5] font-bold">
                   PROFIT FACTOR {result.profitFactor}x
                 </span>
               </div>
-              <div className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-emerald-400 mt-1 flex items-baseline gap-1.5">
+              <div className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-[#7EE0B5] mt-1 flex items-baseline gap-1.5">
                 <span>+{result.totalReturnPct}%</span>
-                <span className="text-xs text-slate-400 font-normal">
+                <span className="text-xs text-[#A7A4B8] font-normal">
                   (+${result.netProfitUsd.toLocaleString()})
                 </span>
               </div>
-              <div className="flex items-center justify-between text-xs font-mono mt-2 pt-2 border-t border-slate-800/80 text-slate-400">
+              <div className="flex items-center justify-between text-xs font-mono mt-2 pt-2 border-t border-white/[0.07]/80 text-[#A7A4B8]">
                 <span>เงินต้น $10,000</span>
-                <span className="text-emerald-300 font-bold">${result.finalEquity.toLocaleString()}</span>
+                <span className="text-[#7EE0B5] font-bold">${result.finalEquity.toLocaleString()}</span>
               </div>
             </div>
 
             {/* Metric 4: MAX DRAWDOWN (MDD) */}
-            <div className="p-4 rounded-xl bg-[#10141E] border border-slate-800 relative overflow-hidden group hover:border-[#f9df7b]/50 transition-all">
-              <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#f9df7b] to-transparent opacity-80" />
-              <div className="flex items-center justify-between text-slate-400 text-xs font-mono mb-1">
+            <div className="p-4 rounded-xl bg-[#141725] border border-white/[0.07] relative overflow-hidden group hover:border-[#FFB86B]/50 transition-all">
+              <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#FFB86B] to-transparent opacity-80" />
+              <div className="flex items-center justify-between text-[#A7A4B8] text-xs font-mono mb-1">
                 <span className="flex items-center gap-1">
-                  <TrendingDown className="w-3.5 h-3.5 text-[#f9df7b]" />
+                  <TrendingDown className="w-3.5 h-3.5 text-[#FFB86B]" />
                   MAX DRAWDOWN
                 </span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded-sm bg-[#f9df7b]/10 border border-[#f9df7b]/30 text-[#f9df7b] font-bold">
+                <span className="text-[10px] px-1.5 py-0.5 rounded-sm bg-[#FFB86B]/10 border border-[#FFB86B]/30 text-[#FFB86B] font-bold">
                   PEAK-TO-TROUGH
                 </span>
               </div>
-              <div className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-[#f9df7b] mt-1">
+              <div className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-[#FFB86B] mt-1">
                 {result.maxDrawdownPct}%
               </div>
-              <div className="flex items-center justify-between text-xs font-mono mt-2 pt-2 border-t border-slate-800/80 text-slate-400">
+              <div className="flex items-center justify-between text-xs font-mono mt-2 pt-2 border-t border-white/[0.07]/80 text-[#A7A4B8]">
                 <span>B&amp;H Return: {result.benchmarkReturnPct}%</span>
-                <span className="text-amber-400 font-bold">Alpha: +{(result.totalReturnPct - result.benchmarkReturnPct).toFixed(1)}%</span>
+                <span className="text-[#FFB86B] font-bold">Alpha: +{(result.totalReturnPct - result.benchmarkReturnPct).toFixed(1)}%</span>
               </div>
             </div>
           </div>
 
           {/* VISUAL EQUITY CURVE & BENCHMARK COMPARISON */}
-          <div className="p-4 sm:p-5 rounded-xl bg-[#10141E] border border-slate-800 space-y-3">
+          <div className="p-4 sm:p-5 rounded-xl bg-[#141725] border border-white/[0.07] space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <BarChart2 className="w-4 h-4 text-[#00FF66]" />
+                <BarChart2 className="w-4 h-4 text-[#7EE0B5]" />
                 <h4 className="text-xs sm:text-sm font-mono font-bold text-white">
                   Cumulative Equity Curve ({result.strategyName} vs Buy &amp; Hold)
                 </h4>
               </div>
               <div className="flex items-center gap-3 text-xs font-mono">
-                <span className="flex items-center gap-1.5 text-[#00FF66]">
-                  <span className="w-3 h-0.5 bg-[#00FF66] inline-block" />
+                <span className="flex items-center gap-1.5 text-[#7EE0B5]">
+                  <span className="w-3 h-0.5 bg-[#7EE0B5] inline-block" />
                   Strategy Equity (${result.finalEquity.toLocaleString()})
                 </span>
-                <span className="flex items-center gap-1.5 text-slate-500 hidden sm:flex">
-                  <span className="w-3 h-0.5 bg-slate-500 inline-block border-dashed" />
+                <span className="flex items-center gap-1.5 text-[#8B88A0] hidden sm:flex">
+                  <span className="w-3 h-0.5 bg-[#F7F5F0]0 inline-block border-dashed" />
                   Benchmark Buy &amp; Hold
                 </span>
               </div>
             </div>
 
             {/* SVG Visual Equity Curve */}
-            <div className="w-full h-44 bg-[#0A0D14] rounded-lg border border-slate-800 p-2 relative flex items-center">
+            <div className="w-full h-44 bg-[#141725] rounded-lg border border-white/[0.07] p-2 relative flex items-center">
               {result.equityCurve.length > 1 && (
                 <svg className="w-full h-full overflow-visible" viewBox="0 0 500 120" preserveAspectRatio="none">
                   <defs>
                     <linearGradient id="equityGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#00FF66" stopOpacity="0.25" />
-                      <stop offset="100%" stopColor="#00FF66" stopOpacity="0.0" />
+                      <stop offset="0%" stopColor="#7EE0B5" stopOpacity="0.25" />
+                      <stop offset="100%" stopColor="#7EE0B5" stopOpacity="0.0" />
                     </linearGradient>
                   </defs>
 
@@ -611,7 +611,7 @@ export const BacktestingDashboard: React.FC<BacktestingDashboardProps> = ({
                   {/* Strategy Line (Bright Neon Green) */}
                   <polyline
                     fill="none"
-                    stroke="#00FF66"
+                    stroke="#7EE0B5"
                     strokeWidth="2.5"
                     points={result.equityCurve
                       .map((pt, i) => {
@@ -627,23 +627,23 @@ export const BacktestingDashboard: React.FC<BacktestingDashboardProps> = ({
                 </svg>
               )}
 
-              <div className="absolute top-2 left-3 text-[10px] font-mono text-slate-500">
+              <div className="absolute top-2 left-3 text-[10px] font-mono text-[#8B88A0]">
                 Peak Equity: ${result.finalEquity.toLocaleString()}
               </div>
-              <div className="absolute bottom-2 right-3 text-[10px] font-mono text-[#00FF66] font-bold">
+              <div className="absolute bottom-2 right-3 text-[10px] font-mono text-[#7EE0B5] font-bold">
                 Alpha: +{(result.totalReturnPct - result.benchmarkReturnPct).toFixed(1)}% vs B&amp;H
               </div>
             </div>
           </div>
 
           {/* TRADE LOG AUDIT TABLE */}
-          <div className="p-4 sm:p-5 rounded-xl bg-[#10141E] border border-slate-800 space-y-3">
+          <div className="p-4 sm:p-5 rounded-xl bg-[#141725] border border-white/[0.07] space-y-3">
             <div className="flex items-center justify-between">
               <h4 className="text-xs sm:text-sm font-mono font-bold text-white flex items-center gap-1.5">
-                <Activity className="w-4 h-4 text-[#00F0FF]" />
+                <Activity className="w-4 h-4 text-[#4CC9F0]" />
                 Recent Simulated Trade Logs ({result.tradeLogs.length} รายการล่าสุด)
               </h4>
-              <span className="text-[11px] font-mono text-slate-400">
+              <span className="text-[11px] font-mono text-[#A7A4B8]">
                 กำไรเฉลี่ย: +{result.avgWinPct}% | ขาดทุนเฉลี่ย: -{result.avgLossPct}%
               </span>
             </div>
@@ -651,7 +651,7 @@ export const BacktestingDashboard: React.FC<BacktestingDashboardProps> = ({
             <div className="overflow-x-auto [&::-webkit-scrollbar]:hidden">
               <table className="w-full text-left font-mono text-xs">
                 <thead>
-                  <tr className="border-b border-slate-800 text-[10px] text-slate-400 uppercase">
+                  <tr className="border-b border-white/[0.07] text-[10px] text-[#A7A4B8] uppercase">
                     <th className="py-2 px-2">เวลาออก</th>
                     <th className="py-2 px-2">ประเภท</th>
                     <th className="py-2 px-2">ราคาเข้า</th>
@@ -660,27 +660,27 @@ export const BacktestingDashboard: React.FC<BacktestingDashboardProps> = ({
                     <th className="py-2 px-2 text-right">ยอดคงเหลือ</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/60">
+                <tbody className="divide-y divide-white/[0.07]/60">
                   {result.tradeLogs.slice(0, 8).map((trade) => (
-                    <tr key={trade.id} className="hover:bg-slate-900/50 transition-colors">
-                      <td className="py-2 px-2 text-slate-300">{trade.exitTime}</td>
+                    <tr key={trade.id} className="hover:bg-[#141725]/50 transition-colors">
+                      <td className="py-2 px-2 text-[#ECEAF4]">{trade.exitTime}</td>
                       <td className="py-2 px-2">
                         <span
                           className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
                             trade.type === 'LONG'
-                              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                              : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                              ? 'bg-[#7EE0B5]/20 text-[#7EE0B5] border border-emerald-500/30'
+                              : 'bg-[#F4A6A6]/20 text-[#F4A6A6] border border-rose-500/30'
                           }`}
                         >
                           {trade.type}
                         </span>
                       </td>
-                      <td className="py-2 px-2 text-slate-300">${trade.entryPrice.toLocaleString()}</td>
-                      <td className="py-2 px-2 text-slate-300">${trade.exitPrice.toLocaleString()}</td>
+                      <td className="py-2 px-2 text-[#ECEAF4]">${trade.entryPrice.toLocaleString()}</td>
+                      <td className="py-2 px-2 text-[#ECEAF4]">${trade.exitPrice.toLocaleString()}</td>
                       <td className="py-2 px-2">
                         <span
                           className={`font-bold ${
-                            trade.isWin ? 'text-[#00FF66]' : 'text-rose-400'
+                            trade.isWin ? 'text-[#7EE0B5]' : 'text-[#F4A6A6]'
                           }`}
                         >
                           {trade.isWin ? '+' : ''}

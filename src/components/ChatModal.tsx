@@ -1,9 +1,28 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { X, Send, Sticker as StickerIcon, Radio, Bot, Copy, Check, User as UserIcon } from 'lucide-react';
-import { ChatMessage, CryptoCoin, ForexPair, ThaiStock, ForeignStock, StockIndex, NewsArticle } from '../types';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { X, Radio, Bot, RotateCcw } from 'lucide-react';
+import {
+  ChatMessage,
+  CryptoCoin,
+  ForexPair,
+  ThaiStock,
+  ForeignStock,
+  StockIndex,
+  NewsArticle,
+} from '../types';
 import { GLOBAL_ROOM_ID, subscribeRoomMessages, sendRoomMessage } from '../services/chatRoomService';
-import { STICKERS, STICKER_MAP, parseStickerCode, stickerCode } from './ChatStickers';
-import { generateAiChatReply, getAiEngineStatus } from '../services/aiChatService';
+import { STICKERS, stickerCode } from './ChatStickers';
+import { getAiEngineStatus } from '../services/aiChatService';
+import { streamChatReply } from '../services/chatStreamClient';
+import {
+  CHAT_TONE_ORDER,
+  CHAT_TONES,
+  ChatTone,
+  extractReasons,
+  sanitizeVoice,
+} from '../services/chatStreamCore';
+import { useModalA11y } from '../hooks/useModalA11y';
+import { ChatMessageItem } from './chat/ChatMessageItem';
+import { ChatComposer } from './chat/ChatComposer';
 
 interface ChatUser {
   uid: string;
@@ -26,15 +45,34 @@ export interface ChatModalProps {
   geminiApiKey?: string;
   onOpenAtsMatrix?: () => void;
   onOpenSettings?: () => void;
+  /**
+   * A sentence the mascot already collected ("ขอดู BTC"). Dropped into the
+   * composer and focused, never auto-sent — the user stays the one who asks.
+   */
+  initialQuestion?: string;
 }
 
-function formatTime(iso: string): string {
+const TONE_STORAGE_KEY = 'motorboy_chat_tone';
+const AI_UID = 'ai-deep-analyze';
+const AI_NAME = '🏍️ น้องมอเตอร์บอย';
+
+const SUGGESTIONS: Array<{ label: string; query: string; accent: string }> = [
+  { label: 'BTC น่าสนใจไหม', query: 'BTC SPOT & NIULAI4', accent: '#7EE0B5' },
+  { label: 'หุ้นไทย AOT / DELTA', query: 'วิเคราะห์หุ้นไทย AOT และ DELTA', accent: '#FFB86B' },
+  { label: 'ค่าเงิน USD/THB', query: 'ตรวจอัตราแลกเปลี่ยน USD/THB', accent: '#4CC9F0' },
+  { label: 'หุ้นนอก NVDA', query: 'วิเคราะห์หุ้นสหรัฐฯ NVDA', accent: '#A89FFF' },
+  { label: 'ข่าวเศรษฐกิจวันนี้', query: 'สรุปข่าวเศรษฐกิจโลกวันนี้', accent: '#A89FFF' },
+  { label: 'ความเสี่ยงพอร์ต', query: 'วิเคราะห์ Drawdown พอร์ตและความเสี่ยง Peak-to-Trough', accent: '#FFB86B' },
+];
+
+function readStoredTone(): ChatTone {
   try {
-    const d = new Date(iso);
-    return d.toLocaleString('th-TH', { hour: '2-digit', minute: '2-digit' });
+    const stored = localStorage.getItem(TONE_STORAGE_KEY);
+    if (stored === 'friend' || stored === 'coach' || stored === 'expert') return stored;
   } catch {
-    return '';
+    /* localStorage may be blocked */
   }
+  return 'friend';
 }
 
 export const ChatModal: React.FC<ChatModalProps> = ({
@@ -51,173 +89,352 @@ export const ChatModal: React.FC<ChatModalProps> = ({
   geminiApiKey = '',
   onOpenAtsMatrix,
   onOpenSettings,
+  initialQuestion,
 }) => {
-  const engineStatus = getAiEngineStatus();
+  const engineStatus = getAiEngineStatus(geminiApiKey);
+
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState('');
+  const [tone, setTone] = useState<ChatTone>(readStoredTone);
   const [isSending, setIsSending] = useState(false);
-  const [isAiThinking, setIsAiThinking] = useState(false);
+  const [streamingText, setStreamingText] = useState<string | null>(null);
+  const [error, setError] = useState<{ message: string; query: string } | null>(null);
   const [showStickers, setShowStickers] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const bottomRef = useRef<HTMLDivElement | null>(null);
+  const [atBottom, setAtBottom] = useState(true);
 
-  // Realtime subscription to the unified chat room
+  const abortRef = useRef<AbortController | null>(null);
+  const rafRef = useRef<number | null>(null);
+  const pendingRef = useRef('');
+  const streamTextRef = useRef('');
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const bottomRef = useRef<HTMLDivElement | null>(null);
+  const atBottomRef = useRef(true);
+  // setState is async: two fast clicks used to fire two AI requests before
+  // `isSending` flipped. A ref is the actual lock.
+  const sendingRef = useRef(false);
+  const copyTimerRef = useRef<number | null>(null);
+
+  const chatContext = useMemo(
+    () => ({
+      cryptoList,
+      forexRates,
+      thaiStocks,
+      foreignStocks,
+      stockIndices,
+      articles,
+      geminiApiKey,
+    }),
+    [cryptoList, forexRates, thaiStocks, foreignStocks, stockIndices, articles, geminiApiKey]
+  );
+
+  /* ------------------------------------------------------------ lifecycle */
+
   useEffect(() => {
     if (!isOpen) return;
     const unsub = subscribeRoomMessages(GLOBAL_ROOM_ID, setMessages);
     return () => unsub();
   }, [isOpen]);
 
-  // Auto-scroll to latest message
+  // Hand-off from the mascot: put the sentence in the box and focus it. The
+  // user still presses enter — a prefilled draft is a suggestion, not a send.
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages.length, isAiThinking]);
-
-  const handleCopyText = (id: string, text: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedId(id);
-    setTimeout(() => setCopiedId(null), 2000);
-  };
-
-  const handleSend = async (overrideText?: string) => {
-    const text = (overrideText !== undefined ? overrideText : draft).trim();
-    if (!text || isSending) return;
-
-    setIsSending(true);
+    if (!isOpen || !initialQuestion) return;
+    setDraft(initialQuestion);
     setError(null);
-    setDraft('');
+    const timer = window.setTimeout(() => {
+      const el = document.getElementById('motorboy-chat-input') as HTMLTextAreaElement | null;
+      el?.focus();
+      el?.setSelectionRange(el.value.length, el.value.length);
+    }, 60);
+    return () => window.clearTimeout(timer);
+  }, [isOpen, initialQuestion]);
 
-    // Guest fallback identity if user is not signed in with Google
-    const senderUid = user?.uid || 'guest-trader';
-    const senderName = user?.displayName || user?.email || 'Trader (Guest)';
-    const senderPhoto = user?.photoURL ?? null;
-
+  useEffect(() => {
     try {
-      // 1. Post user's message to chat room
-      await sendRoomMessage(GLOBAL_ROOM_ID, {
-        uid: senderUid,
-        name: senderName,
-        photoURL: senderPhoto,
-        text,
-      });
-
-      // 2. Trigger 100% AI Response
-      setIsAiThinking(true);
-      try {
-        const aiResponse = await generateAiChatReply(text, {
-          cryptoList,
-          forexRates,
-          thaiStocks,
-          foreignStocks,
-          stockIndices,
-          articles,
-          geminiApiKey,
-        });
-
-        // 3. Post AI's response to chat room
-        await sendRoomMessage(GLOBAL_ROOM_ID, {
-          uid: 'ai-deep-analyze',
-          name: '🤖 AI Deep Analyze [100% AI]',
-          photoURL: null,
-          text: aiResponse,
-        });
-      } catch (aiErr) {
-        console.error('Error generating AI response:', aiErr);
-        await sendRoomMessage(GLOBAL_ROOM_ID, {
-          uid: 'motorboy-ai',
-          name: '🏍️ MotorBoy AI-TH (น้องมอเตอร์บอย)',
-          photoURL: null,
-          text: `🏍️ [MotorBoy AI-TH]\nระบบกำลังประมวลผลข้อมูลตลาดสด กรุณาสอบถามซ้ำอีกครั้งครับ\nคำถามของคุณ: "${text}"\n\nนี่คือการวิเคราะห์ ไม่ใช่คำแนะนำการลงทุน`,
-        });
-      }
-    } catch (err: unknown) {
-      console.error('Failed to send message:', err);
-      setError(err instanceof Error ? err.message : 'ส่งข้อความไม่สำเร็จ');
-    } finally {
-      setIsSending(false);
-      setIsAiThinking(false);
+      localStorage.setItem(TONE_STORAGE_KEY, tone);
+    } catch {
+      /* ignore */
     }
-  };
+  }, [tone]);
 
-  const handleSendSticker = async (id: string) => {
-    if (isSending) return;
-    setIsSending(true);
-    setError(null);
-    const senderUid = user?.uid || 'guest-trader';
-    const senderName = user?.displayName || user?.email || 'Trader (Guest)';
-    const senderPhoto = user?.photoURL ?? null;
+  // ปิดแชท = ยกเลิกสตรีมที่ค้างอยู่ ไม่ปล่อยให้กินโควตา API ต่อ
+  useEffect(() => {
+    if (isOpen) return;
+    abortRef.current?.abort();
+    abortRef.current = null;
+  }, [isOpen]);
 
-    try {
-      const code = stickerCode(id);
-      await sendRoomMessage(GLOBAL_ROOM_ID, {
-        uid: senderUid,
-        name: senderName,
-        photoURL: senderPhoto,
-        text: code,
-      });
+  useEffect(
+    () => () => {
+      abortRef.current?.abort();
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+      if (copyTimerRef.current !== null) window.clearTimeout(copyTimerRef.current);
+    },
+    []
+  );
+
+  const scrollToBottom = useCallback((smooth: boolean) => {
+    const anchor = bottomRef.current;
+    // some embedded webviews (and jsdom) do not implement scrollIntoView
+    if (anchor && typeof anchor.scrollIntoView === 'function') {
+      anchor.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'end' });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (atBottomRef.current) scrollToBottom(false);
+  }, [messages.length, scrollToBottom]);
+
+  const handleScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const distance = el.scrollHeight - el.scrollTop - el.clientHeight;
+    const next = distance < 80;
+    atBottomRef.current = next;
+    setAtBottom((prev) => (prev === next ? prev : next));
+  }, []);
+
+  /* ----------------------------------------------------------- AI stream */
+
+  const flushStream = useCallback(() => {
+    rafRef.current = null;
+    const chunk = pendingRef.current;
+    if (!chunk) return;
+    pendingRef.current = '';
+    streamTextRef.current += chunk;
+    setStreamingText(sanitizeVoice(streamTextRef.current));
+    if (atBottomRef.current) scrollToBottom(false);
+  }, [scrollToBottom]);
+
+  const scheduleFlush = useCallback(() => {
+    if (rafRef.current !== null) return;
+    rafRef.current = requestAnimationFrame(flushStream);
+  }, [flushStream]);
+
+  const runAiTurn = useCallback(
+    async (query: string) => {
+      const controller = new AbortController();
+      abortRef.current = controller;
+      sendingRef.current = true;
+      setIsSending(true);
+      setError(null);
+      setStreamingText('');
+      streamTextRef.current = '';
+      pendingRef.current = '';
+      atBottomRef.current = true;
+
+      try {
+        const result = await streamChatReply({
+          query,
+          context: chatContext,
+          tone,
+          geminiApiKey,
+          signal: controller.signal,
+          onDelta: (chunk) => {
+            pendingRef.current += chunk;
+            scheduleFlush();
+          },
+        });
+
+        if (controller.signal.aborted) return;
+
+        // flush token สุดท้ายที่ยังค้างใน buffer
+        if (pendingRef.current) flushStream();
+
+        const finalText = (result.text || streamTextRef.current).trim();
+        if (!finalText) throw new Error('ไม่ได้คำตอบจาก AI ลองถามใหม่อีกครั้งครับ');
+
+        await sendRoomMessage(GLOBAL_ROOM_ID, {
+          uid: AI_UID,
+          name: AI_NAME,
+          photoURL: null,
+          text: finalText,
+          meta: {
+            tone: result.tone,
+            sources: result.sources,
+            reasons: extractReasons(finalText),
+            depth: result.depth,
+            streamed: result.streamed,
+            latencyMs: result.latencyMs,
+          },
+        });
+
+      } catch (err) {
+        if (controller.signal.aborted) return;
+        const message =
+          err instanceof Error ? err.message : 'เชื่อมต่อ AI ไม่สำเร็จ ลองอีกครั้งได้เลยครับ';
+        setError({ message, query });
+      } finally {
+        abortRef.current = null;
+        sendingRef.current = false;
+        setIsSending(false);
+        setStreamingText(null);
+        streamTextRef.current = '';
+        pendingRef.current = '';
+      }
+    },
+    [chatContext, flushStream, geminiApiKey, scheduleFlush, tone]
+  );
+
+  const sendQuery = useCallback(
+    async (rawQuery: string) => {
+      const query = rawQuery.trim();
+      if (!query || isSending || sendingRef.current) return;
+
+      setDraft('');
+      setError(null);
       setShowStickers(false);
 
-      // AI reacts to trading stickers
-      setIsAiThinking(true);
-      setTimeout(async () => {
-        try {
-          const stickerReplies: Record<string, string> = {
-            bull: '🏍️ [MotorBoy AI-TH] Full Throttle! โมเมนตัมกระทิงมาตามแผน ล็อคจุดเข้าและตั้ง TP ให้ชัดเจนครับ\n\nนี่คือการวิเคราะห์ ไม่ใช่คำแนะนำการลงทุน',
-            bear: '🛑 [MotorBoy AI-TH] เบรกก่อนจิ! ตลาดอยู่ในช่วงปรับฐาน อย่าเพิ่งสวน ให้ตั้ง SL คุมความเสี่ยงไม่เกิน 2%\n\nนี่คือการวิเคราะห์ ไม่ใช่คำแนะนำการลงทุน',
-            moon: '🚀 [MotorBoy AI-TH] Full Throttle To The Moon! อย่าลืมทยอยแบ่งปิดทำกำไร (TP1/TP2) ตามระบบวินัยครับ\n\nนี่คือการวิเคราะห์ ไม่ใช่คำแนะนำการลงทุน',
-            hodl: '💎 [MotorBoy AI-TH] ถือรอตามแผนวินัย! คุมความเสี่ยงตามหลัก Risk Guard ไม่เกิน 2% ต่อไม้\n\nนี่คือการวิเคราะห์ ไม่ใช่คำแนะนำการลงทุน',
-          };
-          const reply = stickerReplies[id] || '🏍️ [MotorBoy AI-TH] รับทราบสัญญาณ! พร้อมวิเคราะห์จุดเข้า Entry, SL, TP สด ถามชื่อเหรียญหรือคู่เงินได้เลยครับ\n\nนี่คือการวิเคราะห์ ไม่ใช่คำแนะนำการลงทุน';
-          await sendRoomMessage(GLOBAL_ROOM_ID, {
-            uid: 'motorboy-ai',
-            name: '🏍️ MotorBoy AI-TH (น้องมอเตอร์บอย)',
-            photoURL: null,
-            text: reply,
-          });
-        } finally {
-          setIsAiThinking(false);
-        }
-      }, 500);
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'ส่งสติ๊กเกอร์ไม่สำเร็จ');
-    } finally {
-      setIsSending(false);
-    }
-  };
+      const senderUid = user?.uid || 'guest-trader';
+      const senderName = user?.displayName || user?.email || 'Trader (Guest)';
 
+      try {
+        await sendRoomMessage(GLOBAL_ROOM_ID, {
+          uid: senderUid,
+          name: senderName,
+          photoURL: user?.photoURL ?? null,
+          text: query,
+        });
+      } catch (err) {
+        setError({
+          message: err instanceof Error ? err.message : 'ส่งข้อความไม่สำเร็จ',
+          query,
+        });
+        return;
+      }
+
+      await runAiTurn(query);
+    },
+    [isSending, runAiTurn, user]
+  );
+
+  const handleStop = useCallback(() => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    sendingRef.current = false;
+    if (rafRef.current !== null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+    setIsSending(false);
+    setStreamingText(null);
+    streamTextRef.current = '';
+    pendingRef.current = '';
+  }, []);
+
+  const handleRegenerate = useCallback(() => {
+    if (isSending || sendingRef.current) return;
+    const lastUser = [...messages].reverse().find((m) => m.uid !== AI_UID && !m.name.includes('AI'));
+    if (lastUser) void runAiTurn(lastUser.text);
+  }, [isSending, messages, runAiTurn]);
+
+  const handleCopy = useCallback((id: string, text: string) => {
+    void navigator.clipboard?.writeText(text).catch(() => {
+      /* clipboard permission denied on http:// origins — nothing to do */
+    });
+    setCopiedId(id);
+    if (copyTimerRef.current !== null) window.clearTimeout(copyTimerRef.current);
+    copyTimerRef.current = window.setTimeout(() => {
+      copyTimerRef.current = null;
+      setCopiedId((current) => (current === id ? null : current));
+    }, 1800);
+  }, []);
+
+  const handleSendSticker = useCallback(
+    async (id: string) => {
+      if (isSending || sendingRef.current) return;
+      const senderUid = user?.uid || 'guest-trader';
+      const senderName = user?.displayName || user?.email || 'Trader (Guest)';
+
+      setShowStickers(false);
+      try {
+        await sendRoomMessage(GLOBAL_ROOM_ID, {
+          uid: senderUid,
+          name: senderName,
+          photoURL: user?.photoURL ?? null,
+          text: stickerCode(id),
+        });
+        await sendRoomMessage(GLOBAL_ROOM_ID, {
+          uid: AI_UID,
+          name: AI_NAME,
+          photoURL: null,
+          text:
+            id === 'bull'
+              ? 'เห็นสติ๊กเกอร์กระทิงแล้วครับ — ถ้าจะเข้าไม้ ขอให้ตั้งจุดตัดขาดทุนไว้ก่อนเสมอ แล้วค่อยดูว่า RR ถึง 1:1.5 ไหมครับ'
+              : id === 'bear'
+                ? 'เห็นสติ๊กเกอร์หมีแล้วครับ — ช่วงปรับฐานชอบหลอกคนรีบเข้า รอดูแท่งปิดก่อนก็ได้ครับ'
+                : id === 'moon'
+                  ? 'อยากไปดวงจันทร์ก็ได้ครับ แต่ขอให้ทยอยปิดทำกำไรเป็นขั้น ไม่โยนหมดไม้ทีเดียว'
+                  : 'ถือตามแผนก็เป็นวินัยที่ดีครับ ขอแค่ตรวจข่าวใหญ่ก่อนถือข้ามคืน',
+          meta: { tone, depth: 'quant', sources: ['สติ๊กเกอร์ที่คุณส่ง'], reasons: [] },
+        });
+      } catch (err) {
+        setError({
+          message: err instanceof Error ? err.message : 'ส่งสติ๊กเกอร์ไม่สำเร็จ',
+          query: '',
+        });
+      }
+    },
+    [isSending, tone, user]
+  );
+
+  const dialogRef = useModalA11y({ onClose, enabled: isOpen });
   if (!isOpen) return null;
 
-  const myUid = user?.uid || 'guest-trader';
+  const streamingMessage: ChatMessage | null =
+    streamingText === null
+      ? null
+      : {
+          id: 'streaming',
+          uid: AI_UID,
+          name: AI_NAME,
+          text: streamingText,
+          createdAt: new Date().toISOString(),
+          meta: { tone, depth: 'llm', sources: [], streamed: true },
+        };
+
+  const showEmptyState = messages.length === 0 && !streamingMessage;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-6 bg-black/75 backdrop-blur-xs overflow-y-auto">
-      <div className={`w-full sm:max-w-xl rounded-t-2xl sm:rounded-2xl flex flex-col overflow-hidden border-t sm:border max-h-[92vh] sm:my-8 shadow-2xl ${isDark ? 'bg-[#0F1117] text-white border-[#252A3A]' : 'bg-white text-slate-900 border-slate-200'}`}>
-        
-        {/* Header: Short title & 100% AI badge */}
-        <div className="flex justify-between items-center px-4 py-3 border-b border-[#252A3A]/60 bg-[#141824]">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#FF2D55] via-[#A855F7] to-[#3B82F6] p-[1.5px] shadow-[0_0_12px_rgba(255,45,85,0.4)]">
-              <div className="w-full h-full bg-[#0A0A0A] rounded-[9.5px] flex items-center justify-center text-sm">
-                🏍️
-              </div>
+    <div
+      ref={dialogRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label="แชทวิเคราะห์ตลาดกับน้องมอเตอร์บอย"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/75 backdrop-blur-sm sm:items-center sm:p-6"
+    >
+      <div
+        className={`flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-[20px] border sm:max-w-xl sm:rounded-[20px] sm:my-8 ${
+          isDark
+            ? 'border-white/[0.07] bg-[#0F1117] text-[#ECEAF4]'
+            : 'border-[#E8E6E0] bg-[#F7F5F0] text-[#1C1F2E]'
+        } shadow-[0_8px_30px_rgba(0,0,0,0.45)]`}
+      >
+        {/* ------------------------------------------------------- header */}
+        <header className="flex items-center justify-between gap-2 border-b border-white/[0.07] bg-[#141725] px-3.5 py-2.5 sm:px-4">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-[14px] border border-[#7C6CFF]/40 bg-[#7C6CFF]/15 text-base">
+              🏍️
+              <span
+                className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-[#141725] bg-[#7EE0B5]"
+                aria-hidden="true"
+              />
             </div>
-            <div>
-              <h2 className="font-bold flex items-center gap-1.5 text-sm sm:text-base">
-                <span className="bg-gradient-to-r from-[#FF2D55] via-[#A855F7] to-[#3B82F6] text-transparent bg-clip-text font-black">
-                  MotorBoy AI-TH
-                </span>
-                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-[#FF2D55]/20 text-[#FF2D55] border border-[#FF2D55]/40 font-mono">
-                  HYBRID PRO
+            <div className="min-w-0">
+              <h2 className="flex items-center gap-1.5 text-sm font-semibold text-[#ECEAF4] sm:text-base">
+                น้องมอเตอร์บอย
+                <span className="rounded-full border border-[#7C6CFF]/35 bg-[#7C6CFF]/12 px-1.5 py-0.5 text-[9px] font-semibold text-[#A89FFF]">
+                  AI
                 </span>
               </h2>
-              <p className="text-[10px] text-[#9CA3AF] flex items-center gap-1">
-                เร็ว แม่น ปลอดภัย แบบ MotorBoy • Auto API Co-Pilot
+              <p className="truncate text-[10px] text-[#8B88A0]">
+                {engineStatus.isOnlineLlm ? 'Gemini + ข้อมูลตลาดสด' : 'เครื่องคำนวณในเครื่อง'} • ตอบทีละคำ
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5">
+          <div className="flex shrink-0 items-center gap-1">
             {onOpenAtsMatrix && (
               <button
                 type="button"
@@ -225,280 +442,205 @@ export const ChatModal: React.FC<ChatModalProps> = ({
                   onClose();
                   onOpenAtsMatrix();
                 }}
-                className="px-2.5 py-1 rounded-lg bg-[#00FF66]/15 hover:bg-[#00FF66]/25 border border-[#00FF66]/40 text-[#00FF66] text-[11px] font-mono font-bold flex items-center gap-1 transition-all cursor-pointer"
+                className="hidden items-center gap-1 rounded-full border border-[#7EE0B5]/35 bg-[#7EE0B5]/10 px-2.5 py-1 text-[10px] font-semibold text-[#7EE0B5] transition-colors hover:bg-[#7EE0B5]/20 sm:flex"
                 title="สลับเป็น ATS MATRIX MODE"
               >
-                <Radio className="w-3 h-3 animate-pulse" />
-                <span className="hidden sm:inline">ATS Matrix</span>
+                <Radio className="h-3 w-3" />
+                ATS Matrix
               </button>
             )}
-            <button onClick={onClose} className="text-[#6B7280] hover:text-white p-1 rounded-lg transition-colors cursor-pointer" aria-label="ปิดแชท">
-              <X className="w-5 h-5" />
+            <button
+              onClick={onClose}
+              className="rounded-lg p-1.5 text-[#A7A4B8] transition-colors hover:bg-white/[0.07] hover:text-[#ECEAF4]"
+              aria-label="ปิดแชท"
+            >
+              <X className="h-5 w-5" />
             </button>
           </div>
-        </div>
+        </header>
 
-        {/* Identity & Live Engine bar */}
-        <div className="px-4 py-2 text-[11px] text-[#9CA3AF] border-b border-[#252A3A]/60 flex items-center justify-between bg-[#0A0D14] flex-wrap gap-2">
-          <div className="flex items-center gap-2">
-            {user ? (
-              <>
-                {user.photoURL ? (
-                  <img src={user.photoURL} alt="" className="w-4 h-4 rounded-full object-cover" referrerPolicy="no-referrer" />
-                ) : (
-                  <span className="w-4 h-4 rounded-full bg-[#FF2D55]/20 text-[#FF2D55] flex items-center justify-center text-[9px] font-bold">
-                    {(user.displayName || user.email || 'T').charAt(0)}
-                  </span>
-                )}
-                <span>คุณ: <strong className="text-white">{user.displayName || user.email}</strong></span>
-              </>
-            ) : (
-              <div className="flex items-center gap-1.5 text-[#34D399]">
-                <UserIcon className="w-3.5 h-3.5" />
-                <span>โหมด Trader • วิเคราะห์สด 100%</span>
-              </div>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <span
-              className={`text-[10px] font-mono px-2 py-0.5 rounded font-bold border flex items-center gap-1 ${
-                engineStatus.isOnlineLlm
-                  ? 'bg-purple-500/15 text-purple-300 border-purple-500/40'
-                  : 'bg-[#00FF66]/15 text-[#00FF66] border-[#00FF66]/40'
-              }`}
-              title={engineStatus.labelTh}
-            >
-              <span className={`w-1.5 h-1.5 rounded-full ${engineStatus.isOnlineLlm ? 'bg-purple-400' : 'bg-[#00FF66] animate-pulse'}`} />
-              {engineStatus.badgeTh}
-            </span>
-            {onOpenSettings && !engineStatus.isOnlineLlm && (
-              <button
-                type="button"
-                onClick={onOpenSettings}
-                className="text-[10px] font-mono text-[#38BDF8] hover:underline cursor-pointer"
-                title="ใส่ Gemini API Key ในตั้งค่าเพื่อเปิดระบบประมวลผล LLM ออนไลน์"
-              >
-                ⚙️ ใส่ API Key
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Messages list */}
-        <div className="flex-1 min-h-[320px] max-h-[440px] overflow-y-auto px-4 py-3 space-y-3 bg-[#0A0D14]">
-          {messages.length === 0 && (
-            <div className="p-4 rounded-2xl bg-[#141824] border border-[#252A3A] text-center my-4 space-y-2">
-              <Bot className="w-10 h-10 text-[#00FF66] mx-auto animate-bounce" />
-              <h3 className="text-white font-bold text-sm">ยินดีต้อนรับสู่ AI Deep Analyze (AI 100%)</h3>
-              <p className="text-xs text-[#9CA3AF] max-w-sm mx-auto leading-relaxed">
-                ถามคำถาม วิเคราะห์แนวรับ-แนวต้าน หุ้นไทย (SET), หุ้นนอก (US), Forex, คริปโต หรือสรุปข่าวสารการเงินโลก AI จะประมวลผลตอบกลับ 100% ทุกข้อความ
-              </p>
-            </div>
-          )}
-
-          {messages.map((m) => {
-            const isAi = m.uid === 'ai-deep-analyze' || m.uid.startsWith('ats-matrix') || m.name.includes('AI');
-            const mine = !isAi && (m.uid === myUid || m.name === (user?.displayName || user?.email));
-            const stickerId = parseStickerCode(m.text);
-            const StickerArt = stickerId ? STICKER_MAP[stickerId].Art : null;
-
-            if (isAi) {
+        {/* ------------------------------------------------- tone selector */}
+        <div className="flex flex-wrap items-center gap-2 border-b border-white/[0.07] bg-[#141725] px-3.5 pb-2 pt-1.5 sm:px-4">
+          <span className="text-[10px] font-semibold text-[#8B88A0]">โทนตอบ</span>
+          <div
+            role="radiogroup"
+            aria-label="เลือกโทนการตอบของ AI"
+            className="flex rounded-full border border-white/[0.07] bg-[#0F1117] p-0.5"
+          >
+            {CHAT_TONE_ORDER.map((id) => {
+              const active = tone === id;
               return (
-                <div key={m.id} className="flex gap-2.5 items-start">
-                  <div className="w-7 h-7 rounded-xl bg-[#00FF66]/20 border border-[#00FF66]/40 flex items-center justify-center shrink-0 mt-0.5 shadow-[0_0_10px_rgba(0,255,102,0.2)]">
-                    <Bot className="w-4 h-4 text-[#00FF66]" />
-                  </div>
-                  <div className="flex-1 rounded-2xl p-3.5 bg-[#0F1622] border border-[#00FF66]/30 shadow-[0_0_15px_rgba(0,255,102,0.06)] relative group">
-                    <div className="flex items-center justify-between pb-1.5 mb-1.5 border-b border-[#252A3A]/60">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[11px] font-bold text-[#00FF66] font-mono">{m.name}</span>
-                        <span className="text-[9px] px-1 rounded bg-[#00FF66]/20 text-[#00FF66] font-mono font-bold">VERIFIED</span>
-                      </div>
-                      <div className="flex items-center gap-1.5 text-[10px] text-[#6B7280]">
-                        <span>{formatTime(m.createdAt)}</span>
-                        <button
-                          type="button"
-                          onClick={() => handleCopyText(m.id, m.text)}
-                          className="hover:text-white transition-colors p-0.5"
-                          title="คัดลอกบทวิเคราะห์"
-                        >
-                          {copiedId === m.id ? <Check className="w-3 h-3 text-[#00FF66]" /> : <Copy className="w-3 h-3" />}
-                        </button>
-                      </div>
-                    </div>
-                    <div className="text-xs text-slate-200 font-mono leading-relaxed whitespace-pre-wrap select-text">
-                      {m.text}
-                    </div>
-                  </div>
-                </div>
+                <button
+                  key={id}
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  onClick={() => setTone(id)}
+                  title={CHAT_TONES[id].hintTh}
+                  className={`rounded-full px-2.5 py-1 text-[11px] font-semibold transition-colors ${
+                    active ? 'bg-[#7C6CFF] text-[#0F1117]' : 'text-[#A7A4B8] hover:text-[#ECEAF4]'
+                  }`}
+                >
+                  {CHAT_TONES[id].labelTh}
+                </button>
               );
-            }
+            })}
+          </div>
+          <span className="hidden text-[10px] text-[#8B88A0] sm:inline">{CHAT_TONES[tone].hintTh}</span>
 
-            return (
-              <div key={m.id} className={`flex gap-2 ${mine ? 'flex-row-reverse' : ''}`}>
-                {m.photoURL ? (
-                  <img src={m.photoURL} alt="" className="w-7 h-7 rounded-full object-cover shrink-0" referrerPolicy="no-referrer" />
-                ) : (
-                  <span className="w-7 h-7 rounded-full bg-[#252A3A] text-[#A5B4FC] flex items-center justify-center text-xs font-bold shrink-0">
-                    {m.name.charAt(0)}
-                  </span>
-                )}
-                <div className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 ${mine ? 'bg-[#FF2D55]/20 border border-[#FF2D55]/40' : 'bg-[#1A1D29] border border-[#252A3A]'}`}>
-                  <p className="text-[10px] text-[#9CA3AF] font-semibold mb-0.5">
-                    {m.name} • {formatTime(m.createdAt)}
-                  </p>
-                  {StickerArt ? (
-                    <span className="inline-block mt-1 drop-shadow-lg">
-                      <StickerArt size={88} />
+          {onOpenSettings && !engineStatus.isOnlineLlm && (
+            <button
+              type="button"
+              onClick={onOpenSettings}
+              className="ml-auto text-[10px] font-semibold text-[#4CC9F0] hover:underline"
+              title="ใส่ Gemini API Key ในตั้งค่าเพื่อเปิดโหมด Gemini"
+            >
+              ⚙️ ใส่ API Key
+            </button>
+          )}
+        </div>
+
+        {/* -------------------------------------------------------- thread */}
+        <div
+          ref={scrollRef}
+          onScroll={handleScroll}
+          role="log"
+          aria-live="polite"
+          aria-relevant="additions text"
+          className="relative min-h-[300px] flex-1 overflow-y-auto bg-[#0F1117] px-3.5 py-3 sm:px-4"
+        >
+          {showEmptyState && (
+            <div className="mx-auto max-w-md px-1 pb-2 pt-3 text-center">
+              <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-[16px] border border-[#7C6CFF]/30 bg-[#7C6CFF]/10">
+                <Bot className="h-6 w-6 text-[#A89FFF]" aria-hidden="true" />
+              </div>
+              <h3 className="text-sm font-semibold text-[#ECEAF4]">สวัสดีครับ ผมช่วยดูให้ได้</h3>
+              <p className="mx-auto mt-1 max-w-xs text-[11px] leading-relaxed text-[#A7A4B8]">
+                ถามเรื่องหุ้นไทย หุ้นนอก คริปโต ค่าเงิน หรือข่าววันนี้
+                ผมจะบอกว่าดูจากอะไร ให้เหตุผล 3 ข้อ และไม่เร่งให้คุณตัดสินใจครับ
+              </p>
+
+              <div className="mt-3 grid grid-cols-2 gap-1.5">
+                {SUGGESTIONS.map((s) => (
+                  <button
+                    key={s.label}
+                    type="button"
+                    onClick={() => void sendQuery(s.query)}
+                    disabled={isSending}
+                    className="rounded-xl border border-white/[0.07] bg-[#1C1F2E] px-2.5 py-2 text-left text-[11px] font-medium text-[#ECEAF4] transition-colors hover:border-white/[0.14] hover:bg-[#222640] disabled:opacity-50"
+                  >
+                    <span className="mr-1" aria-hidden="true" style={{ color: s.accent }}>
+                      ●
                     </span>
-                  ) : (
-                    <p className="text-xs sm:text-sm leading-snug break-words text-white">{m.text}</p>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-
-          {/* AI Thinking Animation */}
-          {isAiThinking && (
-            <div className="flex gap-2.5 items-start animate-pulse">
-              <div className="w-7 h-7 rounded-xl bg-[#00FF66]/20 border border-[#00FF66]/40 flex items-center justify-center shrink-0 mt-0.5">
-                <Bot className="w-4 h-4 text-[#00FF66] animate-spin" />
-              </div>
-              <div className="rounded-2xl px-3.5 py-2.5 bg-[#0F1622] border border-[#00FF66]/30 text-xs text-[#00FF66] font-mono flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-[#00FF66] animate-ping" />
-                <span>AI Deep Analyze กำลังประมวลผลข้อมูลตลาดเชิงลึก...</span>
+                    {s.label}
+                  </button>
+                ))}
               </div>
             </div>
           )}
 
-          <div ref={bottomRef} />
+          <div className="space-y-3">
+            {messages.map((message) => (
+              <ChatMessageItem
+                key={message.id}
+                message={message}
+                isMine={
+                  message.uid !== AI_UID &&
+                  !message.name.includes('AI') &&
+                  (message.uid === (user?.uid || 'guest-trader') ||
+                    message.name === (user?.displayName || user?.email))
+                }
+                copied={copiedId === message.id}
+                onCopy={handleCopy}
+                onRegenerate={handleRegenerate}
+              />
+            ))}
+
+            {streamingMessage && (
+              <ChatMessageItem
+                message={streamingMessage}
+                isMine={false}
+                streaming
+                onCopy={handleCopy}
+              />
+            )}
+
+            {error && (
+              <div className="rounded-xl border border-[#F4A6A6]/30 bg-[#F4A6A6]/10 px-3 py-2.5">
+                <p className="text-[11px] leading-relaxed text-[#F4A6A6]">{error.message}</p>
+                <div className="mt-1.5 flex gap-1.5">
+                  {error.query && (
+                    <button
+                      type="button"
+                      onClick={() => void runAiTurn(error.query)}
+                      className="inline-flex items-center gap-1 rounded-full bg-[#222640] px-2.5 py-1 text-[10px] font-semibold text-[#ECEAF4] transition-colors hover:bg-[#2A3050]"
+                    >
+                      <RotateCcw className="h-3 w-3" />
+                      ลองอีกครั้ง
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setError(null)}
+                    className="rounded-full px-2.5 py-1 text-[10px] font-semibold text-[#8B88A0] hover:text-[#ECEAF4]"
+                  >
+                    ปิด
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div ref={bottomRef} className="h-0.5" />
+
+          {!atBottom && (
+            <button
+              type="button"
+              onClick={() => {
+                atBottomRef.current = true;
+                setAtBottom(true);
+                scrollToBottom(true);
+              }}
+              className="sticky bottom-2 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-full border border-white/[0.07] bg-[#222640] px-3 py-1 text-[10px] font-semibold text-[#ECEAF4] shadow-[0_8px_30px_rgba(0,0,0,0.45)]"
+            >
+              ↓ ไปข้อความล่าสุด
+            </button>
+          )}
         </div>
 
-        {/* Error notification */}
-        {error && (
-          <div className="mx-4 mb-2 text-[#f9df7b] bg-[#f9df7b]/10 border border-[#f9df7b]/30 rounded-lg px-3 py-2 text-xs">
-            {error}
-          </div>
-        )}
-
-        {/* Sticker picker */}
+        {/* ------------------------------------------------------ stickers */}
         {showStickers && (
-          <div className="mx-3 mb-2 rounded-xl border border-[#252A3A] bg-[#1A1D29] p-2">
-            <p className="px-1 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-[#6B7280]">
-              สติ๊กเกอร์เทรด • แตะเพื่อส่งให้ AI วิเคราะห์
+          <div className="mx-3 mb-1 rounded-xl border border-white/[0.07] bg-[#141725] p-2">
+            <p className="px-1 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-[#8B88A0]">
+              สติ๊กเกอร์เทรด • แตะเพื่อส่ง
             </p>
-            <div className="grid grid-cols-6 gap-1 max-h-[160px] overflow-y-auto">
+            <div className="grid max-h-[150px] grid-cols-6 gap-1 overflow-y-auto">
               {STICKERS.map(({ id, name, Art }) => (
                 <button
                   key={id}
-                  onClick={() => handleSendSticker(id)}
+                  type="button"
+                  onClick={() => void handleSendSticker(id)}
                   title={name}
-                  className="p-1.5 rounded-lg hover:bg-white/10 flex flex-col items-center justify-center gap-0.5 transition-colors cursor-pointer"
+                  className="flex flex-col items-center justify-center gap-0.5 rounded-lg p-1.5 transition-colors hover:bg-white/[0.07]"
                 >
-                  <Art size={36} />
-                  <span className="text-[9px] text-[#9CA3AF] truncate max-w-full font-mono">{name}</span>
+                  <Art size={34} />
+                  <span className="max-w-full truncate text-[9px] text-[#8B88A0]">{name}</span>
                 </button>
               ))}
             </div>
           </div>
         )}
 
-        {/* Quick Suggestion Chips */}
-        <div className="px-3 py-1.5 border-t border-[#252A3A]/40 bg-[#0F1117] flex items-center gap-1.5 overflow-x-auto text-[11px] font-mono [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-          <span className="text-slate-500 text-[10px] shrink-0 font-bold">คำสั่งด่วน:</span>
-          <button
-            type="button"
-            onClick={() => handleSend('BTC SPOT & NIULAI4')}
-            disabled={isSending || isAiThinking}
-            className="px-2 py-0.5 rounded-md bg-[#00FF66]/10 hover:bg-[#00FF66]/20 border border-[#00FF66]/30 text-[#00FF66] shrink-0 whitespace-nowrap transition-colors cursor-pointer"
-          >
-            ⚡ วิเคราะห์ BTC
-          </button>
-          <button
-            type="button"
-            onClick={() => handleSend('วิเคราะห์หุ้นไทย AOT และ DELTA')}
-            disabled={isSending || isAiThinking}
-            className="px-2 py-0.5 rounded-md bg-[#F59E0B]/10 hover:bg-[#F59E0B]/20 border border-[#F59E0B]/30 text-[#FBBF24] shrink-0 whitespace-nowrap transition-colors cursor-pointer"
-          >
-            ⚡ หุ้นไทย AOT/DELTA
-          </button>
-          <button
-            type="button"
-            onClick={() => handleSend('ตรวจอัตราแลกเปลี่ยน USD/THB')}
-            disabled={isSending || isAiThinking}
-            className="px-2 py-0.5 rounded-md bg-[#38BDF8]/10 hover:bg-[#38BDF8]/20 border border-[#38BDF8]/30 text-[#38BDF8] shrink-0 whitespace-nowrap transition-colors cursor-pointer"
-          >
-            ⚡ ค่าเงินบาท USD/THB
-          </button>
-          <button
-            type="button"
-            onClick={() => handleSend('วิเคราะห์หุ้นสหรัฐฯ NVDA')}
-            disabled={isSending || isAiThinking}
-            className="px-2 py-0.5 rounded-md bg-[#A855F7]/10 hover:bg-[#A855F7]/20 border border-[#A855F7]/30 text-[#C084FC] shrink-0 whitespace-nowrap transition-colors cursor-pointer"
-          >
-            ⚡ หุ้นนอก NVDA
-          </button>
-          <button
-            type="button"
-            onClick={() => handleSend('สรุปข่าวเศรษฐกิจโลกวันนี้')}
-            disabled={isSending || isAiThinking}
-            className="px-2 py-0.5 rounded-md bg-[#EC4899]/10 hover:bg-[#EC4899]/20 border border-[#EC4899]/30 text-[#F472B6] shrink-0 whitespace-nowrap transition-colors cursor-pointer"
-          >
-            ⚡ ข่าวเศรษฐกิจโลก
-          </button>
-          <button
-            type="button"
-            onClick={() => handleSend('วิเคราะห์ Drawdown พอร์ตและความเสี่ยง Peak-to-Trough')}
-            disabled={isSending || isAiThinking}
-            className="px-2 py-0.5 rounded-md bg-[#f9df7b]/10 hover:bg-[#f9df7b]/20 border border-[#f9df7b]/30 text-[#f9df7b] shrink-0 whitespace-nowrap transition-colors cursor-pointer"
-          >
-            📉 ตรวจ Drawdown พอร์ต
-          </button>
-        </div>
-
-        {/* Input Bar */}
-        <div className="p-3 border-t border-[#252A3A]/60 flex gap-2 bg-[#141824]">
-          <button
-            onClick={() => setShowStickers((v) => !v)}
-            title="สติ๊กเกอร์"
-            aria-label="เปิดชุดสติ๊กเกอร์"
-            className={`px-2.5 rounded-xl border transition-colors cursor-pointer ${
-              showStickers
-                ? 'bg-[#F59E0B]/20 border-[#F59E0B]/50 text-[#FBBF24]'
-                : 'bg-[#1A1D29] border-[#252A3A] text-[#9CA3AF] hover:text-[#FBBF24]'
-            }`}
-          >
-            <StickerIcon className="w-5 h-5" />
-          </button>
-          <input
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                handleSend();
-              }
-            }}
-            placeholder="พิมพ์คำถามหรือสินทรัพย์ให้ AI วิเคราะห์... (เช่น BTC, AOT, NVDA, EUR/USD)"
-            disabled={isSending || isAiThinking}
-            maxLength={500}
-            className="flex-1 bg-[#0F1117] border border-[#252A3A] rounded-xl px-3 py-2 text-xs sm:text-sm outline-none focus:border-[#FF2D55] placeholder-[#6B7280] text-white disabled:opacity-60"
-          />
-          <button
-            onClick={() => handleSend()}
-            disabled={isSending || isAiThinking || !draft.trim()}
-            className="px-4 py-2 bg-[#00FF66] hover:bg-[#00E55B] text-black disabled:opacity-50 rounded-xl text-xs sm:text-sm font-bold inline-flex items-center gap-1.5 transition-all shadow-[0_0_10px_rgba(0,255,102,0.3)] cursor-pointer disabled:cursor-not-allowed"
-          >
-            {isAiThinking ? (
-              <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
-            ) : (
-              <Send className="w-4 h-4" />
-            )}
-            <span>{isAiThinking ? 'คิด...' : 'ส่ง'}</span>
-          </button>
-        </div>
-
+        {/* ------------------------------------------------------ composer */}
+        <ChatComposer
+          value={draft}
+          onChange={setDraft}
+          onSend={() => void sendQuery(draft)}
+          onStop={handleStop}
+          onToggleStickers={() => setShowStickers((v) => !v)}
+          stickersOpen={showStickers}
+          busy={isSending}
+        />
       </div>
     </div>
   );

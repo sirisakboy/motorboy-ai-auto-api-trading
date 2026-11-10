@@ -41,7 +41,8 @@ import {
 } from './services/apiClient';
 import { categorizeHeadlinesWithGemini } from './services/headlineCategorizationService';
 import { t } from './i18n';
-import { getLiveUsdThb } from './utils';
+import { getLiveUsdThb, setActiveUsdThbRate } from './utils';
+import { useModalA11y } from './hooks/useModalA11y';
 import { Header } from './components/Header';
 import { CryptoCard } from './components/CryptoCard';
 import { ForexCard } from './components/ForexCard';
@@ -64,8 +65,11 @@ import { ChatModal } from './components/ChatModal';
 import { RiskCalculatorModal } from './components/RiskCalculatorModal';
 import { DrawdownAlertBanner } from './components/DrawdownAlertBanner';
 import { DrawdownMonitorModal } from './components/DrawdownMonitorModal';
-import { MascotCoPilotCard } from './components/MascotCoPilotCard';
+import { MascotOverlay } from './components/MascotOverlay';
 import { useMascotStore } from './services/mascotService';
+import { publishMascotFeed } from './mascot/feed';
+import { registerMascotActionHandlers, type MascotMarket } from './mascot/actions';
+import { announceMascot } from './mascot/announce';
 import {
   buildDrawdownAssets,
   computePortfolioDrawdownSummary,
@@ -162,30 +166,30 @@ export const App: React.FC = () => {
   const [showHistoryModal, setShowHistoryModal] = useState<boolean>(false);
   const [showAtsMatrixModal, setShowAtsMatrixModal] = useState<boolean>(false);
   const [isAtsMatrixMode, setIsAtsMatrixMode] = useState<boolean>(false);
+
+  // Accessibility wiring for the four inline dialogs rendered in this component.
+  const newsModalRef = useModalA11y({ onClose: () => setShowNewsModal(false), enabled: showNewsModal });
+  const watchlistModalRef = useModalA11y({ onClose: () => setShowWatchlistModal(false), enabled: showWatchlistModal });
+  const historyModalRef = useModalA11y({ onClose: () => setShowHistoryModal(false), enabled: showHistoryModal });
+  const atsModalRef = useModalA11y({ onClose: () => setShowAtsMatrixModal(false), enabled: showAtsMatrixModal });
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [useThb, setUseThb] = useState<boolean>(false);
-  const [isDark, setIsDark] = useState<boolean>(() => {
-    const hours = new Date().getHours();
-    return hours < 6 || hours >= 18;
-  });
+  // The dashboard is dark-only by design: only 8 of 26 components implement a
+  // light palette, so the old 06:00–18:00 auto-flip half-inverted the UI.
+  const [isDark] = useState<boolean>(true);
 
-  // Automatic day/night theme check according to current time (Day: 06:00-18:00 light, Night: 18:00-06:00 dark)
+  // Mascot: initial onboarding greeting (kept from the Co-Pilot feature).
   useEffect(() => {
-    const updateThemeByTime = () => {
-      const hours = new Date().getHours();
-      const isNight = hours < 6 || hours >= 18;
-      setIsDark(isNight);
-    };
-    updateThemeByTime();
-    const interval = setInterval(updateThemeByTime, 60000);
-    
-    // Mascot: Initial Onboarding
-    setTimeout(() => {
+    const openTimer = setTimeout(() => {
       useMascotStore.getState().setMascotState('ONBOARDING');
-      setTimeout(() => useMascotStore.getState().resetToIdle(), 10000);
     }, 1500);
-
-    return () => clearInterval(interval);
+    const closeTimer = setTimeout(() => {
+      useMascotStore.getState().resetToIdle();
+    }, 11500);
+    return () => {
+      clearTimeout(openTimer);
+      clearTimeout(closeTimer);
+    };
   }, []);
 
   const [notificationsEnabled, setNotificationsEnabled] = useState<boolean>(false);
@@ -201,6 +205,8 @@ export const App: React.FC = () => {
   const [showGmail, setShowGmail] = useState<boolean>(false);
   const [showCalendar, setShowCalendar] = useState<boolean>(false);
   const [showChat, setShowChat] = useState<boolean>(false);
+  // A question carried from the mascot into the chat composer (never auto-sent).
+  const [chatSeed, setChatSeed] = useState<string>('');
   const [showRiskCalc, setShowRiskCalc] = useState<boolean>(false);
   const [showDrawdownModal, setShowDrawdownModal] = useState<boolean>(false);
   const [drawdownDismissed, setDrawdownDismissed] = useState<boolean>(false);
@@ -286,27 +292,11 @@ export const App: React.FC = () => {
       drawdownThresholds.soundEnabled
     ) {
       playDrawdownAlertChime('CRITICAL');
-      useMascotStore.getState().setMascotState('KILL_SWITCH_ACTIVE');
+      // The mascot's own observer raises KILL_SWITCH_ACTIVE from the breach
+      // count published to mascot/feed.ts — one owner for that decision.
     }
     prevBreachedCountRef.current = criticalCount;
   }, [criticalOrExtremeAssets.length, drawdownThresholds.soundEnabled]);
-
-  // Mascot: Volatility Monitor (SIDEWAYS / VOLATILITY_SPIKE)
-  useEffect(() => {
-    const activeMascotState = useMascotStore.getState().state;
-    if (activeMascotState !== 'IDLE' && activeMascotState !== 'SIDEWAYS') return;
-
-    const avgChange = cryptoList.reduce((acc, c) => acc + Math.abs(c.change), 0) / cryptoList.length;
-    const maxChange = Math.max(...cryptoList.map(c => Math.abs(c.change)));
-
-    if (maxChange > 10) {
-      useMascotStore.getState().setMascotState('KILL_SWITCH_ACTIVE', '🛑 ตลาดผันผวนรุนแรงมาก! ระวังการโดนล้างพอร์ตนะครับ');
-    } else if (avgChange < 0.2) {
-      useMascotStore.getState().setMascotState('SIDEWAYS');
-    } else if (activeMascotState === 'SIDEWAYS' && avgChange >= 0.2) {
-      useMascotStore.getState().resetToIdle();
-    }
-  }, [cryptoList]);
 
   const handleSendDrawdownToChat = async (reportText: string) => {
     try {
@@ -392,6 +382,8 @@ export const App: React.FC = () => {
   foreignRef.current = foreignStocks;
   const indexRef = useRef<StockIndex[]>(stockIndices);
   indexRef.current = stockIndices;
+  const newsRef = useRef<NewsArticle[]>(newsList);
+  newsRef.current = newsList;
 
   // 1. Memoized API Update Functions with Error Handling & Failover
   const updateCryptoPrices = useCallback(async () => {
@@ -607,35 +599,50 @@ export const App: React.FC = () => {
   useEffect(() => {
     const updateSignals = () => setSignals(generateRealSignals(cryptoListRef.current));
     updateSignals();
-    const interval = setInterval(updateSignals, 15000);
+    const interval = setInterval(() => {
+      if (document.hidden) return; // ไม่ต้องคำนวณใหม่ตอนแท็บถูกซ่อน
+      updateSignals();
+    }, 15000);
     return () => clearInterval(interval);
   }, []);
 
   // 3. Crypto REST Fallback Polling (immediate mount + every 30s)
   useEffect(() => {
     updateCryptoPrices();
-    const interval = setInterval(updateCryptoPrices, 30000);
+    const interval = setInterval(() => {
+      if (document.hidden) return;
+      updateCryptoPrices();
+    }, 30000);
     return () => clearInterval(interval);
   }, [updateCryptoPrices]);
 
   // 4. Forex Periodic Polling (immediate mount + every 15s)
   useEffect(() => {
     updateForex();
-    const interval = setInterval(updateForex, 15000);
+    const interval = setInterval(() => {
+      if (document.hidden) return;
+      updateForex();
+    }, 15000);
     return () => clearInterval(interval);
   }, [updateForex]);
 
   // 5. Thai & Foreign Stock + Index Polling (immediate mount + every 60s)
   useEffect(() => {
     updateStocks();
-    const interval = setInterval(updateStocks, 60000);
+    const interval = setInterval(() => {
+      if (document.hidden) return;
+      updateStocks();
+    }, 60000);
     return () => clearInterval(interval);
   }, [updateStocks]);
 
   // 6. News Periodic Polling (immediate mount + every 300s)
   useEffect(() => {
     updateNews();
-    const interval = setInterval(updateNews, 300000);
+    const interval = setInterval(() => {
+      if (document.hidden) return;
+      updateNews();
+    }, 300000);
     return () => clearInterval(interval);
   }, [updateNews]);
 
@@ -646,7 +653,11 @@ export const App: React.FC = () => {
 
     const runHeadlineCategorization = async () => {
       try {
-        const categorized = await categorizeHeadlinesWithGemini(newsList, geminiApiKey);
+        // read the freshest headlines: the effect only re-subscribes when the
+        // *length* changes, so a captured `newsList` would re-send stale titles
+        const currentNews = newsRef.current;
+        if (currentNews.length === 0) return;
+        const categorized = await categorizeHeadlinesWithGemini(currentNews, geminiApiKey);
         if (isMounted && Array.isArray(categorized) && categorized.length > 0) {
           setNewsList(categorized);
         }
@@ -656,7 +667,10 @@ export const App: React.FC = () => {
     };
 
     runHeadlineCategorization();
-    const interval = setInterval(runHeadlineCategorization, 180000); // Categorize headlines every 3 mins
+    const interval = setInterval(() => {
+      if (document.hidden) return;
+      void runHeadlineCategorization();
+    }, 180000); // Categorize headlines every 3 mins
     return () => {
       isMounted = false;
       clearInterval(interval);
@@ -666,6 +680,7 @@ export const App: React.FC = () => {
   // 7. Clock tick every 30s for Bangkok ICT Market Hours (ultra-low CPU)
   useEffect(() => {
     const interval = setInterval(() => {
+      if (document.hidden) return;
       setMarketHours(computeMarketHours());
     }, 30000);
     return () => clearInterval(interval);
@@ -683,6 +698,83 @@ export const App: React.FC = () => {
     [forexRates]
   );
 
+  // Mascot: the dashboard only publishes what it knows; the mascot decides what
+  // to do about it (see mascot/feed.ts + mascot/observer.ts).
+  useEffect(() => {
+    publishMascotFeed({
+      cryptoList,
+      signals,
+      useThb,
+      usdThbRate,
+      apiKey: geminiApiKey,
+      drawdownBreaches: criticalOrExtremeAssets.length,
+      worstDrawdownPct: portfolioDrawdownSummary.worstDrawdownPct,
+    });
+  }, [
+    cryptoList,
+    signals,
+    useThb,
+    usdThbRate,
+    geminiApiKey,
+    criticalOrExtremeAssets.length,
+    portfolioDrawdownSummary.worstDrawdownPct,
+  ]);
+
+
+  /** One door to the chat: the mascot and the header both come through here. */
+  const openChat = useCallback((question?: string) => {
+    setChatSeed(question?.trim() ?? '');
+    setShowChat(true);
+  }, []);
+
+  // The mascot may navigate, filter and open panels — it may never trade.
+  // Handlers live here because this component owns tabs, search and modals;
+  // the mascot only ever publishes a feed and asks for a verb.
+  useEffect(() => {
+    const tabForMarket = (market?: MascotMarket): number | null => {
+      switch (market) {
+        case 'crypto':
+          return 0;
+        case 'forex':
+          return 1;
+        case 'th':
+          return 2;
+        case 'us':
+          return 3;
+        case 'index':
+          return 4;
+        default:
+          return null;
+      }
+    };
+
+    return registerMascotActionHandlers({
+      change_asset: (action) => {
+        if (action.name !== 'change_asset') return;
+        const tab = tabForMarket(action.market);
+        if (tab !== null) setSelectedTab(tab);
+        setSearchQuery(action.symbol);
+      },
+      filter_stocks: (action) => {
+        if (action.name !== 'filter_stocks') return;
+        const tab = tabForMarket(action.market);
+        if (tab !== null) setSelectedTab(tab);
+        setSearchQuery(action.query);
+      },
+      open_news: () => setShowNewsModal(true),
+      open_chat: (action) => {
+        if (action.name !== 'open_chat') return;
+        openChat(action.question);
+      },
+    });
+  }, [openChat]);
+
+  // Publish the same rate to the formatters so every ฿ amount on screen —
+  // ticker, cards, detail modals, history — converts with one number.
+  useEffect(() => {
+    setActiveUsdThbRate(usdThbRate);
+  }, [usdThbRate]);
+
   // All tradeable signals for the risk calculator picker
   const allSignals = useMemo(
     () => [...signals, ...forexSignals, ...thaiStockSignals, ...foreignStockSignals],
@@ -690,24 +782,32 @@ export const App: React.FC = () => {
   );
 
   // 7. Load Chart Data for Selected Asset
+  // `isForexChart` is a primitive on purpose: depending on the Set itself made
+  // the chart refetch every time forex rates ticked (every 15s).
+  const isForexChart = forexPairSet.has(selectedChartAsset);
   useEffect(() => {
     let isCancelled = false;
     setChartLoading(true);
 
-    fetchPriceHistory(
-      selectedChartAsset,
-      forexPairSet.has(selectedChartAsset)
-    ).then((data) => {
-      if (!isCancelled) {
-        setChartData(data);
-        setChartLoading(false);
-      }
-    });
+    fetchPriceHistory(selectedChartAsset, isForexChart)
+      .then((data) => {
+        if (!isCancelled) setChartData(data);
+      })
+      .catch((err: unknown) => {
+        // A failed candle request used to leave the spinner running forever and
+        // surface as an unhandled promise rejection.
+        if (isCancelled) return;
+        console.warn('Chart data request failed:', err);
+        setChartData(null);
+      })
+      .finally(() => {
+        if (!isCancelled) setChartLoading(false);
+      });
 
     return () => {
       isCancelled = true;
     };
-  }, [selectedChartAsset, forexPairSet]);
+  }, [selectedChartAsset, isForexChart]);
 
   // Helper: show toast, auto-clear after 5s, and remove the triggered alert.
   // Memoised so the price-alert effect dependency is stable.
@@ -791,6 +891,10 @@ export const App: React.FC = () => {
 
   // Handlers with Firestore Cloud Sync
   const handleToggleWatchlist = (symbol: string) => {
+    const wasWatched = watchlist.has(symbol);
+    announceMascot(
+      wasWatched ? `เอาออก ${symbol} แล้วครับ` : `เพิ่ม ${symbol} เข้า watchlist ให้แล้วครับ`
+    );
     setWatchlist((prev) => {
       const next = new Set(prev);
       if (next.has(symbol)) {
@@ -942,16 +1046,21 @@ export const App: React.FC = () => {
 
     <div
       className={`min-h-screen ${
-        isDark ? 'bg-[#0B0F19] text-slate-100' : 'bg-[#F8FAFC] text-[#0F172A]'
+        isDark ? 'bg-[#0F1117] text-[#ECEAF4]' : 'bg-[#F8FAFC] text-[#0F172A]'
       } flex flex-col font-sans transition-colors duration-200 overflow-x-hidden w-full max-w-[100vw]`}
     >
       {/* Toast Notification */}
       {alertToast && (
-        <div className="fixed top-4 right-4 left-4 sm:left-auto z-[60] sm:max-w-sm bg-[#FF2D55] text-white px-4 py-3 rounded-2xl shadow-xl border border-white/20 flex items-center justify-between space-x-3 animate-fade-in">
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed top-4 right-4 left-4 sm:left-auto z-[60] sm:max-w-sm bg-[#7C6CFF] text-[#0F1117] px-4 py-3 rounded-2xl shadow-xl border border-white/20 flex items-center justify-between space-x-3 animate-fade-in"
+        >
           <span className="text-xs font-semibold">{alertToast}</span>
           <button
             type="button"
             onClick={() => setAlertToast(null)}
+            aria-label="ปิดการแจ้งเตือน"
             className="text-white/80 hover:text-white text-xs font-bold px-1"
           >
             ✕
@@ -978,7 +1087,7 @@ export const App: React.FC = () => {
         onOpenSettings={() => setShowSettings(true)}
         onOpenGmail={() => setShowGmail(true)}
         onOpenCalendar={() => setShowCalendar(true)}
-        onOpenChat={() => setShowChat(true)}
+        onOpenChat={() => openChat()}
         onOpenRiskCalc={() => setShowRiskCalc(true)}
         onOpenDrawdown={() => setShowDrawdownModal(true)}
         onOpenAtsMatrix={() => setShowAtsMatrixModal(true)}
@@ -1011,10 +1120,10 @@ export const App: React.FC = () => {
               <div className="lg:col-span-8 space-y-6">
                 {/* Asset Tabs & Filter — Floating Action Sidebar Style Bar */}
                 <div className="space-y-4">
-                  <div className="rounded-[20px] bg-[#131826] border border-[#1E2638] p-3 shadow-lg">
+                  <div className="rounded-[20px] bg-[#141725] border border-white/[0.07] p-3 shadow-lg">
                     <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
                       {/* Tabs / Filters */}
-                      <div className="flex items-center space-x-1 bg-[#0B0F19] p-1 rounded-xl border border-[#1E2638] overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] max-w-full">
+                      <div className="flex items-center space-x-1 bg-[#0F1117] p-1 rounded-xl border border-white/[0.07] overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] max-w-full">
                         {tabs.map((tab, idx) => (
                           <button
                             key={tab.label}
@@ -1029,8 +1138,8 @@ export const App: React.FC = () => {
                             }}
                             className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors flex items-center space-x-1.5 shrink-0 ${
                               selectedTab === idx
-                                ? 'bg-[#FF2D55] text-white font-bold shadow-xs'
-                                : 'text-[#94A3B8] hover:text-white'
+                                ? 'bg-[#7C6CFF] text-[#0F1117] font-bold shadow-xs'
+                                : 'text-[#A7A4B8] hover:text-white'
                             }`}
                           >
                             <span>{tab.label}</span>
@@ -1039,7 +1148,7 @@ export const App: React.FC = () => {
                                 className={`text-[10px] px-1.5 py-0.2 rounded-full ${
                                   selectedTab === idx
                                     ? 'bg-black/30 text-white'
-                                    : 'bg-[#1E2638] text-[#A5B4FC]'
+                                    : 'bg-[#222640] text-[#A89FFF]'
                                 }`}
                               >
                                 {tab.count}
@@ -1052,23 +1161,23 @@ export const App: React.FC = () => {
                       {/* Right Action Group: Search Bar + News & AI Hub Button */}
                       <div className="flex items-center gap-2">
                         <div className="relative flex-1 sm:flex-initial">
-                          <Search className="w-4 h-4 text-[#94A3B8] absolute left-3 top-1/2 -translate-y-1/2" />
+                          <Search className="w-4 h-4 text-[#A7A4B8] absolute left-3 top-1/2 -translate-y-1/2" />
                           <input
                             type="text"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             placeholder="ค้นหาสินทรัพย์..."
-                            className="w-full sm:w-44 bg-[#0B0F19] border border-[#1E2638] focus:border-[#FF2D55] rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-100 outline-none placeholder-[#94A3B8]"
+                            className="w-full sm:w-44 bg-[#0F1117] border border-white/[0.07] focus:border-[#7C6CFF] rounded-xl pl-9 pr-3 py-1.5 text-xs text-[#ECEAF4] outline-none placeholder-[#A7A4B8]"
                           />
                         </div>
 
                         <button
                           type="button"
                           onClick={() => setShowWatchlistModal(true)}
-                          className="px-3 py-1.5 bg-[#FF2D55]/15 hover:bg-[#FF2D55]/25 border border-[#FF2D55]/30 text-[#FF2D55] rounded-xl text-xs font-bold inline-flex items-center gap-1.5 transition-all shrink-0"
+                          className="px-3 py-1.5 bg-[#7C6CFF]/15 hover:bg-[#7C6CFF]/25 border border-[#7C6CFF]/30 text-[#7C6CFF] rounded-xl text-xs font-bold inline-flex items-center gap-1.5 transition-all shrink-0"
                           title="เปิดหน้าต่าง Watchlist (รายการโปรด)"
                         >
-                          <Star className="w-3.5 h-3.5 text-[#FF2D55] fill-[#FF2D55]" />
+                          <Star className="w-3.5 h-3.5 text-[#7C6CFF] fill-[#7C6CFF]" />
                           <span className="hidden sm:inline">Watchlist</span>
                           {[
                             ...signals.map((s) => s.symbol),
@@ -1076,7 +1185,7 @@ export const App: React.FC = () => {
                             ...thaiStocks.map((s) => s.symbol),
                             ...foreignStocks.map((s) => s.symbol),
                           ].filter((sym) => watchlist.has(sym)).length > 0 && (
-                            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[#FF2D55] text-white">
+                            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[#7C6CFF] text-[#0F1117]">
                               {[
                                 ...signals.map((s) => s.symbol),
                                 ...forexSignals.map((s) => s.symbol),
@@ -1090,13 +1199,13 @@ export const App: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => setShowHistoryModal(true)}
-                          className="px-3 py-1.5 bg-[#10B981]/15 hover:bg-[#10B981]/25 border border-[#10B981]/30 text-[#34D399] rounded-xl text-xs font-bold inline-flex items-center gap-1.5 transition-all shrink-0"
+                          className="px-3 py-1.5 bg-[#7EE0B5]/15 hover:bg-[#7EE0B5]/25 border border-[#7EE0B5]/30 text-[#7EE0B5] rounded-xl text-xs font-bold inline-flex items-center gap-1.5 transition-all shrink-0"
                           title="เปิดหน้าต่างประวัติการวิเคราะห์"
                         >
-                          <History className="w-3.5 h-3.5 text-[#10B981]" />
+                          <History className="w-3.5 h-3.5 text-[#7EE0B5]" />
                           <span className="hidden sm:inline">ประวัติ</span>
                           {historyEntries.length > 0 && (
-                            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[#10B981] text-white">
+                            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[#7EE0B5] text-[#0F1117]">
                               {historyEntries.length}
                             </span>
                           )}
@@ -1105,7 +1214,7 @@ export const App: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => setShowNewsModal(true)}
-                          className="px-3 py-1.5 bg-[#0284C7]/15 hover:bg-[#0284C7]/25 border border-[#0284C7]/30 text-[#38BDF8] rounded-xl text-xs font-bold inline-flex items-center gap-1.5 transition-all shrink-0"
+                          className="px-3 py-1.5 bg-[#4CC9F0]/15 hover:bg-[#4CC9F0]/25 border border-[#4CC9F0]/30 text-[#4CC9F0] rounded-xl text-xs font-bold inline-flex items-center gap-1.5 transition-all shrink-0"
                           title="เปิดหน้าต่างข่าวสาร & วิเคราะห์ AI"
                         >
                           <Sparkles className="w-3.5 h-3.5" />
@@ -1116,12 +1225,12 @@ export const App: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => setShowAtsMatrixModal(true)}
-                          className="px-3 py-1.5 bg-[#10B981]/15 hover:bg-[#10B981]/25 border border-[#10B981]/40 text-[#34D399] rounded-xl text-xs font-mono font-bold inline-flex items-center gap-1.5 transition-all shrink-0 cursor-pointer"
+                          className="px-3 py-1.5 bg-[#7EE0B5]/15 hover:bg-[#7EE0B5]/25 border border-[#7EE0B5]/40 text-[#7EE0B5] rounded-xl text-xs font-mono font-bold inline-flex items-center gap-1.5 transition-all shrink-0 cursor-pointer"
                           title="เปิดโหมด ATS MATRIX (Polymarket & Crypto Arbitrage)"
                         >
-                          <Radio className="w-3.5 h-3.5 text-[#34D399]" />
+                          <Radio className="w-3.5 h-3.5 text-[#7EE0B5]" />
                           <span className="hidden sm:inline">ATS Matrix</span>
-                          <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[#10B981] text-black font-extrabold">
+                          <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[#7EE0B5] text-black font-extrabold">
                             LIVE
                           </span>
                         </button>
@@ -1130,19 +1239,19 @@ export const App: React.FC = () => {
 
                     {/* Auto-detected ATS MATRIX Trigger Banner */}
                     {isAtsMatrixTrigger(searchQuery) && (
-                      <div className="mt-3 p-3 rounded-xl bg-gradient-to-r from-[#00FF66]/20 via-[#0A0D14] to-[#00F0FF]/20 border border-[#00FF66]/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-[0_0_20px_rgba(0,255,102,0.15)] animate-in fade-in duration-300">
+                      <div className="mt-3 p-3 rounded-xl bg-gradient-to-r from-[#7EE0B5]/20 via-[#141725] to-[#4CC9F0]/20 border border-[#7EE0B5]/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-[0_0_20px_rgba(0,255,102,0.15)] animate-in fade-in duration-300">
                         <div className="flex items-center gap-2.5">
-                          <div className="w-8 h-8 rounded-lg bg-[#00FF66]/20 border border-[#00FF66]/50 flex items-center justify-center text-[#00FF66] shrink-0 animate-pulse">
+                          <div className="w-8 h-8 rounded-lg bg-[#7EE0B5]/20 border border-[#7EE0B5]/50 flex items-center justify-center text-[#7EE0B5] shrink-0 animate-pulse">
                             <Radio className="w-4 h-4" />
                           </div>
                           <div>
                             <div className="text-xs font-mono font-black text-white flex items-center gap-2">
                               <span>⚡ สลับเป็น ATS MATRIX MODE (MARKETS / BTC / POLYMARKET)</span>
-                              <span className="text-[9px] px-1.5 py-0.5 rounded-sm bg-[#00FF66] text-black font-extrabold">
+                              <span className="text-[9px] px-1.5 py-0.5 rounded-sm bg-[#7EE0B5] text-black font-extrabold">
                                 AUTO-DETECTED
                               </span>
                             </div>
-                            <p className="text-[11px] font-mono text-slate-300 mt-0.5">
+                            <p className="text-[11px] font-mono text-[#ECEAF4] mt-0.5">
                               ตรวจพบคำค้นหาเกี่ยวข้อง — เปิดวิเคราะห์ Torus Model, Feed Latency, Inefficiency และทำนาย 1M/15M/1H
                             </p>
                           </div>
@@ -1154,14 +1263,14 @@ export const App: React.FC = () => {
                               setIsAtsMatrixMode(true);
                               setShowAtsMatrixModal(true);
                             }}
-                            className="px-3 py-1.5 rounded-lg bg-[#00FF66] hover:bg-[#00FF66]/90 text-black text-xs font-mono font-black transition-all shadow-[0_0_12px_rgba(0,255,102,0.3)] cursor-pointer"
+                            className="px-3 py-1.5 rounded-lg bg-[#7EE0B5] hover:bg-[#7EE0B5]/90 text-black text-xs font-mono font-black transition-all shadow-[0_0_12px_rgba(0,255,102,0.3)] cursor-pointer"
                           >
                             เปิด Cockpit ทันที
                           </button>
                           <button
                             type="button"
                             onClick={() => setIsAtsMatrixMode((v) => !v)}
-                            className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-mono font-bold transition-all border border-slate-700 cursor-pointer"
+                            className="px-3 py-1.5 rounded-lg bg-[#222640] hover:bg-[#222640] text-[#ECEAF4] text-xs font-mono font-bold transition-all border border-white/[0.07] cursor-pointer"
                           >
                             {isAtsMatrixMode ? 'ซ่อนในแดชบอร์ด' : 'แสดงในแดชบอร์ด'}
                           </button>
@@ -1182,13 +1291,13 @@ export const App: React.FC = () => {
                 )}
 
                 {/* Real Price Chart Canvas with Asset Selector */}
-                <div className="rounded-[20px] bg-[#1A1D29] border border-[#252A3A] p-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 mb-3 border-b border-[#252A3A]/60 gap-2">
+                <div className="rounded-[20px] bg-[#141725] border border-white/[0.07] p-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 mb-3 border-b border-white/[0.07]/60 gap-2">
                     <div>
                       <h2 className="text-white font-bold text-sm">
                         กราฟราคา 90 วัน & ค่าเฉลี่ย EMA (20/50)
                       </h2>
-                      <p className="text-[#6B7280] text-[11px] mt-0.5">
+                      <p className="text-[#A7A4B8] text-[11px] mt-0.5">
                         {selectedTab === 0 && 'ดึงข้อมูล Binance 1D Klines จริง วิเคราะห์เส้น EMA (20/50) และแนวรับ-แนวต้าน'}
                         {selectedTab === 1 && 'ดึงข้อมูลอัตราแลกเปลี่ยน Forex 1D Closes จริง วิเคราะห์กรอบสวิง 90 วัน'}
                         {selectedTab === 2 && 'ดึงข้อมูลราคาปิดหุ้นไทย SET (.BK) รายวันจากตลาดหลักทรัพย์ พร้อมแนวรับ-แนวต้าน'}
@@ -1206,8 +1315,8 @@ export const App: React.FC = () => {
                           onClick={() => setSelectedChartAsset(coin.id)}
                           className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all shrink-0 whitespace-nowrap ${
                             selectedChartAsset === coin.id
-                              ? 'bg-[#7C6CFF] text-white shadow-xs'
-                              : 'bg-[#0F1117] text-[#9CA3AF] hover:text-white border border-[#252A3A]'
+                              ? 'bg-[#7C6CFF] text-[#0F1117] shadow-xs'
+                              : 'bg-[#0F1117] text-[#A7A4B8] hover:text-white border border-white/[0.07]'
                           }`}
                         >
                           {coin.symbol}
@@ -1220,8 +1329,8 @@ export const App: React.FC = () => {
                           onClick={() => setSelectedChartAsset(forex.pair)}
                           className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all shrink-0 whitespace-nowrap ${
                             selectedChartAsset === forex.pair
-                              ? 'bg-[#10B981] text-white shadow-xs'
-                              : 'bg-[#0F1117] text-[#9CA3AF] hover:text-white border border-[#252A3A]'
+                              ? 'bg-[#7EE0B5] text-[#0F1117] shadow-xs'
+                              : 'bg-[#0F1117] text-[#A7A4B8] hover:text-white border border-white/[0.07]'
                           }`}
                         >
                           {forex.pair}
@@ -1234,8 +1343,8 @@ export const App: React.FC = () => {
                           onClick={() => setSelectedChartAsset(stock.symbol)}
                           className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all shrink-0 whitespace-nowrap ${
                             selectedChartAsset === stock.symbol
-                              ? 'bg-[#F59E0B] text-black shadow-xs font-black'
-                              : 'bg-[#0F1117] text-[#9CA3AF] hover:text-white border border-[#252A3A]'
+                              ? 'bg-[#FFB86B] text-black shadow-xs font-black'
+                              : 'bg-[#0F1117] text-[#A7A4B8] hover:text-white border border-white/[0.07]'
                           }`}
                         >
                           {stock.symbol}
@@ -1248,8 +1357,8 @@ export const App: React.FC = () => {
                           onClick={() => setSelectedChartAsset(stock.symbol)}
                           className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all shrink-0 whitespace-nowrap ${
                             selectedChartAsset === stock.symbol
-                              ? 'bg-[#38BDF8] text-black shadow-xs font-black'
-                              : 'bg-[#0F1117] text-[#9CA3AF] hover:text-white border border-[#252A3A]'
+                              ? 'bg-[#4CC9F0] text-black shadow-xs font-black'
+                              : 'bg-[#0F1117] text-[#A7A4B8] hover:text-white border border-white/[0.07]'
                           }`}
                         >
                           {stock.symbol}
@@ -1262,8 +1371,8 @@ export const App: React.FC = () => {
                           onClick={() => setSelectedChartAsset(idxItem.symbol)}
                           className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all shrink-0 whitespace-nowrap ${
                             selectedChartAsset === idxItem.symbol
-                              ? 'bg-[#EC4899] text-white shadow-xs'
-                              : 'bg-[#0F1117] text-[#9CA3AF] hover:text-white border border-[#252A3A]'
+                              ? 'bg-[#A89FFF] text-[#0F1117] shadow-xs'
+                              : 'bg-[#0F1117] text-[#A7A4B8] hover:text-white border border-white/[0.07]'
                           }`}
                         >
                           {idxItem.symbol}
@@ -1401,7 +1510,9 @@ export const App: React.FC = () => {
 
               {/* Right Sidebar Column: Market Hours & API Status (col-span-4) */}
               <div className="lg:col-span-4 space-y-6">
-                <MascotCoPilotCard />
+                {/* The mascot is not a dashboard card any more: it floats over the
+                    page and speaks only when the detectors actually catch
+                    something (see MascotOverlay + the auto-detect effects above). */}
                 <MarketHoursCard marketHours={marketHours} />
                 <ApiStatusCard status={apiStatus} onRefresh={handleRefreshAllApis} />
               </div>
@@ -1409,16 +1520,16 @@ export const App: React.FC = () => {
           </main>
 
           {/* Eye-Friendly Footer */}
-          <footer className="py-6 border-t border-[#1E2638] text-xs text-[#94A3B8] transition-colors">
+          <footer className="py-6 border-t border-white/[0.07] text-xs text-[#A7A4B8] transition-colors">
             <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
               <div className="flex items-center gap-2">
-                <span className="font-semibold text-slate-300">MotorBoy AI-TH</span>
+                <span className="font-semibold text-[#ECEAF4]">MotorBoy AI-TH</span>
                 <span>·</span>
                 <span>Real-Time Multi-Asset & AI Deep Analytics</span>
               </div>
               {globalSession?.title && (
-                <div className="text-[11px] px-2.5 py-1 rounded-lg bg-[#131826] border border-[#1E2638] text-slate-400">
-                  Global Session: <span className="font-medium text-slate-200">{globalSession.title}</span>
+                <div className="text-[11px] px-2.5 py-1 rounded-lg bg-[#141725] border border-white/[0.07] text-[#A7A4B8]">
+                  Global Session: <span className="font-medium text-[#ECEAF4]">{globalSession.title}</span>
                 </div>
               )}
             </div>
@@ -1571,7 +1682,11 @@ export const App: React.FC = () => {
           {showChat && (
             <ChatModal
               isOpen={showChat}
-              onClose={() => setShowChat(false)}
+              onClose={() => {
+                setShowChat(false);
+                setChatSeed('');
+              }}
+              initialQuestion={chatSeed}
               user={user}
               cryptoList={cryptoList}
               forexRates={forexRates}
@@ -1588,12 +1703,17 @@ export const App: React.FC = () => {
 
           {/* News & AI Analysis Hub Modal */}
           {showNewsModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm overflow-y-auto">
-              <div className="w-full max-w-2xl bg-[#131722] border border-[#2A2E39] rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
-                <div className="p-4 border-b border-[#2A2E39] flex items-center justify-between bg-gradient-to-r from-[#1E222D] to-[#131722]">
+            <div
+              ref={newsModalRef}
+              role="dialog"
+              aria-modal="true"
+              aria-label="ศูนย์รวมข่าวสารตลาดและวิเคราะห์ AI"
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm overflow-y-auto">
+              <div className="w-full max-w-2xl bg-[#141725] border border-[#222640] rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+                <div className="p-4 border-b border-[#222640] flex items-center justify-between bg-gradient-to-r from-[#1C1F2E] to-[#141725]">
                   <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#FF2D55] via-[#A855F7] to-[#3B82F6] p-[1.5px]">
-                      <div className="w-full h-full bg-[#0A0A0A] rounded-[6.5px] flex items-center justify-center text-xs">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#7C6CFF] to-[#8E80FF] p-[1.5px]">
+                      <div className="w-full h-full bg-[#0F1117] rounded-[6.5px] flex items-center justify-center text-xs">
                         🏍️
                       </div>
                     </div>
@@ -1603,7 +1723,7 @@ export const App: React.FC = () => {
                   </div>
                   <button
                     onClick={() => setShowNewsModal(false)}
-                    className="text-[#94A3B8] hover:text-white p-1 rounded-lg transition-colors"
+                    className="text-[#A7A4B8] hover:text-white p-1 rounded-lg transition-colors"
                   >
                     <X className="w-5 h-5" />
                   </button>
@@ -1626,9 +1746,14 @@ export const App: React.FC = () => {
 
           {/* Watchlist Modal */}
           {showWatchlistModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm overflow-y-auto">
-              <div className="w-full max-w-2xl bg-[#131722] border border-[#2A2E39] rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
-                <div className="p-4 border-b border-[#2A2E39] flex items-center justify-between bg-gradient-to-r from-[#1E222D] to-[#131722]">
+            <div
+              ref={watchlistModalRef}
+              role="dialog"
+              aria-modal="true"
+              aria-label="รายการโปรด Watchlist"
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm overflow-y-auto">
+              <div className="w-full max-w-2xl bg-[#141725] border border-[#222640] rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+                <div className="p-4 border-b border-[#222640] flex items-center justify-between bg-gradient-to-r from-[#1C1F2E] to-[#141725]">
                   <div className="flex items-center gap-2">
                     <Star className="w-5 h-5 text-[#7C6CFF] fill-[#7C6CFF]" />
                     <h2 className="text-white font-bold text-sm">
@@ -1637,7 +1762,7 @@ export const App: React.FC = () => {
                   </div>
                   <button
                     onClick={() => setShowWatchlistModal(false)}
-                    className="text-[#94A3B8] hover:text-white p-1 rounded-lg transition-colors"
+                    className="text-[#A7A4B8] hover:text-white p-1 rounded-lg transition-colors"
                   >
                     <X className="w-5 h-5" />
                   </button>
@@ -1726,11 +1851,11 @@ export const App: React.FC = () => {
                       })}
                     </>
                   ) : (
-                    <div className="rounded-[18px] bg-[#1A1D29] border border-[#252A3A] p-8 text-center">
+                    <div className="rounded-[18px] bg-[#141725] border border-white/[0.07] p-8 text-center">
                       <p className="text-white text-sm font-semibold">
                         ยังไม่มีรายการใน Watchlist
                       </p>
-                      <p className="text-[#6B7280] text-xs mt-1">
+                      <p className="text-[#A7A4B8] text-xs mt-1">
                         แตะรูปดาว ⭐️ ที่การ์ดคริปโต คู่เงิน Forex หรือหุ้นไทย/ต่างประเทศ เพื่อเพิ่มลงในรายการโปรด
                       </p>
                     </div>
@@ -1742,18 +1867,23 @@ export const App: React.FC = () => {
 
           {/* History Modal */}
           {showHistoryModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm overflow-y-auto">
-              <div className="w-full max-w-3xl bg-[#131722] border border-[#2A2E39] rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
-                <div className="p-4 border-b border-[#2A2E39] flex items-center justify-between bg-gradient-to-r from-[#1E222D] to-[#131722]">
+            <div
+              ref={historyModalRef}
+              role="dialog"
+              aria-modal="true"
+              aria-label="ประวัติการวิเคราะห์"
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm overflow-y-auto">
+              <div className="w-full max-w-3xl bg-[#141725] border border-[#222640] rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+                <div className="p-4 border-b border-[#222640] flex items-center justify-between bg-gradient-to-r from-[#1C1F2E] to-[#141725]">
                   <div className="flex items-center gap-2">
-                    <History className="w-5 h-5 text-[#10B981]" />
+                    <History className="w-5 h-5 text-[#7EE0B5]" />
                     <h2 className="text-white font-bold text-sm">
                       ประวัติการวิเคราะห์ & สัญญาณที่บันทึก (Google Sync)
                     </h2>
                   </div>
                   <button
                     onClick={() => setShowHistoryModal(false)}
-                    className="text-[#94A3B8] hover:text-white p-1 rounded-lg transition-colors"
+                    className="text-[#A7A4B8] hover:text-white p-1 rounded-lg transition-colors"
                   >
                     <X className="w-5 h-5" />
                   </button>
@@ -1774,7 +1904,12 @@ export const App: React.FC = () => {
 
           {/* ATS Matrix Mode Modal */}
           {showAtsMatrixModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md overflow-y-auto animate-in fade-in duration-200">
+            <div
+              ref={atsModalRef}
+              role="dialog"
+              aria-modal="true"
+              aria-label="ATS Matrix Cockpit"
+              className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md overflow-y-auto animate-in fade-in duration-200">
               <div className="w-full max-w-5xl my-auto">
                 <AtsMatrixDashboard
                   isModal
@@ -1786,6 +1921,11 @@ export const App: React.FC = () => {
               </div>
             </div>
           )}
+
+      {/* Floating AI mascot — pointer-events-none wrapper, never blocks the UI */}
+      {/* No data props: the mascot subscribes to the published feed, so it can
+          be mounted on any surface and still see live market context. */}
+      <MascotOverlay onOpenChat={() => openChat()} />
     </>
   );
 };

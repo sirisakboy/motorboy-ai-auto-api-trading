@@ -87,8 +87,8 @@ export const Header: React.FC<HeaderProps> = ({
       key: 'ats',
       label: '⚡ ATS Matrix Mode',
       desc: 'Polymarket & Crypto Inefficiency (NIULAI4)',
-      icon: <Radio className="w-4 h-4 text-[#10B981]" />,
-      accent: 'hover:border-[#10B981]/60',
+      icon: <Radio className="w-4 h-4 text-[#7EE0B5]" />,
+      accent: 'hover:border-[#7EE0B5]/60',
       badge: 'PRO',
       onOpen: onOpenAtsMatrix,
     },
@@ -104,16 +104,16 @@ export const Header: React.FC<HeaderProps> = ({
       key: 'calendar',
       label: 'ปฏิทินเทรด',
       desc: 'กิจกรรม Google Calendar + สร้างนัด',
-      icon: <CalendarIcon className="w-4 h-4 text-[#38BDF8]" />,
-      accent: 'hover:border-[#38BDF8]/60',
+      icon: <CalendarIcon className="w-4 h-4 text-[#4CC9F0]" />,
+      accent: 'hover:border-[#4CC9F0]/60',
       onOpen: onOpenCalendar,
     },
     {
       key: 'chat',
       label: 'AI Deep Analyze',
       desc: 'คุยวิเคราะห์ตลาด การเงิน & ข่าวกับ AI 100%',
-      icon: <MessageSquare className="w-4 h-4 text-[#22C55E]" />,
-      accent: 'hover:border-[#22C55E]/60',
+      icon: <MessageSquare className="w-4 h-4 text-[#7EE0B5]" />,
+      accent: 'hover:border-[#7EE0B5]/60',
       badge: 'AI 100%',
       onOpen: onOpenChat,
     },
@@ -121,8 +121,8 @@ export const Header: React.FC<HeaderProps> = ({
       key: 'drawdown',
       label: 'Drawdown Monitor',
       desc: 'ตรวจวัด Peak-to-Trough & คุมความเสี่ยง',
-      icon: <TrendingDown className="w-4 h-4 text-[#f9df7b]" />,
-      accent: 'hover:border-[#f9df7b]/60',
+      icon: <TrendingDown className="w-4 h-4 text-[#FFB86B]" />,
+      accent: 'hover:border-[#FFB86B]/60',
       badge: drawdownBreachCount > 0 ? `! ${drawdownBreachCount}` : undefined,
       onOpen: onOpenDrawdown,
     },
@@ -130,8 +130,8 @@ export const Header: React.FC<HeaderProps> = ({
       key: 'risk',
       label: 'คำนวณความเสี่ยง',
       desc: 'ขนาด position ตาม %risk + SL',
-      icon: <Calculator className="w-4 h-4 text-[#F59E0B]" />,
-      accent: 'hover:border-[#F59E0B]/60',
+      icon: <Calculator className="w-4 h-4 text-[#FFB86B]" />,
+      accent: 'hover:border-[#FFB86B]/60',
       onOpen: onOpenRiskCalc,
     },
   ].filter((t) => t.onOpen);
@@ -140,29 +140,39 @@ export const Header: React.FC<HeaderProps> = ({
     `w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl border flex items-center justify-center transition-all ${isDark ? darkCls : lightCls}`;
 
   return (
-    <header className={`sticky top-0 z-30 border-b backdrop-blur-md ${isDark ? 'bg-[#0A0A0A]/95 border-[#262626]' : 'bg-white/95 border-[#E2E8F0]'}`}>
+    <header className={`sticky top-0 z-30 border-b backdrop-blur-md ${isDark ? 'bg-[#0F1117]/95 border-white/[0.07]' : 'bg-white/95 border-[#ECEAF4]'}`}>
       <div className="max-w-7xl mx-auto px-2 sm:px-4 h-16 flex items-center justify-between gap-1">
         {/* MotorBoy AI-TH Logo & Brand */}
         <div className="flex items-center space-x-1.5 sm:space-x-2.5 min-w-0">
-          <div className="w-8 h-8 sm:w-9 sm:h-9 shrink-0 rounded-lg sm:rounded-xl bg-gradient-to-br from-[#FF2D55] via-[#A855F7] to-[#3B82F6] p-[1.5px] shadow-[0_0_15px_rgba(255,45,85,0.45)]">
-            <div className="w-full h-full bg-[#0A0A0A] rounded-[6.5px] sm:rounded-[10px] flex items-center justify-center text-sm sm:text-base">
-              <span role="img" aria-label="motorcycle">🏍️</span>
-            </div>
-          </div>
+          {/* App mark: fixed 32/36px square, same footprint as the old emblem, so
+              nothing in the row shifts. Vector, so it stays crisp on any DPI. */}
+          <img
+            src="/brand/motorboy-mark.svg"
+            alt=""
+            width={36}
+            height={36}
+            className="w-8 h-8 sm:w-9 sm:h-9 shrink-0 rounded-lg sm:rounded-xl shadow-[0_4px_16px_rgba(124,108,255,0.35)]"
+          />
 
           <div className="min-w-0">
-            <div className="flex items-center space-x-1.5 flex-wrap sm:flex-nowrap">
-              <span className="font-black text-xs sm:text-base tracking-tight bg-gradient-to-r from-[#FF2D55] via-[#A855F7] to-[#3B82F6] text-transparent bg-clip-text">
+            <div className="flex items-baseline gap-1.5 min-w-0">
+              <span
+                className={`font-black text-xs sm:text-base tracking-tight leading-none ${
+                  isDark ? 'text-[#ECEAF4]' : 'text-[#0F172A]'
+                }`}
+              >
                 MOTORBOY
               </span>
-              <span className={`font-black text-xs sm:text-base tracking-tight ${isDark ? 'text-white' : 'text-[#0F172A]'}`}>
+              <span className="font-black text-xs sm:text-base tracking-tight leading-none text-[#8E80FF]">
                 AI-TH
               </span>
-              <span className="bg-gradient-to-r from-[#FF2D55]/20 to-[#A855F7]/20 border border-[#FF2D55]/40 text-[#FF2D55] text-[8px] sm:text-[9px] font-extrabold px-1.5 py-0.5 rounded-md">
+              {/* the chip needs ~62px; below 640px it moved the row around, so it
+                  only appears when there is room for it */}
+              <span className="hidden sm:inline-flex items-center bg-[#7C6CFF]/15 border border-[#7C6CFF]/40 text-[#8E80FF] text-[9px] font-extrabold px-1.5 py-0.5 rounded-md shrink-0">
                 HYBRID PRO
               </span>
             </div>
-            <p className="text-[#9CA3AF] text-[9px] sm:text-[10px] leading-tight mt-0.5 truncate hidden min-[380px]:block">
+            <p className="text-[#A7A4B8] text-[9px] sm:text-[10px] leading-tight mt-0.5 truncate hidden min-[380px]:block">
               เร็ว แม่น ปลอดภัย แบบ MotorBoy • Auto API Co-Pilot
             </p>
           </div>
@@ -179,21 +189,21 @@ export const Header: React.FC<HeaderProps> = ({
               className={`px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl border text-[10px] sm:text-xs font-semibold transition-all inline-flex items-center gap-1.5 ${
                 isMusicPlaying
                   ? isDark
-                    ? 'bg-[#10B981]/15 border-[#10B981]/40 text-[#34D399] hover:bg-[#10B981]/25'
+                    ? 'bg-[#7EE0B5]/15 border-[#7EE0B5]/40 text-[#7EE0B5] hover:bg-[#7EE0B5]/25'
                     : 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100'
                   : isDark
-                  ? 'bg-[#131826] border-[#1E2638] text-slate-400 hover:text-slate-200'
-                  : 'bg-white border-slate-200 text-slate-500 hover:text-slate-700'
+                  ? 'bg-[#141725] border-white/[0.07] text-[#A7A4B8] hover:text-[#ECEAF4]'
+                  : 'bg-white border-white/[0.07] text-[#8B88A0] hover:text-[#A7A4B8]'
               }`}
             >
               {isMusicPlaying ? (
                 <>
-                  <Volume2 className="w-3.5 h-3.5 text-[#34D399] animate-pulse" />
+                  <Volume2 className="w-3.5 h-3.5 text-[#7EE0B5] animate-pulse" />
                   <span className="hidden md:inline">ธรรมชาติบำบัด 🍃</span>
                 </>
               ) : (
                 <>
-                  <VolumeX className="w-3.5 h-3.5 text-slate-400" />
+                  <VolumeX className="w-3.5 h-3.5 text-[#A7A4B8]" />
                   <span className="hidden md:inline">ธรรมชาติบำบัด</span>
                 </>
               )}
@@ -207,8 +217,8 @@ export const Header: React.FC<HeaderProps> = ({
             title={useThb ? `เรท USD/THB ${usdThbRate.toFixed(2)}${usdThbLive ? ' (live)' : ' (สำรอง)'}` : 'แสดงราคาเป็นบาท'}
             className={`px-1.5 sm:px-2.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl border text-[10px] sm:text-xs font-bold transition-all ${
               isDark
-                ? 'bg-[#131826] border-[#1E2638] text-[#818CF8] hover:border-[#818CF8]'
-                : 'bg-white border-[#E2E8F0] text-[#6366F1] hover:border-[#6366F1]'
+                ? 'bg-[#141725] border-white/[0.07] text-[#A89FFF] hover:border-[#A89FFF]'
+                : 'bg-white border-[#ECEAF4] text-[#A89FFF] hover:border-[#A89FFF]'
             }`}
           >
             <span className="sm:hidden">{useThb ? '฿' : '$'}</span>
@@ -221,15 +231,15 @@ export const Header: React.FC<HeaderProps> = ({
               type="button"
               onClick={onToggleNotifications}
               className={`${iconBtn(
-                'bg-[#131826] border-[#1E2638] hover:border-[#818CF8]',
-                'bg-white border-[#E2E8F0] hover:border-[#6366F1]'
-              )} ${notifEnabled ? 'text-[#818CF8]' : 'text-[#94A3B8]'}`}
+                'bg-[#141725] border-white/[0.07] hover:border-[#A89FFF]',
+                'bg-white border-[#ECEAF4] hover:border-[#A89FFF]'
+              )} ${notifEnabled ? 'text-[#A89FFF]' : 'text-[#A7A4B8]'}`}
               aria-label="Notifications"
             >
               <Bell className="w-4 h-4" />
             </button>
             {alertCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#f9df7b] text-black text-[9px] font-bold flex items-center justify-center">
+              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#FFB86B] text-black text-[9px] font-bold flex items-center justify-center">
                 {alertCount}
               </span>
             )}
@@ -242,8 +252,8 @@ export const Header: React.FC<HeaderProps> = ({
                 type="button"
                 onClick={() => setToolsOpen((v) => !v)}
                 className={`${iconBtn(
-                  'bg-[#131826] border-[#1E2638] text-slate-100 hover:border-[#818CF8]',
-                  'bg-white border-[#E2E8F0] text-[#0F172A] hover:border-[#6366F1]'
+                  'bg-[#141725] border-white/[0.07] text-[#ECEAF4] hover:border-[#A89FFF]',
+                  'bg-white border-[#ECEAF4] text-[#0F172A] hover:border-[#A89FFF]'
                 )}`}
                 aria-label="เครื่องมือ"
                 aria-expanded={toolsOpen}
@@ -251,16 +261,16 @@ export const Header: React.FC<HeaderProps> = ({
               >
                 {toolsOpen ? <X className="w-4 h-4" /> : <LayoutGrid className="w-4 h-4" />}
                 {drawdownBreachCount > 0 && (
-                  <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#f9df7b] text-black text-[9px] font-bold flex items-center justify-center">
+                  <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#FFB86B] text-black text-[9px] font-bold flex items-center justify-center">
                     !
                   </span>
                 )}
               </button>
               {toolsOpen && (
                 <div className={`absolute right-0 top-full mt-2 w-64 rounded-2xl border shadow-2xl overflow-hidden z-50 ${
-                  isDark ? 'bg-[#131826] border-[#1E2638]' : 'bg-white border-slate-200'
+                  isDark ? 'bg-[#141725] border-white/[0.07]' : 'bg-white border-white/[0.07]'
                 }`}>
-                  <p className={`px-4 pt-3 pb-1 text-[10px] font-bold uppercase tracking-wider ${isDark ? 'text-[#94A3B8]' : 'text-slate-400'}`}>
+                  <p className={`px-4 pt-3 pb-1 text-[10px] font-bold uppercase tracking-wider ${isDark ? 'text-[#A7A4B8]' : 'text-[#A7A4B8]'}`}>
                     เครื่องมือ
                   </p>
                   <div className="p-2 space-y-1">
@@ -273,22 +283,22 @@ export const Header: React.FC<HeaderProps> = ({
                           t.onOpen?.();
                         }}
                         className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border border-transparent text-left transition-colors ${t.accent} ${
-                          isDark ? 'hover:bg-[#0B0F19]' : 'hover:bg-slate-50'
+                          isDark ? 'hover:bg-[#0F1117]' : 'hover:bg-[#F7F5F0]'
                         }`}
                       >
-                        <span className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${isDark ? 'bg-[#0B0F19] border border-[#1E2638]' : 'bg-slate-100 border border-slate-200'}`}>
+                        <span className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${isDark ? 'bg-[#0F1117] border border-white/[0.07]' : 'bg-[#F7F5F0] border border-white/[0.07]'}`}>
                           {t.icon}
                         </span>
                         <span className="min-w-0 flex-1">
-                          <span className={`flex items-center gap-1.5 text-xs font-bold ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>
+                          <span className={`flex items-center gap-1.5 text-xs font-bold ${isDark ? 'text-[#ECEAF4]' : 'text-[#0F1117]'}`}>
                             {t.label}
                             {t.badge && (
-                              <span className="text-[9px] font-bold px-1 py-0.2 rounded bg-[#10B981]/15 border border-[#10B981]/40 text-[#34D399]">
+                              <span className="text-[9px] font-bold px-1 py-0.2 rounded bg-[#7EE0B5]/15 border border-[#7EE0B5]/40 text-[#7EE0B5]">
                                 {t.badge}
                               </span>
                             )}
                           </span>
-                          <span className={`block text-[11px] truncate ${isDark ? 'text-[#94A3B8]' : 'text-slate-500'}`}>{t.desc}</span>
+                          <span className={`block text-[11px] truncate ${isDark ? 'text-[#A7A4B8]' : 'text-[#8B88A0]'}`}>{t.desc}</span>
                         </span>
                       </button>
                     ))}
@@ -303,8 +313,8 @@ export const Header: React.FC<HeaderProps> = ({
             type="button"
             onClick={onOpenSettings}
             className={iconBtn(
-              'bg-[#131826] border-[#1E2638] text-slate-100 hover:border-[#818CF8]',
-              'bg-white border-[#E2E8F0] text-[#0F172A] hover:border-[#6366F1]'
+              'bg-[#141725] border-white/[0.07] text-[#ECEAF4] hover:border-[#A89FFF]',
+              'bg-white border-[#ECEAF4] text-[#0F172A] hover:border-[#A89FFF]'
             )}
             aria-label="Settings"
             data-testid="settings_btn"
@@ -314,16 +324,16 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* User Profile & Sign Out / Sign In */}
           {user && user.email ? (
-            <div className="flex items-center gap-1 sm:gap-2 pl-1.5 ml-0.5 sm:pl-2.5 sm:ml-1 border-l border-[#1E2638]">
+            <div className="flex items-center gap-1 sm:gap-2 pl-1.5 ml-0.5 sm:pl-2.5 sm:ml-1 border-l border-white/[0.07]">
               {user.photoURL ? (
                 <img
                   src={user.photoURL}
                   alt={user.displayName || 'User'}
-                  className="w-7 h-7 sm:w-8 sm:h-8 rounded-full border border-[#818CF8]/50 object-cover"
+                  className="w-7 h-7 sm:w-8 sm:h-8 rounded-full border border-[#A89FFF]/50 object-cover"
                   referrerPolicy="no-referrer"
                 />
               ) : (
-                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#818CF8]/20 border border-[#818CF8]/40 flex items-center justify-center text-[#A5B4FC]">
+                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#A89FFF]/20 border border-[#A89FFF]/40 flex items-center justify-center text-[#A89FFF]">
                   <UserIcon className="w-4 h-4" />
                 </div>
               )}
@@ -333,8 +343,8 @@ export const Header: React.FC<HeaderProps> = ({
                   onClick={onSignOut}
                   className={`flex items-center w-8 h-8 sm:w-auto sm:h-9 justify-center sm:space-x-1.5 sm:px-2.5 rounded-lg sm:rounded-xl border text-xs font-semibold transition-colors ${
                     isDark
-                      ? 'bg-[#131826] border-[#1E2638] text-[#94A3B8] hover:text-white hover:border-[#f9df7b]/50 hover:bg-[#f9df7b]/10'
-                      : 'bg-white border-[#E2E8F0] text-slate-600 hover:text-[#f9df7b] hover:border-[#f9df7b] hover:bg-[#f9df7b]'
+                      ? 'bg-[#141725] border-white/[0.07] text-[#A7A4B8] hover:text-white hover:border-[#FFB86B]/50 hover:bg-[#FFB86B]/10'
+                      : 'bg-white border-[#ECEAF4] text-[#8B88A0] hover:text-[#FFB86B] hover:border-[#FFB86B] hover:bg-[#FFB86B]'
                   }`}
                   title="Sign Out"
                 >
@@ -345,13 +355,13 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           ) : (
             onSignIn && (
-              <div className="flex items-center pl-1.5 ml-0.5 sm:pl-2.5 sm:ml-1 border-l border-[#1E2638]">
+              <div className="flex items-center pl-1.5 ml-0.5 sm:pl-2.5 sm:ml-1 border-l border-white/[0.07]">
                 <button
                   type="button"
                   onClick={onSignIn}
                   className={`flex items-center h-8 sm:h-9 px-2 sm:px-3 rounded-lg sm:rounded-xl border text-xs font-semibold transition-colors gap-1.5 ${
                     isDark
-                      ? 'bg-[#818CF8]/15 border-[#818CF8]/40 text-[#A5B4FC] hover:bg-[#818CF8]/25 hover:border-[#818CF8]'
+                      ? 'bg-[#A89FFF]/15 border-[#A89FFF]/40 text-[#A89FFF] hover:bg-[#A89FFF]/25 hover:border-[#A89FFF]'
                       : 'bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100'
                   }`}
                   title="Sign In with Google"
