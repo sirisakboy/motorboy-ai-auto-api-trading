@@ -83,14 +83,14 @@ export async function generateAiChatReply(
       ? process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY
       : undefined);
 
-  if (activeGeminiKey && activeGeminiKey !== 'dummy_key') {
+  if (activeGeminiKey && activeGeminiKey !== 'dummy_key' && !activeGeminiKey.startsWith('AQ.')) {
     try {
       const geminiReply = await callGeminiWithMarketContext(query, context, activeGeminiKey);
       if (geminiReply) {
         return geminiReply;
       }
     } catch (err) {
-      console.warn('Gemini chat request fallback:', err);
+      console.warn('Gemini chat request fallback to quant engine:', err);
     }
   }
 

@@ -30,21 +30,30 @@ const apiRateLimiter = createRateLimiter({ windowMs: 60_000, max: 60 });
 app.use('/api', apiRateLimiter);
 
 /** Shared Gemini model identifier */
-const GEMINI_MODEL = 'gemini-3.1-flash-lite';
+const GEMINI_MODEL = 'gemini-3.8-flash';
+
+/** Helper to validate Gemini API Key format */
+function isValidGeminiKey(key?: string): boolean {
+  if (!key) return false;
+  const trimmed = key.trim();
+  // Valid Google API keys are alphanumeric with underscores and hyphens, typically starting with AIzaSy
+  // or standard Google API key format (min 20 chars, no spaces)
+  return trimmed.length >= 20 && !trimmed.includes(' ') && !trimmed.startsWith('AQ.');
+}
 
 /** Helper to instantiate GoogleGenAI client on the server */
 function getGeminiClient(userApiKey?: string) {
-  const apiKey =
+  const candidate =
     userApiKey?.trim() ||
     process.env.GEMINI_API_KEY ||
     process.env.VITE_GEMINI_API_KEY;
 
-  if (!apiKey || apiKey === 'dummy_key') {
+  if (!candidate || candidate === 'dummy_key' || !isValidGeminiKey(candidate)) {
     return null;
   }
 
   return new GoogleGenAI({
-    apiKey,
+    apiKey: candidate,
     httpOptions: {
       headers: {
         'User-Agent': 'aistudio-build',
@@ -102,11 +111,25 @@ function extractJsonFromText<T = Record<string, unknown>>(text: string): T | nul
 /** 1. Test Gemini API Key */
 app.post('/api/gemini/test-key', async (req, res) => {
   const { apiKey, userEmail } = req.body || {};
+  if (!apiKey || !apiKey.trim()) {
+    return res.status(400).json({
+      success: false,
+      text: 'กรุณากรอก Gemini API-KEY ก่อนทำการทดสอบ',
+    });
+  }
+
+  if (!isValidGeminiKey(apiKey)) {
+    return res.status(400).json({
+      success: false,
+      text: 'รูปแบบ API Key ไม่ถูกต้อง (API Key ของ Google Gemini ต้องขึ้นต้นด้วย AIzaSy... และไม่มีช่องว่าง)',
+    });
+  }
+
   const ai = getGeminiClient(apiKey);
   if (!ai) {
     return res.status(400).json({
       success: false,
-      text: 'กรุณากรอก Gemini API-KEY ก่อนทำการทดสอบ',
+      text: 'ไม่สามารถสร้างการเชื่อมต่อ AI ด้วย API Key นี้ได้',
     });
   }
 
@@ -668,8 +691,14 @@ app.post('/api/gemini/chat-reply', async (req, res) => {
     }
     return res.status(500).json({ error: 'Empty response from Gemini' });
   } catch (err: any) {
-    console.warn('Server Gemini chat query error:', err?.message);
-    return res.status(500).json({ error: err?.message || 'Gemini chat query failed' });
+    const errMsg = err?.message || 'Gemini chat query failed';
+    const isApiKeyError = errMsg.includes('API key not valid') || errMsg.includes('API_KEY_INVALID') || err?.status === 400;
+    console.warn('Server Gemini chat query error:', errMsg);
+    return res.status(isApiKeyError ? 400 : 500).json({
+      error: isApiKeyError
+        ? 'Google Gemini API Key ไม่ถูกต้องหรือยังไม่ได้ตั้งค่า กรุณาไปที่ การตั้งค่า (⚙️) เพื่อระบุ API Key ใหม่'
+        : errMsg,
+    });
   }
 });
 
@@ -703,7 +732,7 @@ app.post('/api/gemini/mascot-line', async (req, res) => {
     const response = await ai.models.generateContent({
       model: GEMINI_MODEL,
       contents: prompt,
-      config: { temperature: 0.95, maxOutputTokens: 200 },
+      config: { maxOutputTokens: 200 },
     });
 
     const line = String(response?.text || '')
@@ -768,7 +797,7 @@ ${MASCOT_ACTION_CATALOG}
     const response = await ai.models.generateContent({
       model: GEMINI_MODEL,
       contents: prompt,
-      config: { temperature: 0.4, maxOutputTokens: 220, responseMimeType: 'application/json' },
+      config: { maxOutputTokens: 220, responseMimeType: 'application/json' },
     });
 
     const raw = String(response?.text || '').trim();
@@ -879,8 +908,14 @@ app.post('/api/gemini/chat-stream', async (req, res) => {
     return res.end();
   } catch (error: any) {
     if (controller.signal.aborted) return res.end();
-    console.warn('Gemini chat stream error:', error?.message);
-    send('error', { message: error?.message || 'chat_stream_failed' });
+    const errMsg = error?.message || 'chat_stream_failed';
+    const isApiKeyError = errMsg.includes('API key not valid') || errMsg.includes('API_KEY_INVALID') || error?.status === 400;
+    console.warn('Gemini chat stream error:', errMsg);
+    send('error', {
+      message: isApiKeyError
+        ? 'Google Gemini API Key ไม่ถูกต้องหรือยังไม่ได้ตั้งค่า กรุณาไปที่ การตั้งค่า (⚙️) เพื่อระบุ API Key ใหม่'
+        : errMsg,
+    });
     return res.end();
   }
 });
