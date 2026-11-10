@@ -1,5 +1,9 @@
 # FUSION CORE (TypeScript) — รันในโปรเจกต์ ไม่ใช่ปรับโปรเจกต์ให้เข้ากับมัน
 
+> ⚠️ **ขอบเขต: ผู้ช่วยวิเคราะห์/ตัดสินใจ ไม่ใช่ระบบเทรดออโต้**
+> Fusion Core ผลิตสัญญาณให้คนอ่าน ไม่มีคำสั่งซื้อขายในโมดูลนี้เลย (ไม่มี network,
+> ไม่มี order path) และมี guard test ผูกไว้ทั้ง TS/Python — ดู `docs/FUSION-REVIEW-2026-11.md`
+
 สเปก MotorBoy Fusion Core ถูกเขียนไว้แบบ Python (`motorboy_production/`) โปรเจกต์นี้
 เป็น React/TypeScript ที่รันในเบราว์เซอร์และไม่มี Python runtime จึง **พอร์ตมาเป็น
 TypeScript** โดยยึดหลักว่า
@@ -63,10 +67,14 @@ const real = analyzeWhale({
 
 ## parity กับ Python (กันพอร์ตเพี้ยน)
 
-`src/__tests__/fusionWhale.test.ts` มี fixture ที่คำนวณจาก
-`motorboy_production/02_whale.py` ตรง ๆ (9 เคส: crypto/stock/forex/gold_index ×
-bull/bear/neutral + เคสสัญญาณสวนทาง) ตรวจทั้ง `score`, `confidence`, `total`,
-`coverage`, `agreement` และ **ข้อความ reason ภาษาไทย** ว่าตรงกัน
+`src/__tests__/fusionWhale.test.ts` เทียบกับผลที่คำนวณจาก
+`motorboy_production/02_whale.py` ตรง ๆ สองชั้น
+
+- **9 เคสเขียนมือ** — crypto/stock/forex/gold_index × bull/bear/neutral + เคสสัญญาณสวนทาง
+- **40 เคสสุ่ม (seed คงที่)** จาก `parity_export.py` — คลุม 5 profile, มีเคสข้อมูลไม่ครบ,
+  ค่าที่ส่งมาเป็น string พร้อมหน่วย และค่าที่เกินสเกล
+
+ตรวจทั้ง `score`, `confidence`, `total`, `coverage`, `agreement` และ **ข้อความ reason ภาษาไทย**
 
 > แก้สูตรฝั่งใดฝั่งหนึ่ง = เทสต์ parity แดง ห้ามแก้ fixture ให้ตามโค้ด
 
@@ -75,7 +83,8 @@ bull/bear/neutral + เคสสัญญาณสวนทาง) ตรวจ�
 ## เทสต์
 
 ```bash
-npx vitest run src/__tests__/fusionWhale.test.ts   # 35 tests (parity + adapters + interface)
+python motorboy_production/parity_export.py        # สร้าง fixture 40 เคสจาก Python
+npx vitest run src/__tests__/fusionWhale.test.ts   # 44 tests (parity 9+40, adapters, safety)
 npx vitest run                                     # ทั้งโปรเจกต์ 279 tests
 ```
 

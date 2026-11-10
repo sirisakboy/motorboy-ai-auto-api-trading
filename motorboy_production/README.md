@@ -1,5 +1,8 @@
 # motorboy_production — สายเงินจริง (reference implementation)
 
+> ⚠️ **ขอบเขต: ผู้ช่วยวิเคราะห์ ไม่ใช่ระบบเทรดออโต้** — โฟลเดอร์นี้ไม่มีคำสั่งซื้อขาย
+> ไม่มี network call และมี guard test คุมไว้ (ดู `docs/FUSION-REVIEW-2026-11.md`)
+>
 > **สถานะปัจจุบัน:** โปรเจกต์นี้รันบนเบราว์เซอร์ จึงพอร์ต `02_whale` มาเป็น
 > TypeScript แล้วที่ `src/fusion/` (ดู `docs/FUSION-CORE.md`) — โค้ด Python ในโฟลเดอร์นี้
 > ยังเป็น **reference** ที่ใช้เทียบผล (parity test) และเป็นฐานของงานฝั่งเซิร์ฟเวอร์/
@@ -114,11 +117,12 @@ asset_type : crypto
 - **ไม่มี API จริง** — ต่อทีหลังได้โดยไม่แตะ scoring: เปลี่ยนแค่คนที่ส่ง `mock_data` เข้ามา
 - **ไม่มีชื่อสินทรัพย์** — ไม่มี `BTC`/`AAPL` อยู่ใน logic (มีแค่ในตัวอย่าง CLI)
 
-### เทส
+### เทส + parity
 
 ```bash
-python -m unittest discover -s motorboy_production/tests -v   # 18 tests
+python -m unittest discover -s motorboy_production/tests -v   # 21 tests
 python motorboy_production/02_whale.py --selftest              # 94 checks
+python motorboy_production/parity_export.py                    # fixture 40 เคสให้ vitest
 ```
 
 เทสคุมไว้: ช่วงคะแนน/ความมั่นใจ · ทิศทาง bull/bear/neutral ของทั้ง 5 ประเภท ·

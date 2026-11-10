@@ -146,6 +146,34 @@ class TestWhaleInput(unittest.TestCase):
             whale.analyze_flow("", "crypto", {})
 
 
+class TestWhaleSafety(unittest.TestCase):
+    """ผู้ช่วยวิเคราะห์เท่านั้น — ห้ามมีทางสั่งออเดอร์หรือยิง network เอง"""
+
+    FORBIDDEN = (
+        "requests",
+        "ccxt",
+        "urllib.request",
+        "http.client",
+        "websocket",
+        "place_order",
+        "create_order",
+        "submit_order",
+        "execute_trade",
+    )
+
+    def test_module_has_no_network_or_order_paths(self):
+        source = MODULE_PATH.read_text(encoding="utf-8")
+        for token in self.FORBIDDEN:
+            self.assertNotIn(token, source, f"02_whale.py ต้องไม่มี {token}")
+
+    def test_signal_carries_no_order_instruction(self):
+        signal = whale.analyze_flow("BTCUSDT", "crypto", whale.sample_mock("crypto", "bull"))
+        self.assertEqual(
+            set(signal.to_dict()),
+            {"symbol", "asset_type", "score", "confidence", "reason", "source"},
+        )
+
+
 class TestWhaleCli(unittest.TestCase):
     """ทุกไฟล์ต้องรันแล้วเห็นผลลัพธ์ได้เลย (สเปกข้อ 10)"""
 

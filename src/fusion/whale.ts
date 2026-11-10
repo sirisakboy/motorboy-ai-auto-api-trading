@@ -296,9 +296,12 @@ export function toNumber(value: MoneyFlowValue): number | null {
   const text = value.trim().replace(/,/g, '').replace(/%/g, '').replace(/\$/g, '');
   if (!text) return null;
   const suffix = text.slice(-1).toUpperCase();
-  const multiplier = suffix === 'K' ? 1e3 : suffix === 'M' ? 1e6 : suffix === 'B' ? 1e9 : 1;
-  const numeric = Number(multiplier === 1 ? text : text.slice(0, -1));
-  return Number.isFinite(numeric) ? numeric * multiplier : null;
+  // ต้องมีตัวเลขนำหน้าเสมอ: '5M' ได้, 'M' เดี่ยว ๆ ต้องไม่กลายเป็น 0
+  const hasSuffix = text.length > 1 && (suffix === 'K' || suffix === 'M' || suffix === 'B');
+  const multiplier = !hasSuffix ? 1 : suffix === 'K' ? 1e3 : suffix === 'M' ? 1e6 : 1e9;
+  const numeric = Number(hasSuffix ? text.slice(0, -1) : text);
+  if (!Number.isFinite(numeric)) return null;
+  return hasSuffix ? numeric * multiplier : numeric;
 }
 
 function unitFromEnum(raw: MoneyFlowValue, enumMap?: readonly (readonly [string, number])[]): number | null {

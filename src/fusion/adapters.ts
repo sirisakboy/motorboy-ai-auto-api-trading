@@ -156,6 +156,19 @@ export function moneyFlowFromQuote(quote: AppQuote): MoneyFlowData {
  * ข้อมูล (PROXY_CONFIDENCE_FACTOR) เพื่อไม่ให้ proxy ดูมั่นใจเท่าข้อมูลจริง
  */
 export function analyzeWhaleFromApp(quote: AppQuote): ModuleSignal {
+  const symbol = String(quote?.symbol ?? '').trim();
+  if (!symbol) {
+    // UI อาจส่งแถวที่ยังโหลดไม่เสร็จเข้ามา — คืนสัญญาณกลาง ไม่โยน error ใส่หน้าจอ
+    return createModuleSignal({
+      symbol: 'UNKNOWN',
+      assetType: quote?.assetType ?? 'default',
+      score: 0,
+      confidence: 0,
+      reason: 'ยังไม่มีชื่อสินทรัพย์ให้วิเคราะห์ — ขอเป็นกลางก่อน',
+      source: 'whale:proxy:price+volume',
+    });
+  }
+
   const data = moneyFlowFromQuote(quote);
   const base = analyzeWhale({
     symbol: quote.symbol,

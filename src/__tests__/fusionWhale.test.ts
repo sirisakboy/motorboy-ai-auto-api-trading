@@ -1,5 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest';
+import { readFileSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
 
 import type { CryptoCoin, ForexPair, ForeignStock, StockIndex, ThaiStock } from '../types';
 import {
@@ -25,6 +27,7 @@ import {
   fromSignalDict,
   moneyFlowFromQuote,
   moneyText,
+  toNumber,
   quoteFromCryptoCoin,
   quoteFromForexPair,
   quoteFromForeignStock,
@@ -210,6 +213,11 @@ const PARITY: ParityCase[] = [
   },
 ];
 
+/* ผลเฉลย 40 เคสจาก Python — สร้างด้วย `python motorboy_production/parity_export.py` */
+const SWEEP: ParityCase[] = JSON.parse(
+  readFileSync(join(process.cwd(), 'src', '__tests__', 'fixtures', 'fusion-parity.json'), 'utf8')
+) as ParityCase[];
+
 describe('fusion/whale — parity กับ reference implementation (Python)', () => {
   it.each(PARITY)('$name ตรงกับผลของ Python', (testCase) => {
     const detail = explainWhale({
@@ -224,6 +232,37 @@ describe('fusion/whale — parity กับ reference implementation (Python)', 
     expect(Number(detail.coverage.toFixed(6))).toBeCloseTo(testCase.coverage, 6);
     expect(Number(detail.agreement.toFixed(6))).toBeCloseTo(testCase.agreement, 6);
     expect(detail.signal.reason).toBe(testCase.reason);
+  });
+});
+
+describe('fusion/whale — parity sweep (40 เคสสุ่มจาก Python, seed คงที่)', () => {
+  it('fixture ครอบทุก profile และมีเคสข้อมูลไม่ครบ', () => {
+    const profiles = new Set(SWEEP.map((item) => item.assetType));
+    for (const assetType of ['crypto', 'stock', 'forex', 'gold_index', 'default']) {
+      expect(profiles.has(assetType)).toBe(true);
+    }
+    const partial = SWEEP.filter((item) => item.coverage < 1);
+    expect(partial.length).toBeGreaterThan(0);
+    expect(SWEEP.length).toBe(40);
+  });
+
+  it('ทุกเคสต้องได้ผลตรงกับ Python ทั้ง 6 ค่า', () => {
+    const mismatches = SWEEP.flatMap((item) => {
+      const detail = explainWhale({ symbol: 'SWEEP', assetType: item.assetType, data: item.data });
+      const problems: string[] = [];
+      if (detail.signal.score !== item.score) problems.push(`score ${detail.signal.score}≠${item.score}`);
+      if (detail.signal.confidence !== item.confidence)
+        problems.push(`conf ${detail.signal.confidence}≠${item.confidence}`);
+      if (Math.abs(detail.total - item.total) > 1e-6) problems.push(`total ${detail.total}≠${item.total}`);
+      if (Math.abs(detail.coverage - item.coverage) > 1e-6)
+        problems.push(`coverage ${detail.coverage}≠${item.coverage}`);
+      if (Math.abs(detail.agreement - item.agreement) > 1e-6)
+        problems.push(`agreement ${detail.agreement}≠${item.agreement}`);
+      if (detail.signal.reason !== item.reason) problems.push(`reason "${detail.signal.reason}"≠"${item.reason}"`);
+      return problems.length ? [`${item.name}: ${problems.join(', ')}`] : [];
+    });
+
+    expect(mismatches).toEqual([]);
   });
 });
 
@@ -509,5 +548,96 @@ describe('fusion/adapters — วิ่งบนข้อมูลตั้ง�
       data: sampleMoneyFlow('crypto', 'bull'),
     });
     expect(proxy.confidence).toBeLessThan(real.confidence);
+  });
+});
+
+/* --------------------------------------------------- review fixes + safety */
+
+describe('fusion — ความปลอดภัย: เป็นผู้ช่วยวิเคราะห์ ไม่ใช่ออโต้เทรด', () => {
+  const fusionDir = join(process.cwd(), 'src', 'fusion');
+  const sources = readdirSync(fusionDir)
+    .filter((file) => file.endsWith('.ts'))
+    .map((file) => ({ file, text: readFileSync(join(fusionDir, file), 'utf8') }));
+
+  it('ทั้งโฟลเดอร์ไม่มี network call เลย (คำนวณล้วน)', () => {
+    for (const { file, text } of sources) {
+      expect(text, `${file} ต้องไม่เรียก network`).not.toMatch(/\bfetch\s*\(/);
+      expect(text, `${file} ต้องไม่ใช้ XHR`).not.toMatch(/XMLHttpRequest/);
+      expect(text, `${file} ต้องไม่เปิด WebSocket`).not.toMatch(/new WebSocket/);
+      expect(text, `${file} ต้องไม่อ้าง apiClient/server`).not.toMatch(/from '\.\.\/services\/apiClient'/);
+    }
+  });
+
+  it('ไม่มีคำสั่งซื้อขาย/ส่งออเดอร์ในโค้ด', () => {
+    const forbidden = [
+      /placeOrder/i,
+      /createOrder/i,
+      /submitOrder/i,
+      /executeTrade/i,
+      /autoTrade/i,
+      /\/api\/v3\/order/i,
+      /apiKey\s*[=:]/i,
+      /secret(Key)?/i,
+    ];
+    for (const { file, text } of sources) {
+      for (const pattern of forbidden) {
+        expect(pattern.test(text), `${file} ต้องไม่ตรงกับ ${pattern}`).toBe(false);
+      }
+    }
+  });
+
+  it('ModuleSignal ไม่มี field ที่ใช้สั่งงาน (ตรวจจาก key ที่ส่งออก)', () => {
+    const dict = toSignalDict(
+      analyzeWhale({ symbol: 'BTC', assetType: 'crypto', data: sampleMoneyFlow('crypto', 'bull') })
+    );
+    expect(Object.keys(dict).sort()).toEqual(
+      ['asset_type', 'confidence', 'reason', 'score', 'source', 'symbol'].sort()
+    );
+  });
+});
+
+describe('fusion — เคสที่ review แล้วพบและแก้', () => {
+  it("toNumber ไม่แปลง suffix เดี่ยว ๆ เป็น 0 ('M' ต้องได้ null)", () => {
+    expect(toNumber('M')).toBeNull();
+    expect(toNumber('B')).toBeNull();
+    expect(toNumber('K')).toBeNull();
+    expect(toNumber('5M')).toBe(5_000_000);
+    expect(toNumber('$1,250.50')).toBe(1250.5);
+    expect(toNumber('3.5%')).toBe(3.5);
+    expect(toNumber('1.2B')).toBeCloseTo(1.2e9, 3);
+    expect(toNumber('abc')).toBeNull();
+  });
+
+  it('symbol ว่างจาก UI ต้องได้สัญญาณกลาง ไม่ throw', () => {
+    const signal = analyzeWhaleFromApp({ symbol: '   ', assetType: 'th' });
+    expect(signal.score).toBe(0);
+    expect(signal.confidence).toBe(0);
+    expect(signal.reason).toContain('ขอเป็นกลางก่อน');
+  });
+
+  it(' símbol ตัวพิมพ์เล็กถูกจัดรูปที่ชั้นวิเคราะห์ (เหมือน Python) ไม่ใช่ที่ตัวสร้างสัญญาณ', () => {
+    const created = createModuleSignal({
+      symbol: 'btc',
+      assetType: 'crypto',
+      score: 0,
+      confidence: 0,
+      reason: 'ok',
+      source: 's',
+    });
+    expect(created.symbol).toBe('btc');
+    expect(analyzeWhale({ symbol: 'btc', assetType: 'crypto', data: sampleMoneyFlow('crypto') }).symbol).toBe(
+      'BTC'
+    );
+  });
+
+  it('source ยาวไม่เกิน 120 ตัวอักษร (เท่ากับ Python)', () => {
+    const longNote = 'x'.repeat(300);
+    const signal = analyzeWhale({
+      symbol: 'BTC',
+      assetType: 'crypto',
+      data: sampleMoneyFlow('crypto', 'bull'),
+      sourceOverride: longNote,
+    });
+    expect(signal.source.length).toBeLessThanOrEqual(120);
   });
 });

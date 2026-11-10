@@ -124,12 +124,13 @@ function requireConfidence(value: unknown): number {
 export function createModuleSignal(input: ModuleSignalInput): ModuleSignal {
   const score = requireScore(input.score);
   return {
-    symbol: requireText(input.symbol, 'symbol', 32).toUpperCase(),
+    // ไม่แปลงตัวพิมพ์: Python เก็บ symbol ตามที่รับมา (การทำ upper อยู่ที่ analyze_flow)
+    symbol: requireText(input.symbol, 'symbol', 32),
     assetType: canonicalAssetType(input.assetType),
     score,
     confidence: requireConfidence(input.confidence),
     reason: requireText(input.reason, 'reason'),
-    source: requireText(input.source, 'source', 160),
+    source: requireText(input.source, 'source', 120), // 120 = เท่ากับ Python
     direction: score > 0 ? 'bullish' : score < 0 ? 'bearish' : 'neutral',
   };
 }
@@ -172,7 +173,7 @@ export function createFusionResult(input: {
     throw new Error(`decision ต้องเป็นหนึ่งใน ${VALID_DECISIONS.join(' / ')} (ได้ ${input.decision})`);
   }
   return {
-    symbol: requireText(input.symbol, 'symbol', 32).toUpperCase(),
+    symbol: requireText(input.symbol, 'symbol', 32),
     assetType: canonicalAssetType(input.assetType),
     decision,
     finalScore: Number.isFinite(input.finalScore) ? input.finalScore : 0,
