@@ -751,7 +751,8 @@ app.post('/api/gemini/mascot-line', async (req, res) => {
       timestamp: new Date().toISOString(),
     });
   } catch (error: any) {
-    return res.status(502).json({ error: error?.message || 'mascot_line_failed' });
+    console.warn('Mascot line error:', error?.message || error);
+    return res.status(502).json({ error: 'mascot_line_failed' });
   }
 });
 
@@ -827,7 +828,9 @@ ${MASCOT_ACTION_CATALOG}
       timestamp: new Date().toISOString(),
     });
   } catch (error: any) {
-    return res.status(502).json({ error: error?.message || 'mascot_action_failed' });
+    // ไม่ส่งข้อความภายในออกไปให้ client (ให้ UI จัดการรหัสเดียวจบ)
+    console.warn('Mascot action error:', error?.message || error);
+    return res.status(502).json({ error: 'mascot_action_failed' });
   }
 });
 

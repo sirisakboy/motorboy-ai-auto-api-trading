@@ -38,6 +38,22 @@ Missing: vitest@3.2.7 / jsdom@30.1.3 / @testing-library/react@16.3.3 / zustand@5
 > ถ้าเจตนาคือ **ดาวน์เกรดเป็น 2.21.0 จริง** ต้องแก้ `package.json` เป็น `^2.21.0` แล้ว generate lock ใหม่
 > (ตอนนี้ commit message บอก downgrade แต่ manifest ไม่ได้แก้ → สองไฟล์ขัดกัน)
 
+## 2.1 เจอบั๊กในโค้ดของเราเองระหว่างรีวิว — แก้แล้ว
+
+ทดสอบ endpoint จริงด้วยคีย์ปลอม (ยาว ≥15 ไม่มีช่องว่าง จึงผ่าน `isValidGeminiKey`)
+แล้วพบว่า **error ภายในหลุดออกไปถึง client**:
+
+```
+POST /api/gemini/mascot-action  →  {"error":"fetch failed"}
+POST /api/gemini/mascot-line    →  {"error":"..."}   (รูปแบบเดียวกัน)
+```
+
+`error?.message || '...'` ส่งข้อความจากระบบ (ชื่อ host, ข้อผิดพลาด network) ออกไป
+ทั้งที่ client ไม่ได้ใช้ข้อมูลนี้ และทำให้แยกไม่ออกว่าล้มเพราะอะไร
+
+แก้เป็นรหัสคงที่ + log ฝั่งเซิร์ฟเวอร์: `mascot_action_failed` / `mascot_line_failed`
+(ยืนยันหลังแก้: 502 + รหัสคงที่ทั้งสอง endpoint)
+
 ## 3. ⚠️ ควรแก้ (ยังไม่แตะ — รอเจ้าของตัดสิน)
 
 | # | ระดับ | ที่ | ปัญหา | ข้อเสนอ |
