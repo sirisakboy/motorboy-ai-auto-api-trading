@@ -103,6 +103,35 @@ function extractJsonFromText<T = Record<string, unknown>>(text: string): T | nul
   return null;
 }
 
+/** Helper to call generateContent with search grounding and automatic fallback to plain generation on 429/quota error */
+async function generateWithGroundingFallback(
+  ai: GoogleGenAI,
+  contents: any,
+  baseConfig: Record<string, any> = {}
+) {
+  try {
+    return await ai.models.generateContent({
+      model: GEMINI_MODEL,
+      contents,
+      config: {
+        ...baseConfig,
+        tools: [{ googleSearch: {} }],
+      },
+    });
+  } catch (searchError: any) {
+    const raw = searchError?.message || '';
+    if (raw.includes('429') || raw.includes('RESOURCE_EXHAUSTED') || raw.includes('quota') || searchError?.status === 429) {
+      console.warn('Search grounding quota reached, falling back to plain generation:', raw);
+      return await ai.models.generateContent({
+        model: GEMINI_MODEL,
+        contents,
+        config: baseConfig,
+      });
+    }
+    throw searchError;
+  }
+}
+
 // ============================================================================
 // SERVER-SIDE GEMINI API ROUTES
 // ============================================================================
@@ -132,27 +161,59 @@ app.post('/api/gemini/test-key', async (req, res) => {
     });
   }
 
-  try {
-    const response = await ai.models.generateContent({
+  const runTestGeneration = async (withSearch: boolean) => {
+    return ai.models.generateContent({
       model: GEMINI_MODEL,
       contents: 'ตอบสั้นๆ 1 บรรทัดภาษาไทย: ยืนยันสถานะการเชื่อมต่อ AI สำหรับระบบวิเคราะห์ตลาด',
-      config: {
-        tools: [{ googleSearch: {} }],
-      },
+      config: withSearch ? { tools: [{ googleSearch: {} }] } : {},
     });
+  };
+
+  try {
+    let response: any;
+    let searchGrounded = true;
+    try {
+      response = await runTestGeneration(true);
+    } catch (groundingErr: any) {
+      // Free-tier API keys frequently don't have search-grounding quota or hit rate limits
+      // Fallback to standard plain generation to verify key validity!
+      console.warn('Test-key search-grounded attempt failed, trying standard generation:', groundingErr?.message);
+      searchGrounded = false;
+      response = await runTestGeneration(false);
+    }
 
     if (!response?.text) throw new Error('No response from Gemini model');
     const emailNotice = userEmail ? ` (เชื่อมโยงกับบัญชี ${userEmail})` : '';
 
     return res.json({
       success: true,
-      text: `เชื่อมต่อ Gemini API สำเร็จ!${emailNotice} คีย์พร้อมใช้งานสมบูรณ์ ✓`,
-      searchGrounded: true,
+      text: searchGrounded
+        ? `เชื่อมต่อ Gemini 3.8 Flash สำเร็จ!${emailNotice} คีย์พร้อมใช้งานสมบูรณ์ (รองรับ Google Search Grounding) ✓`
+        : `เชื่อมต่อ Gemini 3.8 Flash สำเร็จ!${emailNotice} คีย์พร้อมใช้งานสมบูรณ์ ✓ (โหมดมาตรฐาน)`,
+      searchGrounded,
     });
   } catch (error: any) {
-    return res.status(500).json({
+    const rawMsg = error?.message || '';
+    let friendlyMessage = 'เชื่อมต่อไม่สำเร็จ โปรดตรวจสอบ API Key อีกครั้ง';
+
+    if (rawMsg.includes('RESOURCE_EXHAUSTED') || rawMsg.includes('429') || error?.status === 429) {
+      friendlyMessage = '⚠️ คีย์นี้ใช้งานเกินโควตาฟรีชั่วคราว (Rate Limit / Quota Exceeded) โปรดรอสักครู่แล้วทดสอบใหม่ หรือเปิด Billing บน Google AI Studio';
+    } else if (rawMsg.includes('API_KEY_INVALID') || rawMsg.includes('400') || error?.status === 400) {
+      friendlyMessage = '❌ API Key ไม่ถูกต้อง โปรดคัดลอกรหัสใหม่จาก Google AI Studio';
+    } else if (rawMsg.includes('PERMISSION_DENIED') || error?.status === 403) {
+      friendlyMessage = '🔒 ไม่มีสิทธิ์เข้าถึงโมเดล โปรดตรวจสอบสิทธิ์ของโปรเจกต์ใน Google AI Studio';
+    } else if (rawMsg) {
+      try {
+        const parsed = JSON.parse(rawMsg);
+        friendlyMessage = `เชื่อมต่อไม่สำเร็จ: ${parsed?.error?.message || rawMsg}`;
+      } catch {
+        friendlyMessage = `เชื่อมต่อไม่สำเร็จ: ${rawMsg}`;
+      }
+    }
+
+    return res.status(error?.status || 500).json({
       success: false,
-      text: `เชื่อมต่อไม่สำเร็จ: ${error?.message || 'Invalid API Key'}`,
+      text: friendlyMessage,
     });
   }
 });
@@ -193,13 +254,7 @@ ${signal ? `- สัญญาณเทคนิค: ${signal.type} (ความ
   "whaleActivity": "ACCUMULATION" หรือ "DISTRIBUTION" หรือ "NEUTRAL"
 }`;
 
-    const response = await ai.models.generateContent({
-      model: GEMINI_MODEL,
-      contents: prompt,
-      config: {
-        tools: [{ googleSearch: {} }],
-      },
-    });
+    const response = await generateWithGroundingFallback(ai, prompt);
 
     const parsed = extractJsonFromText<any>(response.text || '{}');
     if (!parsed) throw new Error('Unparseable sentiment JSON');
@@ -264,13 +319,7 @@ ${signal ? `- สัญญาณเทคนิคระบบ: ${signal.type} (
   "whaleActivity": "ACCUMULATION" หรือ "DISTRIBUTION" หรือ "NEUTRAL"
 }`;
 
-    const response = await ai.models.generateContent({
-      model: GEMINI_MODEL,
-      contents: prompt,
-      config: {
-        tools: [{ googleSearch: {} }],
-      },
-    });
+    const response = await generateWithGroundingFallback(ai, prompt);
 
     const parsed = extractJsonFromText<any>(response.text || '{}');
     if (!parsed) throw new Error('Unparseable market analysis response');
@@ -340,13 +389,7 @@ app.post('/api/gemini/analyze-news', async (req, res) => {
   "riskFactors": ["ปัจจัยเสี่ยงข้อที่ 1 ที่ต้องจับตา", "ปัจจัยเสี่ยงข้อที่ 2 ที่ต้องจับตา"]
 }`;
 
-    const response = await ai.models.generateContent({
-      model: GEMINI_MODEL,
-      contents: prompt,
-      config: {
-        tools: [{ googleSearch: {} }],
-      },
-    });
+    const response = await generateWithGroundingFallback(ai, prompt);
 
     const parsed = extractJsonFromText<any>(response.text || '{}');
     if (!parsed) throw new Error('Unparseable news analysis JSON');
@@ -419,13 +462,7 @@ ${topNewsSummary}
   "riskFactor": "ปัจจัยเสี่ยงสำคัญที่สุด 1 ข้อที่ต้องจับตาอย่างใกล้ชิด"
 }`;
 
-    const response = await ai.models.generateContent({
-      model: GEMINI_MODEL,
-      contents: prompt,
-      config: {
-        tools: [{ googleSearch: {} }],
-      },
-    });
+    const response = await generateWithGroundingFallback(ai, prompt);
 
     const parsed = extractJsonFromText<any>(response.text || '{}');
     if (!parsed) throw new Error('Unparseable holistic stance response');
@@ -488,13 +525,7 @@ ${topSignals.map((s: any) => `- ${s.symbol}: ${s.type} (ราคา $${s.price}
   "actionableSummary": "สรุปคำแนะนำสั้นกระชับสำหรับผู้ใช้"
 }`;
 
-    const response = await ai.models.generateContent({
-      model: GEMINI_MODEL,
-      contents: prompt,
-      config: {
-        tools: [{ googleSearch: {} }],
-      },
-    });
+    const response = await generateWithGroundingFallback(ai, prompt);
 
     const parsed = extractJsonFromText<any>(response.text || '{}');
     if (!parsed) throw new Error('Unparseable synthesis response');
@@ -554,13 +585,7 @@ app.post('/api/gemini/longterm-project', async (req, res) => {
   "strategyAdvice": "คำแนะนำการสะสมหุ้นสำหรับนักลงทุนระยะยาว"
 }`;
 
-    const response = await ai.models.generateContent({
-      model: GEMINI_MODEL,
-      contents: prompt,
-      config: {
-        tools: [{ googleSearch: {} }],
-      },
-    });
+    const response = await generateWithGroundingFallback(ai, prompt);
 
     const parsed = extractJsonFromText<any>(response.text || '{}');
     if (!parsed) throw new Error('Unparseable project analysis JSON');
@@ -677,13 +702,7 @@ app.post('/api/gemini/chat-reply', async (req, res) => {
   });
 
   try {
-    const response = await ai.models.generateContent({
-      model: GEMINI_MODEL,
-      contents: prompt,
-      config: {
-        tools: [{ googleSearch: {} }],
-      },
-    });
+    const response = await generateWithGroundingFallback(ai, prompt);
 
     if (response?.text) {
       return res.json({ reply: response.text, source: 'GEMINI_AI' });
