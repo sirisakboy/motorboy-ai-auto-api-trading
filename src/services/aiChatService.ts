@@ -83,7 +83,7 @@ export async function generateAiChatReply(
       ? process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY
       : undefined);
 
-  if (activeGeminiKey && activeGeminiKey !== 'dummy_key' && !activeGeminiKey.startsWith('AQ.')) {
+  if (activeGeminiKey && activeGeminiKey !== 'dummy_key') {
     try {
       const geminiReply = await callGeminiWithMarketContext(query, context, activeGeminiKey);
       if (geminiReply) {

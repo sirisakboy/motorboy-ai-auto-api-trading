@@ -36,9 +36,8 @@ const GEMINI_MODEL = 'gemini-3.8-flash';
 function isValidGeminiKey(key?: string): boolean {
   if (!key) return false;
   const trimmed = key.trim();
-  // Valid Google API keys are alphanumeric with underscores and hyphens, typically starting with AIzaSy
-  // or standard Google API key format (min 20 chars, no spaces)
-  return trimmed.length >= 20 && !trimmed.includes(' ') && !trimmed.startsWith('AQ.');
+  // Valid Google Gemini API keys (including legacy AIzaSy... and new AQ... format keys)
+  return trimmed.length >= 15 && !trimmed.includes(' ');
 }
 
 /** Helper to instantiate GoogleGenAI client on the server */
@@ -121,7 +120,7 @@ app.post('/api/gemini/test-key', async (req, res) => {
   if (!isValidGeminiKey(apiKey)) {
     return res.status(400).json({
       success: false,
-      text: 'รูปแบบ API Key ไม่ถูกต้อง (API Key ของ Google Gemini ต้องขึ้นต้นด้วย AIzaSy... และไม่มีช่องว่าง)',
+      text: 'รูปแบบ API Key ไม่ถูกต้อง โปรดตรวจสอบรหัสผ่านและคัดลอกจาก Google AI Studio ให้ครบถ้วน',
     });
   }
 
