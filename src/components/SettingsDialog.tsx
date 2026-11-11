@@ -16,7 +16,12 @@ import {
   Mail,
   ChevronDown,
   ChevronUp,
+  HelpCircle,
+  BookOpen,
+  Copy,
+  Check,
 } from 'lucide-react';
+import guideImg from '../assets/images/gemini_api_guide_1794356820031.jpg';
 import { TradingPsychologySettings } from '../types';
 import { testGeminiApiKeyWithSearch } from '../services/geminiService';
 import { useModalA11y } from '../hooks/useModalA11y';
@@ -59,6 +64,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
   const [keyFeedback, setKeyFeedback] = useState<{ type: 'SUCCESS' | 'ERROR'; message: string } | null>(null);
 
   const [isApiKeySectionOpen, setIsApiKeySectionOpen] = useState(false);
+  const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
 
   const [isTestingKey, setIsTestingKey] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; text: string } | null>(null);
@@ -250,30 +257,55 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                   <Key className="w-4 h-4 text-[#A89FFF]" />
                   <span>Google Gemini API Key (ซิงค์กับบัญชี Google)</span>
                 </label>
-                <span className="text-[10px] text-[#A7A4B8] bg-[#222640] px-2 py-0.5 rounded-md font-medium">
-                  Google AI Studio
-                </span>
+                <div className="flex items-center space-x-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsHelpModalOpen(true)}
+                    className="text-[11px] text-[#4CC9F0] hover:text-[#7EE0B5] flex items-center space-x-1 font-medium transition-colors cursor-pointer group"
+                    title="ดูวิธีรับ API Key จาก Google AI Studio"
+                  >
+                    <HelpCircle className="w-3.5 h-3.5 text-[#4CC9F0] group-hover:scale-110 transition-transform" />
+                    <span className="underline decoration-[#4CC9F0]/50 underline-offset-2">วิธีรับ API Key</span>
+                  </button>
+                  <span className="text-[10px] text-[#A7A4B8] bg-[#222640] px-2 py-0.5 rounded-md font-medium">
+                    Google AI Studio
+                  </span>
+                </div>
               </div>
 
               <p className="text-[11px] text-[#A7A4B8] leading-relaxed">
-                ใส่ Google Gemini API Key เพื่อเปิดใช้งานระบบวิเคราะห์ตลาดแบบเรียลไทม์ พร้อม Google Search Grounding สด (คีย์จะถูกเข้ารหัสและซิงค์เก็บไว้ในบัญชีของคุณเท่านั้น)
+                ใส่ Google Gemini API Key เพื่อเปิดใช้งานระบบวิเคราะห์ตลาดแบบเรียลไทม์ พร้อม Google Search Grounding สด (รองรับทั้งคีย์แบบดั้งเดิม AIzaSy... และคีย์รุ่นใหม่ AQ...)
               </p>
 
-              <div className="relative">
-                <input
-                  type={showKey ? 'text' : 'password'}
-                  value={keyInput}
-                  onChange={(e) => setKeyInput(e.target.value)}
-                  placeholder="AIzaSy..."
-                  className="w-full bg-[#0F1117] border border-white/[0.07] focus:border-[#7C6CFF] rounded-xl pl-3.5 pr-10 py-2.5 text-xs text-white outline-none font-mono placeholder-[#8B88A0]"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowKey(!showKey)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#A7A4B8] hover:text-white p-1 cursor-pointer"
-                >
-                  {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
+              <div className="space-y-1.5">
+                <div className="relative">
+                  <input
+                    type={showKey ? 'text' : 'password'}
+                    value={keyInput}
+                    onChange={(e) => setKeyInput(e.target.value)}
+                    placeholder="AIzaSy... หรือ AQ..."
+                    className="w-full bg-[#0F1117] border border-white/[0.07] focus:border-[#7C6CFF] rounded-xl pl-3.5 pr-20 py-2.5 text-xs text-white outline-none font-mono placeholder-[#8B88A0]"
+                  />
+                  <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center space-x-1">
+                    <button
+                      type="button"
+                      onClick={() => setIsHelpModalOpen(true)}
+                      className="text-[#4CC9F0] hover:text-white p-1 rounded transition-colors cursor-pointer"
+                      title="วิธีขอ API Key ฟรี"
+                      aria-label="คู่มือวิธีขอ API Key"
+                    >
+                      <HelpCircle className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowKey(!showKey)}
+                      className="text-[#A7A4B8] hover:text-white p-1 rounded transition-colors cursor-pointer"
+                      title={showKey ? 'ซ่อนรหัส' : 'แสดงรหัส'}
+                    >
+                      {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
               </div>
 
               {/* Quick link to Google AI Studio */}
@@ -543,6 +575,130 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Guide Modal: How to obtain a new API Key from Google AI Studio */}
+      {isHelpModalOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="วิธีขอ Google Gemini API Key"
+          className="fixed inset-0 z-60 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 overflow-y-auto"
+          onClick={() => setIsHelpModalOpen(false)}
+        >
+          <div
+            className="w-full max-w-lg bg-[#141725] border border-white/10 rounded-3xl p-5 sm:p-6 space-y-4 shadow-2xl relative my-auto animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-white/[0.07] pb-3">
+              <div className="flex items-center space-x-2.5">
+                <div className="w-8 h-8 rounded-xl bg-[#4CC9F0]/15 border border-[#4CC9F0]/30 flex items-center justify-center text-[#4CC9F0]">
+                  <BookOpen className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-white font-extrabold text-sm sm:text-base tracking-tight">
+                    วิธีรับ Google Gemini API Key ฟรี
+                  </h3>
+                  <p className="text-[11px] text-[#A7A4B8]">
+                    ขั้นตอนการขอคีย์จาก Google AI Studio ภายใน 1 นาที
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsHelpModalOpen(false)}
+                className="text-[#A7A4B8] hover:text-white p-1 rounded-lg transition-colors cursor-pointer"
+                aria-label="ปิดคู่มือ"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Visual Guide Infographic / Screenshot Image */}
+            <div className="rounded-2xl overflow-hidden border border-white/10 bg-[#0F1117] shadow-lg group">
+              <img
+                src={guideImg}
+                alt="คู่มือขั้นตอนการขอ Google Gemini API Key จาก Google AI Studio"
+                className="w-full h-auto object-cover transform group-hover:scale-[1.01] transition-transform duration-300"
+              />
+            </div>
+
+            {/* Step-by-Step Instructions */}
+            <div className="space-y-2.5 bg-[#0F1117] border border-white/[0.07] rounded-2xl p-4">
+              <div className="flex items-start space-x-3 text-xs">
+                <span className="w-5 h-5 rounded-full bg-[#4CC9F0]/20 text-[#4CC9F0] border border-[#4CC9F0]/40 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">
+                  1
+                </span>
+                <div>
+                  <p className="text-white font-semibold">เข้าสู่เว็บไซต์ Google AI Studio</p>
+                  <p className="text-[11px] text-[#A7A4B8] mt-0.5">
+                    ลงชื่อเข้าใช้ด้วยบัญชี Google ของคุณที่หน้าจัดการ API Keys
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start space-x-3 text-xs">
+                <span className="w-5 h-5 rounded-full bg-[#8E80FF]/20 text-[#8E80FF] border border-[#8E80FF]/40 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">
+                  2
+                </span>
+                <div>
+                  <p className="text-white font-semibold">กดปุ่ม &quot;Get API key&quot; หรือ &quot;Create API Key&quot;</p>
+                  <p className="text-[11px] text-[#A7A4B8] mt-0.5">
+                    เลือกว่าจะผูกกับโปรเจกต์ Google Cloud เดิมหรือสร้างโปรเจกต์ใหม่ได้ฟรี
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start space-x-3 text-xs">
+                <span className="w-5 h-5 rounded-full bg-[#7EE0B5]/20 text-[#7EE0B5] border border-[#7EE0B5]/40 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">
+                  3
+                </span>
+                <div>
+                  <p className="text-white font-semibold">คัดลอกรหัส (Copy API Key)</p>
+                  <p className="text-[11px] text-[#A7A4B8] mt-0.5">
+                    คีย์อาจขึ้นต้นด้วย <span className="font-mono text-[#7EE0B5]">AIzaSy...</span> หรือ <span className="font-mono text-[#4CC9F0]">AQ...</span> จากนั้นนำมาวางในช่องและกดบันทึก
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Direct Link & Action Buttons */}
+            <div className="flex flex-col sm:flex-row items-center gap-2 pt-1">
+              <a
+                href="https://aistudio.google.com/app/apikey"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full sm:flex-1 bg-[linear-gradient(135deg,#8E80FF,#4CC9F0)] hover:brightness-105 text-[#0F1117] font-bold text-xs py-2.5 rounded-xl transition-all flex items-center justify-center space-x-1.5 shadow-[0_6px_18px_rgba(124,108,255,0.28)] cursor-pointer"
+              >
+                <span>เปิดหน้า Google AI Studio</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText('https://aistudio.google.com/app/apikey');
+                  setCopiedLink(true);
+                  setTimeout(() => setCopiedLink(false), 2000);
+                }}
+                className="w-full sm:w-auto px-4 bg-[#141417] hover:bg-[#222640] border border-white/[0.07] text-[#ECEAF4] font-semibold text-xs py-2.5 rounded-xl transition-colors flex items-center justify-center space-x-1.5 cursor-pointer"
+              >
+                {copiedLink ? (
+                  <>
+                    <Check className="w-3.5 h-3.5 text-[#7EE0B5]" />
+                    <span className="text-[#7EE0B5]">คัดลอกลิงก์แล้ว</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3.5 h-3.5 text-[#A7A4B8]" />
+                    <span>คัดลอกลิงก์</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

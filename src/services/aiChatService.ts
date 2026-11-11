@@ -90,7 +90,7 @@ export async function generateAiChatReply(
         return geminiReply;
       }
     } catch (err) {
-      console.warn('Gemini chat request fallback:', err);
+      console.warn('Gemini chat request fallback to quant engine:', err);
     }
   }
 
