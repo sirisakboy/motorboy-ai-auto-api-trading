@@ -252,12 +252,12 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
 
           {isApiKeySectionOpen && (
             <div className="p-4 pt-2 border-t border-[#1F2433] space-y-3 bg-[#0F1117]">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-bold text-white flex items-center space-x-1.5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-2">
+                <label className="text-xs font-bold text-white flex items-center space-x-1.5 shrink-0">
                   <Key className="w-4 h-4 text-[#A89FFF]" />
-                  <span>Google Gemini API Key (ซิงค์กับบัญชี Google)</span>
+                  <span>Google Gemini API Key</span>
                 </label>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2 shrink-0">
                   <button
                     type="button"
                     onClick={() => setIsHelpModalOpen(true)}
