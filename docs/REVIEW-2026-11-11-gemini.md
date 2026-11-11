@@ -85,3 +85,43 @@ python -m unittest discover        ✓ 21 tests · 02_whale --selftest 94/94
 
 งาน Fusion Core (`src/fusion`, `motorboy_production`) ไม่ชนกับ commit ที่ pull มาเลย —
 เทสต์ยังเขียวครบ และไม่มีการแก้ไฟล์ของทีม Gemini ในรอบนี้ (ยกเว้น lockfile ที่พังจริง)
+
+---
+
+# รอบที่ 2 — pull `ad8c6e6` (Google Search grounding fallback)
+
+## 6.1 สิ่งที่เข้ามา
+
+| ไฟล์ | เนื้อหา |
+| --- | --- |
+| `server.ts` (+135/−62) | `generateWithGroundingFallback()` — ลอง `tools:[{googleSearch}]` ก่อน ถ้าเจอ 429/RESOURCE_EXHAUSTED/quota → ยิงใหม่แบบไม่มี search · `/api/gemini/test-key` มี fallback สองชั้น + ข้อความ error แยกตามสาเหตุ (429 / key ผิด / 403) |
+| `src/components/SettingsDialog.tsx` | ย่อ label เป็น "Google Gemini API Key" + เปลี่ยนแถวเป็น `flex-col sm:flex-row` (แก้การเบียดบนจอเล็ก) |
+| `public/assets/aistudio/Screenshot_2026-11-11-…png` | รูป 250,160 ไบต์ |
+
+ของดี: fallback นี้แก้ปัญหา 429 ของคีย์ฟรีได้ตรงจุด และข้อความบอกสาเหตุ (โควตา / คีย์ผิด / สิทธิ์)
+เป็นการยกระดับ UX จริง · การย้าย label เป็น flex-col แก้ปัญหา layout บนมือถือได้ถูกต้อง
+
+## 6.2 สิ่งที่พบในรอบนี้
+
+| # | ระดับ | ที่ | ปัญหา |
+| --- | --- | --- | --- |
+| 1 | กลาง | `server.ts:201` | `rawMsg.includes('400')` → ข้อความอะไรก็ได้ที่มีเลข 400 (เช่น "1400 tokens") จะถูกสรุปเป็น "API Key ไม่ถูกต้อง" |
+| 2 | กลาง | `server.ts:201, 713, 933` | ตรรกะ "400 == คีย์ผิด" ถูกคัดลอกไว้ **3 ที่** — แก้ที่ไม่เดียวจะไม่ตรงกัน (ควรมี `isGeminiKeyError(err)` ตัวเดียว) |
+| 3 | กลาง | `server.ts` (test-key) | fallback ชั้นใน retry **ทุก error** ไม่ใช่เฉพาะ 429 → คีย์ผิดจะยิง Google 2 ครั้ง (ช้า + กินโควตา) ควรเช็ค key-invalid ก่อนแล้วค่อย fallback |
+| 4 | ต่ำ | `server.ts` (test-key) | ยังส่งข้อความภายในออกไป: ทดสอบจริงแล้วได้ `"เชื่อมต่อไม่สำเร็จ: fetch failed"` (HTTP 500) — ควรใช้ข้อความคงที่ + log |
+| 5 | ต่ำ | `generateWithGroundingFallback` | retry ทันทีโดยไม่มี backoff และไม่บอกผู้เรียกว่าคำตอบ "ไม่มี search" (มีแค่ test-key ที่รู้) |
+| 6 | ต่ำ | `public/assets/aistudio/*.png` | 250 KB **ไม่มีโค้ดอ้างถึงเลย** (grep ไม่พบ) — ไฟล์ตายในรีโป ควรลบหรือเอาไปใช้แทนรูปในม็อดัลคู่มือ |
+| 7 | ต่ำ | `server.ts` (ข้อความสำเร็จ) | ฝังชื่อรุ่นในข้อความผู้ใช้ "เชื่อมต่อ Gemini 3.8 Flash สำเร็จ" — พอเปลี่ยนโมเดล ข้อความจะโกหก และยังไม่มี `process.env.GEMINI_MODEL` ให้ override |
+
+## 6.3 สถานะหลัง merge รอบ 2
+
+```
+npx tsc --noEmit / -p tsconfig.server.json   ✓
+npx vitest run                               ✓ 288 tests / 21 files
+npm run build                                ✓
+GET /                                        ✓ 200
+POST /api/gemini/mascot-action (คีย์ปลอม)     ✓ 502 {"error":"mascot_action_failed"}
+POST /api/gemini/test-key (คีย์ปลอม)          ⚠ 500 {"success":false,"text":"เชื่อมต่อไม่สำเร็จ: fetch failed"}
+```
+
+แถวสุดท้ายคือข้อ 4 — ข้อความภายในยังหลุด (ต่างจาก mascot endpoints ที่ปิดแล้วในรอบก่อน)
