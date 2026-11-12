@@ -48,14 +48,18 @@ export async function testGeminiApiKeyWithSearch(
       };
     }
 
+    console.error('Gemini API test failed. Response data:', data);
+
     return {
       success: false,
       text:
         data?.text ||
         data?.message ||
+        data?.error || // Add this to capture the error code if present
         'เชื่อมต่อไม่สำเร็จ — กรุณาตรวจสอบ API Key แล้วลองใหม่',
     };
-  } catch {
+  } catch (err) {
+    console.error('Gemini API test exception:', err);
     // ห้าม mirrors ข้อความภายใน (เช่น "fetch failed") ออกหน้าจอ
     return {
       success: false,

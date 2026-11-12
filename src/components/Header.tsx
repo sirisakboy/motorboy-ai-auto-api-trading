@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Bell, Settings, LogOut, User as UserIcon, Mail, Calendar as CalendarIcon, MessageSquare, Calculator, LayoutGrid, X, Radio, TrendingDown, Volume2, VolumeX } from 'lucide-react';
+import { Bell, Settings, LogOut, User as UserIcon, Mail, Calendar as CalendarIcon, MessageSquare, Calculator, LayoutGrid, X, Radio, TrendingDown } from 'lucide-react';
 import { CryptoCoin } from '../types';
 import { TickerBar } from './TickerBar';
 
@@ -12,8 +12,6 @@ interface HeaderProps {
   notifEnabled: boolean;
   alertCount: number;
   user?: { displayName?: string | null; photoURL?: string | null; email?: string | null } | null;
-  isMusicPlaying?: boolean;
-  onToggleMusic?: () => void;
   onToggleCurrency: () => void;
   onToggleNotifications: () => void;
   onOpenSettings: () => void;
@@ -37,8 +35,6 @@ export const Header: React.FC<HeaderProps> = ({
   notifEnabled,
   alertCount,
   user,
-  isMusicPlaying = true,
-  onToggleMusic,
   onToggleCurrency,
   onToggleNotifications,
   onOpenSettings,
@@ -180,36 +176,6 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Action buttons */}
         <div className="flex items-center gap-1 sm:gap-2 shrink-0 ml-1">
-          {/* Calming Nature Healing Audio Toggle Button */}
-          {onToggleMusic && (
-            <button
-              type="button"
-              onClick={onToggleMusic}
-              title={isMusicPlaying ? 'ปิดเสียงธรรมชาติบำบัด (Nature Healing Audio)' : 'เปิดเสียงธรรมชาติบำบัด'}
-              className={`px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl border text-[10px] sm:text-xs font-semibold transition-all inline-flex items-center gap-1.5 ${
-                isMusicPlaying
-                  ? isDark
-                    ? 'bg-[#7EE0B5]/15 border-[#7EE0B5]/40 text-[#7EE0B5] hover:bg-[#7EE0B5]/25'
-                    : 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100'
-                  : isDark
-                  ? 'bg-[#141725] border-white/[0.07] text-[#A7A4B8] hover:text-[#ECEAF4]'
-                  : 'bg-white border-white/[0.07] text-[#8B88A0] hover:text-[#A7A4B8]'
-              }`}
-            >
-              {isMusicPlaying ? (
-                <>
-                  <Volume2 className="w-3.5 h-3.5 text-[#7EE0B5] animate-pulse" />
-                  <span className="hidden md:inline">ธรรมชาติบำบัด 🍃</span>
-                </>
-              ) : (
-                <>
-                  <VolumeX className="w-3.5 h-3.5 text-[#A7A4B8]" />
-                  <span className="hidden md:inline">ธรรมชาติบำบัด</span>
-                </>
-              )}
-            </button>
-          )}
-
           {/* Currency Switch */}
           <button
             type="button"

@@ -15,7 +15,7 @@
 import { checkGeminiKey } from '../services/geminiKey';
 
 /** Model used when nothing else is configured. */
-export const DEFAULT_GEMINI_MODEL = 'gemini-3.8-flash';
+export const DEFAULT_GEMINI_MODEL = 'gemini-3.1-flash-lite';
 
 /**
  * Tried in order when the primary model is unavailable (404 / NOT_FOUND).
@@ -110,6 +110,9 @@ export function classifyGeminiError(error: unknown): GeminiErrorInfo {
   })();
 
   const status = numericStatus ?? statusFromText;
+
+  console.log(`[classifyGeminiError] Detail: "${detail}", Status: ${status}`);
+
 
   const make = (
     kind: GeminiErrorKind,

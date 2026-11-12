@@ -129,6 +129,7 @@ function sendKeyProblem(res: express.Response, userKey?: string) {
 function sendGeminiError(res: express.Response, error: unknown, context: string) {
   const info = classifyGeminiError(error);
   console.warn(`[gemini:${context}] ${info.kind} — ${info.detail || 'no detail'}`);
+  console.log(`[gemini:${context}] Sending JSON response:`, JSON.stringify(info));
   return res.status(info.httpStatus).json({
     error: info.code,
     message: info.messageTh,

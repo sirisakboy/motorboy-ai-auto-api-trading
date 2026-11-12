@@ -215,7 +215,6 @@ export const App: React.FC = () => {
   const [geminiApiKey, setGeminiApiKey] = useState<string>('');
   const [historyEntries, setHistoryEntries] = useState<TradingHistoryEntry[]>([]);
   const [globalSession, setGlobalSession] = useState<any>(null);
-  const [isMusicPlaying, setIsMusicPlaying] = useState<boolean>(true);
   /* eslint-disable-next-line */
   const [psychologySettings, setPsychologySettings] = useState<TradingPsychologySettings>({
     riskToleranceLevel: 'MODERATE',
@@ -223,15 +222,7 @@ export const App: React.FC = () => {
     dailyLimitRiskPct: 2,
   });
 
-  const handleToggleMusic = useCallback(() => {
-    if (isMusicPlaying) {
-      stopBgMusic();
-      setIsMusicPlaying(false);
-    } else {
-      initBgMusic();
-      setIsMusicPlaying(true);
-    }
-  }, [isMusicPlaying]);
+  // Music removed.
 
   useEffect(() => {
     const docRef = doc(db, 'sessions', 'global');
@@ -335,13 +326,6 @@ export const App: React.FC = () => {
       setTimeout(() => setAlertToast(null), 3500);
     }
   };
-
-  // Cleanup background audio when component unmounts
-  useEffect(() => {
-    return () => {
-      stopBgMusic();
-    };
-  }, []);
 
   // 0. User Settings & History Sync (Local Device & Google Account)
   useEffect(() => {
@@ -1080,8 +1064,6 @@ export const App: React.FC = () => {
         notifEnabled={notificationsEnabled}
         alertCount={priceAlerts.length}
         user={user}
-        isMusicPlaying={isMusicPlaying}
-        onToggleMusic={handleToggleMusic}
         onToggleCurrency={() => setUseThb(!useThb)}
         onToggleNotifications={() =>
           setNotificationsEnabled(!notificationsEnabled)
@@ -1934,183 +1916,7 @@ export const App: React.FC = () => {
   );
 };
 
-// Max volume locked at 50% (20% lower than previous 70% level)
-const MAX_LOCKED_VOLUME = 50;
 
-let bgPlayers: any[] = [];
-let bgRampTimer: any = null;
-let bgGestureCleanup: (() => void) | null = null;
-let webAudioCtx: AudioContext | null = null;
-let natureSynthNodes: { gainNode?: GainNode; oscNodes?: OscillatorNode[] } = {};
 
-function startWebAudioNatureSynth() {
-  if (webAudioCtx) return;
-  try {
-    const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-    if (!AudioCtx) return;
-    webAudioCtx = new AudioCtx();
-    const masterGain = webAudioCtx.createGain();
-    masterGain.gain.setValueAtTime(0.04, webAudioCtx.currentTime);
-
-    // Warm 432Hz sine oscillator chord (A4 = 432Hz, E5 = 648Hz, C#5 = 540Hz)
-    const freqs = [432, 540, 648];
-    const oscNodes: OscillatorNode[] = [];
-    freqs.forEach((freq) => {
-      const osc = webAudioCtx!.createOscillator();
-      const oscGain = webAudioCtx!.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(freq, webAudioCtx!.currentTime);
-      oscGain.gain.setValueAtTime(0.015, webAudioCtx!.currentTime);
-      osc.connect(oscGain);
-      oscGain.connect(masterGain);
-      osc.start();
-      oscNodes.push(osc);
-    });
-
-    masterGain.connect(webAudioCtx.destination);
-    natureSynthNodes = { gainNode: masterGain, oscNodes };
-  } catch (err) {
-    console.warn('Web Audio Nature Synth init warning:', err);
-  }
-}
-
-function stopWebAudioNatureSynth() {
-  if (webAudioCtx) {
-    try {
-      natureSynthNodes.oscNodes?.forEach((n) => n.stop());
-      webAudioCtx.close();
-    } catch {}
-    webAudioCtx = null;
-    natureSynthNodes = {};
-  }
-}
-
-/**
- * Start / restart calming nature healing background audio with soft ramp up.
- * Single lightweight player with playlist to minimize browser CPU usage.
- */
-function initBgMusic(): void {
-  const launch = () => {
-    startWebAudioNatureSynth();
-
-    if (bgPlayers.length > 0) return;
-    try {
-      const YT = (window as any).YT;
-      if (!YT || !YT.Player) return;
-
-      let host = document.getElementById('bg-music-host');
-      if (!host) {
-        host = document.createElement('div');
-        host.id = 'bg-music-host';
-        host.style.position = 'fixed';
-        host.style.left = '-9999px';
-        host.style.top = '-9999px';
-        host.style.width = '1px';
-        host.style.height = '1px';
-        host.style.overflow = 'hidden';
-        host.style.opacity = '0';
-        host.style.pointerEvents = 'none';
-        document.body.appendChild(host);
-      }
-
-      // Nature Healing Ambient Stream Video IDs
-      const musicIds = ['lE6RYpe9IT0', 'XA_EYOPNJqI', 'hK-OPtECSkw', 'xrvEs5q1vKQ'];
-      const targetId = 'bg-music-single-player';
-      let playerTarget = document.getElementById(targetId);
-      if (!playerTarget) {
-        playerTarget = document.createElement('div');
-        playerTarget.id = targetId;
-        host.appendChild(playerTarget);
-      }
-
-      const player = new YT.Player(targetId, {
-        videoId: musicIds[0],
-        playerVars: {
-          autoplay: 1,
-          loop: 1,
-          playlist: musicIds.join(','),
-          controls: 0,
-        },
-        events: {
-          onReady: (event: any) => {
-            try {
-              event.target.setVolume(MAX_LOCKED_VOLUME);
-              event.target.playVideo();
-            } catch {}
-
-            const onGesture = () => {
-              if (webAudioCtx && webAudioCtx.state === 'suspended') {
-                webAudioCtx.resume();
-              }
-              cleanupGesture();
-            };
-
-            const cleanupGesture = () => {
-              window.removeEventListener('click', onGesture);
-              window.removeEventListener('keydown', onGesture);
-              window.removeEventListener('touchstart', onGesture);
-              bgGestureCleanup = null;
-            };
-
-            bgGestureCleanup = cleanupGesture;
-            window.addEventListener('click', onGesture, { once: true });
-            window.addEventListener('keydown', onGesture, { once: true });
-            window.addEventListener('touchstart', onGesture, { once: true });
-          },
-          onStateChange: (event: any) => {
-            if (event.data === 0 || event.data === 2) {
-              try {
-                event.target.playVideo();
-                event.target.setVolume(MAX_LOCKED_VOLUME);
-              } catch {}
-            }
-          },
-        },
-      });
-      bgPlayers.push(player);
-    } catch {
-      // Silently ignore if API cannot initialize
-    }
-  };
-
-  if ((window as any).YT && (window as any).YT.Player) {
-    launch();
-  } else {
-    if (!document.querySelector('script[src*="youtube.com/iframe_api"]')) {
-      const tag = document.createElement('script');
-      tag.src = 'https://www.youtube.com/iframe_api';
-      tag.async = true;
-      document.head.appendChild(tag);
-    }
-    const prevReady = (window as any).onYouTubeIframeAPIReady;
-    (window as any).onYouTubeIframeAPIReady = () => {
-      if (typeof prevReady === 'function') {
-        try { prevReady(); } catch {}
-      }
-      launch();
-    };
-  }
-}
-
-function stopBgMusic(): void {
-  stopWebAudioNatureSynth();
-  if (bgGestureCleanup) {
-    bgGestureCleanup();
-    bgGestureCleanup = null;
-  }
-  if (bgRampTimer) {
-    clearInterval(bgRampTimer);
-    bgRampTimer = null;
-  }
-  bgPlayers.forEach((player) => {
-    try { player.stopVideo(); } catch {}
-    try { player.destroy(); } catch {}
-  });
-  bgPlayers = [];
-  const host = document.getElementById('bg-music-host');
-  if (host && host.parentNode) {
-    try { host.parentNode.removeChild(host); } catch {}
-  }
-}
 
 export default App;
