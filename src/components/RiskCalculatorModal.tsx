@@ -12,6 +12,7 @@ import { analyzeMarketWithGemini } from '../services/geminiService';
 import { t } from '../i18n';
 import { useModalA11y } from '../hooks/useModalA11y';
 import { useMascotStore } from '../services/mascotService';
+import { defaultRiskPercentForProfile, type RiskToleranceLevel } from '../services/riskProfile';
 
 interface Props {
   isOpen: boolean;
@@ -21,6 +22,8 @@ interface Props {
   signals?: TradingSignal[];
   cryptoList?: CryptoCoin[];
   geminiApiKey?: string;
+  /** ระดับความเสี่ยงจากหน้าตั้งค่า — ใช้เป็นค่าเริ่มต้นของช่อง risk% เท่านั้น */
+  riskTolerance?: RiskToleranceLevel;
   onSaveToHistory?: (
     entry: Omit<TradingHistoryEntry, 'id' | 'userId' | 'timestamp'>
   ) => Promise<void>;
@@ -62,7 +65,7 @@ const PRESETS: { name: string; desc: string; assets: Array<{ symbol: string; nam
 ];
 
 export const RiskCalculatorModal: React.FC<Props> = ({
-  isOpen, onClose, useThb = false, usdThbRate = 36.45, signals = [], cryptoList = [], geminiApiKey = '', onSaveToHistory,
+  isOpen, onClose, useThb = false, usdThbRate = 36.45, signals = [], cryptoList = [], geminiApiKey = '', riskTolerance, onSaveToHistory,
 }) => {
   // Accessibility: role/aria-modal/Escape/focus-trap/scroll-lock. Must run before
   // the `if (!isOpen) return null` guard further down.
@@ -74,7 +77,7 @@ export const RiskCalculatorModal: React.FC<Props> = ({
   // --- TAB 1: Position Sizing State ---
   const [direction, setDirection] = useState<'LONG' | 'SHORT'>('LONG');
   const [accountSize, setAccountSize] = useState('10000');
-  const [riskPercent, setRiskPercent] = useState('1');
+  const [riskPercent, setRiskPercent] = useState(() => defaultRiskPercentForProfile(riskTolerance));
   const [entryPrice, setEntryPrice] = useState('');
   const [slPrice, setSlPrice] = useState('');
   const [rr, setRr] = useState(2);

@@ -27,7 +27,13 @@ import {
 } from '../services/geminiService';
 import { t } from '../i18n';
 import { useModalA11y } from '../hooks/useModalA11y';
-import { formatNumber } from '../utils';
+import {
+  formatNumber,
+  formatCryptoPrice,
+  validateTradingSignal,
+  momentumLabel,
+  INCONSISTENT_SIGNAL_LABEL,
+} from '../utils';
 
 interface SignalDetailModalProps {
   signal: TradingSignal | null;
@@ -73,9 +79,8 @@ export const SignalDetailModal: React.FC<SignalDetailModalProps> = ({
 
   const isForex = signal.category === 'FOREX' || signal.symbol.includes('/');
   const isLong = signal.type === 'LONG';
-    const decimals = isForex && signal.price < 10 ? 4 : 2;
+  const decimals = isForex && signal.price < 10 ? 4 : 2;
   const multiplier = useThb && !isForex ? usdThbRate : 1;
-  const currency = useThb && !isForex ? '฿' : isForex ? '' : '$';
   const quoteSuffix = isForex ? ` ${signal.quote}` : '';
 
   const targetCoin: CryptoCoin = coin || {
@@ -87,10 +92,19 @@ export const SignalDetailModal: React.FC<SignalDetailModalProps> = ({
     change: signal.change,
   };
 
-  const formatPrice = (val?: number) =>
-    val === undefined || val === null
-      ? '-'
-      : `${currency}${formatNumber(val * multiplier, decimals)}${quoteSuffix}`;
+  // คริปโต/หุ้น: เลือกทศนิยมตามขนาดราคา (SHIB ต้องไม่ถูกปัดเป็น $0.00)
+  // ฟอเร็กซ์: คงรูปแบบเดิม (ทศนิยมคงที่ + quote suffix)
+  const formatPrice = (val?: number): string => {
+    if (val === undefined || val === null || !Number.isFinite(val)) return '-';
+    if (!isForex) {
+      return formatCryptoPrice({
+        price: val,
+        mode: useThb ? 'THB' : 'USD',
+        usdThbRate,
+      });
+    }
+    return `${formatNumber(val * multiplier, decimals)}${quoteSuffix}`;
+  };
 
   const handleFetchSentiment = async () => {
     if (!signal) return;
@@ -120,6 +134,24 @@ export const SignalDetailModal: React.FC<SignalDetailModalProps> = ({
 
   const slPercent = Math.abs((1.0 - signal.sl / signal.price) * 100).toFixed(1);
   const tpPercent = Math.abs((signal.tp / signal.price - 1.0) * 100).toFixed(1);
+
+  // SL/TP ต้องอยู่ถูกฝั่งของราคา ถ้าไม่ใช่ = ข้อมูลผิด ห้ามโชว์ตัวเลขเหมือนใช้ได้
+  const signalValidation = validateTradingSignal({
+    type: signal.type,
+    price: signal.price,
+    sl: signal.sl,
+    tp: signal.tp,
+  });
+
+  // โมเมนตัมต้องบอกกรอบเวลา และเตือนเมื่อสวนทางกับแนวโน้มหลักของสัญญาณ
+  const momentumText = momentumLabel({
+    changePct: signal.change,
+    timeframe: signal.timeframe,
+    direction: signal.type,
+  });
+  const momentumConflicts =
+    (signal.type === 'LONG' && signal.change < 0) ||
+    (signal.type === 'SHORT' && signal.change >= 0);
 
   const handleRunAiAnalysis = async () => {
     setIsAnalyzing(true);
@@ -611,16 +643,23 @@ export const SignalDetailModal: React.FC<SignalDetailModalProps> = ({
                 </div>
 
                 <div className="bg-[#0F1117] border border-white/[0.07] rounded-xl p-3">
-                  <span className="text-[#A7A4B8] text-[10px] block">EMA & Momentum</span>
+                  <span className="text-[#A7A4B8] text-[10px] block">
+                    EMA & Momentum ({signal.timeframe})
+                  </span>
                   <p
                     className={`text-xs font-bold mt-0.5 ${
-                      signal.change >= 0 ? 'text-[#7EE0B5]' : 'text-[#FFB86B]'
+                      momentumConflicts
+                        ? 'text-[#A89FFF]'
+                        : signal.change >= 0
+                        ? 'text-[#7EE0B5]'
+                        : 'text-[#FFB86B]'
                     }`}
+                    data-testid="momentum-label"
                   >
-                    {signal.change >= 0 ? 'โมเมนตัมบวก (Bullish)' : 'โมเมนตัมชะลอ (Bearish)'}
+                    {momentumText}
                   </p>
                   <p className="text-[#A7A4B8] text-[10px] mt-0.5 leading-snug">
-                    EMA20 / EMA50 Dynamic Bands
+                    EMA20 / EMA50 Dynamic Bands • เทียบกับแนวโน้มหลักของสัญญาณ
                   </p>
                 </div>
               </div>
@@ -679,31 +718,49 @@ export const SignalDetailModal: React.FC<SignalDetailModalProps> = ({
                 <span>การบริหารความเสี่ยง • SL/TP & แนวรับ-แนวต้าน</span>
               </h4>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                <div className="bg-[#FFB86B]/15 border border-[#FFB86B]/40 rounded-xl p-3">
-                  <span className="text-[#FFB86B] text-[11px] block font-medium">
-                    Stop Loss (SL)
-                  </span>
-                  <span className="text-white font-mono font-bold text-sm block mt-0.5">
-                    {displaySl}
-                  </span>
-                  <span className="text-[#A7A4B8] text-[10px] block mt-0.5">
-                    -{slPercent}% จากจุดเข้า (ใต้แนวรับ {displaySupport})
-                  </span>
-                </div>
+              {signalValidation.valid ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <div className="bg-[#FFB86B]/15 border border-[#FFB86B]/40 rounded-xl p-3">
+                    <span className="text-[#FFB86B] text-[11px] block font-medium">
+                      Stop Loss (SL)
+                    </span>
+                    <span className="text-white font-mono font-bold text-sm block mt-0.5">
+                      {displaySl}
+                    </span>
+                    <span className="text-[#A7A4B8] text-[10px] block mt-0.5">
+                      -{slPercent}% จากจุดเข้า (ใต้แนวรับ {displaySupport})
+                    </span>
+                  </div>
 
-                <div className="bg-[#7EE0B5]/15 border border-[#7EE0B5]/40 rounded-xl p-3">
-                  <span className="text-[#7EE0B5] text-[11px] block font-medium">
-                    Take Profit (TP)
-                  </span>
-                  <span className="text-white font-mono font-bold text-sm block mt-0.5">
-                    {displayTp}
-                  </span>
-                  <span className="text-[#A7A4B8] text-[10px] block mt-0.5">
-                    +{tpPercent}% เป้ากำไร (ใกล้แนวต้าน {displayResistance})
-                  </span>
+                  <div className="bg-[#7EE0B5]/15 border border-[#7EE0B5]/40 rounded-xl p-3">
+                    <span className="text-[#7EE0B5] text-[11px] block font-medium">
+                      Take Profit (TP)
+                    </span>
+                    <span className="text-white font-mono font-bold text-sm block mt-0.5">
+                      {displayTp}
+                    </span>
+                    <span className="text-[#A7A4B8] text-[10px] block mt-0.5">
+                      +{tpPercent}% เป้ากำไร (ใกล้แนวต้าน {displayResistance})
+                    </span>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div
+                  className="bg-[#FFB86B]/15 border border-[#FFB86B]/40 rounded-xl p-3 space-y-1"
+                  role="alert"
+                  data-testid="signal-inconsistent-warning"
+                >
+                  <p className="text-[#FFB86B] text-xs font-bold">
+                    {INCONSISTENT_SIGNAL_LABEL}
+                  </p>
+                  <p className="text-[#A7A4B8] text-[10px] leading-snug">
+                    {signalValidation.detail} — ระบบซ่อนตัวเลข SL/TP ไว้จนกว่าข้อมูลจะถูกแก้ไข
+                  </p>
+                  <p className="text-[#A7A4B8] text-[10px] leading-snug">
+                    ราคาปัจจุบัน {displayPrice} • {signal.type}
+                  </p>
+                </div>
+              )}
 
               <div className="space-y-1.5 text-xs text-[#A7A4B8] pt-1">
                 <p>• ควบคุมความเสี่ยงต่อไม้ ไม่เกิน 1-2% ของพอร์ตการลงทุนทั้งหมด</p>

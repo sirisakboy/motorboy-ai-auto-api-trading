@@ -1,5 +1,6 @@
 import React from 'react';
 import { CryptoCoin } from '../types';
+import { formatCryptoPrice } from '../utils';
 
 interface TickerBarProps {
   coins: CryptoCoin[];
@@ -8,16 +9,17 @@ interface TickerBarProps {
 }
 
 export const TickerBar: React.FC<TickerBarProps> = ({ coins, useThb, usdThbRate = 36.45 }) => {
-  const currencyPrefix = useThb ? '฿' : '$';
-  const multiplier = useThb ? usdThbRate : 1;
+  const priceMode = useThb ? 'THB' : 'USD';
 
   return (
     <div className="w-full bg-[#0F1117]/95 border-b border-white/[0.07] select-none">
       <div className="max-w-7xl mx-auto px-4 h-9 flex items-center overflow-x-auto [no-scrollbar::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] gap-4 sm:gap-6 text-xs">
         {coins.slice(0, 6).map((coin, index) => {
-          const displayPrice = (coin.price * multiplier).toLocaleString(undefined, {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
+          // ทศนิยมตามขนาดราคา — SHIB ต้องไม่กลายเป็น $0.00 ในแถบวิ่ง
+          const displayPrice = formatCryptoPrice({
+            price: coin.price,
+            mode: priceMode,
+            usdThbRate,
           });
           const isPositive = coin.change >= 0;
 
@@ -26,7 +28,7 @@ export const TickerBar: React.FC<TickerBarProps> = ({ coins, useThb, usdThbRate 
               <div className="flex items-center gap-2">
                 <span className="font-bold text-white tracking-tight">{coin.symbol}</span>
                 <span className="font-medium text-[#ECEAF4] tabular-nums">
-                  {currencyPrefix}{displayPrice}
+                  {displayPrice}
                 </span>
                 <span
                   className={`inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-semibold tabular-nums ${

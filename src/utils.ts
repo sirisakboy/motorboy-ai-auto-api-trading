@@ -139,6 +139,163 @@ export function formatPriceSimple(
 }
 
 /* ============================================================================
+ * Crypto price formatting — dynamic decimals
+ *
+ * ปัญหาเดิม: SHIB (0.0000245) ถูกปัดเป็น 2 ตำแหน่ง -> "$0.00" ซึ่งอ่านไม่ได้
+ * กติกา: < 0.01 -> 8 ตำแหน่ง · < 1 -> 4 ตำแหน่ง · >= 1 -> 2 ตำแหน่ง
+ * ========================================================================== */
+
+/**
+ * จำนวนทศนิยมตามขนาดราคา (ใช้กับราคาที่แปลงเป็นสกุลเงินที่แสดงแล้ว)
+ * @example getCryptoDecimals(0.0000245) // 8 · getCryptoDecimals(0.42) // 4 · getCryptoDecimals(92450) // 2
+ */
+export function getCryptoDecimals(price: number): number {
+  if (!Number.isFinite(price) || price <= 0) return 2;
+  if (price < 0.01) return 8;
+  if (price < 1) return 4;
+  return 2;
+}
+
+export interface FormatCryptoPriceOptions {
+  /** ราคาในสกุลเงินต้นทาง (USD) */
+  price: number;
+  mode?: CurrencyMode;
+  usdThbRate?: number;
+  /** แสดงเครื่องหมาย + นำหน้าเมื่อเป็นบวก */
+  withSign?: boolean;
+}
+
+/**
+ * จัดรูปราคาคริปโตแบบไดนามิก — เลือกทศนิยมตามขนาดจริงของราคาที่แสดง
+ * คืน '-' เมื่อค่าไม่ใช่ตัวเลข (กัน "NaN" ขึ้นหน้าจอ)
+ */
+export function formatCryptoPrice({
+  price,
+  mode = 'USD',
+  usdThbRate,
+  withSign = false,
+}: FormatCryptoPriceOptions): string {
+  if (!Number.isFinite(price)) return '-';
+  const value = price * getMultiplier(mode, usdThbRate);
+  const decimals = getCryptoDecimals(Math.abs(value));
+  const sign = withSign && value > 0 ? '+' : '';
+  const formatted = value.toLocaleString(undefined, {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  });
+  return `${sign}${getCurrencyPrefix(mode)}${formatted}`;
+}
+
+/* ============================================================================
+ * Trading-signal validation
+ *
+ * ตัวเลข SL/TP ที่สลับข้างกัน (SL อยู่เหนือราคาในไม้ LONG) คือสัญญาณที่ "ผิด"
+ * ไม่ใช่แค่ตัวเลขที่ดูไม่สวย — UI ต้องไม่โชว์ตัวเลขนั้นเหมือนเป็นแผนที่ใช้ได้
+ * ========================================================================== */
+
+/** ข้อความมาตรฐานเมื่อข้อมูลไม่สอดคล้อง (ใช้ร่วมกันทุกจุด) */
+export const INCONSISTENT_SIGNAL_LABEL = '⚠️ ข้อมูลไม่สอดคล้อง';
+
+export type SignalValidationCode =
+  | 'OK'
+  | 'MISSING_PRICE'
+  | 'MISSING_SL'
+  | 'MISSING_TP'
+  | 'INVALID_RANGE';
+
+export interface SignalValidation {
+  valid: boolean;
+  code: SignalValidationCode;
+  /** ข้อความเต็ม (มีป้าย ⚠️ นำหน้าเมื่อไม่ผ่าน) */
+  message: string;
+  /** คำอธิบายสาเหตุแบบไม่มีป้าย — ใช้เป็นบรรทัดรองใน UI */
+  detail: string;
+}
+
+export interface TradingSignalLike {
+  type: 'LONG' | 'SHORT';
+  price: number;
+  sl: number;
+  tp: number;
+}
+
+/**
+ * ตรวจความสอดคล้องของ SL/TP กับราคาปัจจุบัน
+ * LONG: SL < price < TP · SHORT: TP < price < SL
+ * (ค่าเท่ากันถือว่าไม่ผ่าน เพราะไม่มีความหมายเชิงความเสี่ยง)
+ */
+export function validateTradingSignal(
+  signal: TradingSignalLike | null | undefined
+): SignalValidation {
+  const invalid = (code: SignalValidationCode, detail: string): SignalValidation => ({
+    valid: false,
+    code,
+    message: `${INCONSISTENT_SIGNAL_LABEL} — ${detail}`,
+    detail,
+  });
+
+  if (!signal) return invalid('MISSING_PRICE', 'ไม่พบข้อมูลสัญญาณ');
+
+  const { type, price, sl, tp } = signal;
+  if (!Number.isFinite(price) || price <= 0) {
+    return invalid('MISSING_PRICE', 'ไม่มีราคาปัจจุบันที่ใช้ได้');
+  }
+  if (!Number.isFinite(sl) || sl <= 0) {
+    return invalid('MISSING_SL', 'ไม่มีราคา Stop Loss ที่ใช้ได้');
+  }
+  if (!Number.isFinite(tp) || tp <= 0) {
+    return invalid('MISSING_TP', 'ไม่มีราคา Take Profit ที่ใช้ได้');
+  }
+
+  if (type === 'LONG') {
+    if (sl >= price) return invalid('INVALID_RANGE', 'SL ของ LONG ต้องต่ำกว่าราคาปัจจุบัน');
+    if (tp <= price) return invalid('INVALID_RANGE', 'TP ของ LONG ต้องสูงกว่าราคาปัจจุบัน');
+  } else {
+    if (sl <= price) return invalid('INVALID_RANGE', 'SL ของ SHORT ต้องสูงกว่าราคาปัจจุบัน');
+    if (tp >= price) return invalid('INVALID_RANGE', 'TP ของ SHORT ต้องต่ำกว่าราคาปัจจุบัน');
+  }
+
+  return {
+    valid: true,
+    code: 'OK',
+    message: 'ข้อมูล SL/TP สอดคล้องกับราคาปัจจุบัน',
+    detail: 'SL/TP อยู่ถูกฝั่งของราคาปัจจุบัน',
+  };
+}
+
+/* ============================================================================
+ * Momentum label
+ *
+ * การ์ดโมเมนตัมเคยเขียนแค่ "บวก/ชะลอ" โดยไม่บอกกรอบเวลา และไม่บอกว่ามัน
+ * ขัดกับทิศทางของสัญญาณ — ทั้งที่ Alert ส่วนหัวใช้ทิศทางของสัญญาณ
+ * ========================================================================== */
+
+/**
+ * ข้อความโมเมนตัมพร้อมกรอบเวลา และหมายเหตุเมื่อสวนทางกับแนวโน้มหลัก
+ * @example momentumLabel({ changePct: 2.4, timeframe: '1H', direction: 'SHORT' })
+ *   // "โมเมนตัมบวก (1H) แต่แนวโน้มหลักยังเป็นขาลง"
+ */
+export function momentumLabel({
+  changePct,
+  timeframe,
+  direction,
+}: {
+  changePct: number | null | undefined;
+  timeframe?: string | null;
+  direction?: 'LONG' | 'SHORT';
+}): string {
+  if (changePct === null || changePct === undefined || !Number.isFinite(changePct)) {
+    return 'โมเมนตัมยังไม่ชัดเจน';
+  }
+  const base = changePct >= 0 ? 'โมเมนตัมบวก' : 'โมเมนตัมชะลอ';
+  const tf = typeof timeframe === 'string' && timeframe.trim() ? ` (${timeframe.trim()})` : '';
+
+  if (direction === 'LONG' && changePct < 0) return `${base}${tf} แต่แนวโน้มหลักยังเป็นขาขึ้น`;
+  if (direction === 'SHORT' && changePct >= 0) return `${base}${tf} แต่แนวโน้มหลักยังเป็นขาลง`;
+  return `${base}${tf}`;
+}
+
+/* ============================================================================
  * Generic value/time formatters
  *
  * These used to be copy-pasted as local helpers inside ~8 components

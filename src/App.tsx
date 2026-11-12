@@ -52,7 +52,7 @@ import { ForeignStockCard } from './components/ForeignStockCard';
 import { PriceChartCanvas } from './components/PriceChartCanvas';
 import { MarketHoursCard } from './components/MarketHoursCard';
 import { NewsCard } from './components/NewsCard';
-import { ApiStatusCard } from './components/ApiStatusCard';
+import { SystemHealthPanel } from './components/SystemHealthPanel';
 import { SignalDetailModal } from './components/SignalDetailModal';
 import { ForexDetailModal } from './components/ForexDetailModal';
 import { StockDetailModal } from './components/StockDetailModal';
@@ -938,9 +938,11 @@ export const App: React.FC = () => {
   };
 
   const handleSaveApiKey = async (newKey: string) => {
-    setGeminiApiKey(newKey);
+    // ตัดช่องว่างหัว-ท้ายเสมอ: คีย์ที่Copyมามักติดขึ้นบรรทัดใหม่ แล้วจะถูก Google ปฏิเสธ
+    const normalized = newKey.trim();
+    setGeminiApiKey(normalized);
     const targetUid = user?.uid || 'local';
-    await saveUserSettings(targetUid, { geminiApiKey: newKey });
+    await saveUserSettings(targetUid, { geminiApiKey: normalized });
   };
 
   const handleToggleCurrency = (val: boolean) => {
@@ -1508,13 +1510,14 @@ export const App: React.FC = () => {
                 </div>
               </div>
 
-              {/* Right Sidebar Column: Market Hours & API Status (col-span-4) */}
+              {/* Right Sidebar Column: Market Hours & System Health (col-span-4) */}
               <div className="lg:col-span-4 space-y-6">
                 {/* The mascot is not a dashboard card any more: it floats over the
                     page and speaks only when the detectors actually catch
                     something (see MascotOverlay + the auto-detect effects above). */}
                 <MarketHoursCard marketHours={marketHours} />
-                <ApiStatusCard status={apiStatus} onRefresh={handleRefreshAllApis} />
+                {/* รายละเอียด API/Error Handling ถูกย่อไว้ในแท็บพับได้ ลดความรกของ sidebar */}
+                <SystemHealthPanel status={apiStatus} onRefresh={handleRefreshAllApis} />
               </div>
             </div>
           </main>
@@ -1628,6 +1631,7 @@ export const App: React.FC = () => {
 
           {/* Risk Calculator Modal */}
           <RiskCalculatorModal
+            riskTolerance={psychologySettings.riskToleranceLevel}
             isOpen={showRiskCalc}
             onClose={() => setShowRiskCalc(false)}
             useThb={useThb}

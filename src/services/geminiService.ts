@@ -36,24 +36,30 @@ export async function testGeminiApiKeyWithSearch(
       body: JSON.stringify({ apiKey: apiKey.trim(), userEmail }),
     });
 
-    const data = await res.json();
-    if (res.ok && data.success) {
+    const data = await res.json().catch(() => null);
+
+    if (res.ok && data?.success) {
       return {
         success: true,
         text: data.text || 'เชื่อมต่อ Gemini API สำเร็จ!',
-        searchGrounded: true,
+        // เซิร์ฟเวอร์เป็นผู้บอกว่าคำขอล่าสุดยังค้นเว็บได้จริงหรือไม่
+        // (เดิม client ฮาร์ดโค้ดเป็น true เสมอ แม้จะตกไปโหมดไม่ค้นหา)
+        searchGrounded: Boolean(data?.searchGrounded),
       };
     }
 
     return {
       success: false,
-      text: data.text || 'เชื่อมต่อไม่สำเร็จ — กรุณาตรวจสอบ API Key',
+      text:
+        data?.text ||
+        data?.message ||
+        'เชื่อมต่อไม่สำเร็จ — กรุณาตรวจสอบ API Key แล้วลองใหม่',
     };
-  } catch (error: unknown) {
-    const err = error as { message?: string };
+  } catch {
+    // ห้าม mirrors ข้อความภายใน (เช่น "fetch failed") ออกหน้าจอ
     return {
       success: false,
-      text: `เชื่อมต่อไม่สำเร็จ: ${err?.message || 'Network error'}`,
+      text: 'ทดสอบไม่สำเร็จ — เชื่อมต่อเซิร์ฟเวอร์ของแอปไม่ได้ ลองใหม่อีกครั้ง',
     };
   }
 }
