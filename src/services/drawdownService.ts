@@ -7,6 +7,7 @@ import {
   DrawdownThresholds,
   PortfolioDrawdownSummary,
   DrawdownRiskStatus,
+  DrawdownReferenceSource,
 } from '../types';
 
 export const DEFAULT_THRESHOLDS: DrawdownThresholds = {
@@ -131,6 +132,8 @@ interface BuildRowParams {
   customPeak?: number;
   /** 52-week high จากผู้ให้บริการข้อมูล (มีเฉพาะหุ้นต่างประเทศ) */
   apiPeak?: number;
+  /** high-water mark ที่ AI เก็บจากราคาสด (มีทุกสินทรัพย์ที่มีราคา) */
+  autoPeak?: number;
   troughPrice?: number;
   thresholds: DrawdownThresholds;
   /** ตัวคูณประมาณจำนวนวันใน drawdown (ใช้เฉพาะเมื่อมีจุดอ้างอิงจริง) */
@@ -147,13 +150,25 @@ interface BuildRowParams {
  */
 function buildDrawdownRow(params: BuildRowParams): DrawdownAsset {
   const {
-    id, symbol, name, category, currentPrice, customPeak, apiPeak, troughPrice, thresholds, daysFactor,
+    id, symbol, name, category, currentPrice, customPeak, apiPeak, autoPeak, troughPrice, thresholds, daysFactor,
   } = params;
 
   const custom = sanitizePeak(customPeak, currentPrice);
   const fromApi = sanitizePeak(apiPeak, currentPrice);
-  const peakPrice = custom ?? fromApi ?? null;
-  const referenceSource = custom !== null ? 'CUSTOM' : fromApi !== null ? 'API_52W' : 'NONE';
+  const fromAi = sanitizePeak(autoPeak, currentPrice);
+
+  // ลำดับ: ผู้ใช้ตั้งเอง > AI (high-water mark จากราคาสด) > 52W จากผู้ให้บริการ
+  // ถ้าผู้ใช้ไม่ตั้ง AI จะเติมให้อัตโนมัติ ⇒ ไม่ต้อง onboard เองทีละตัว
+  let peakPrice: number | null = null;
+  let referenceSource: DrawdownReferenceSource = 'NONE';
+  if (custom !== null) {
+    peakPrice = custom;
+    referenceSource = 'CUSTOM';
+  } else if (fromAi !== null || fromApi !== null) {
+    const aiWins = fromAi !== null && (fromApi === null || fromAi >= fromApi);
+    peakPrice = aiWins ? fromAi : fromApi;
+    referenceSource = aiWins ? 'AI_AUTO' : 'API_52W';
+  }
 
   const currentDrawdownPct =
     peakPrice !== null ? Number((((currentPrice - peakPrice) / peakPrice) * 100).toFixed(2)) : 0;
@@ -205,6 +220,8 @@ export function buildDrawdownAssets(params: {
   forexRates?: ForexPair[];
   thresholds: DrawdownThresholds;
   customPeaks?: Record<string, number>;
+  /** high-water marks ที่ AI เก็บไว้ (ดู peakTracker) */
+  autoPeaks?: Record<string, number>;
 }): DrawdownAsset[] {
   const {
     cryptoList = [],
@@ -213,13 +230,14 @@ export function buildDrawdownAssets(params: {
     forexRates = [],
     thresholds,
     customPeaks = {},
+    autoPeaks = {},
   } = params;
 
   const result: DrawdownAsset[] = [];
   const hasPrice = (price: unknown): price is number =>
     typeof price === 'number' && Number.isFinite(price) && price > 0;
 
-  // 1) คริปโต — จุดอ้างอิงมาจากที่ผู้ใช้บันทึกเท่านั้น (ข้อมูล 52w ไม่มีในฟีดนี้)
+  // 1) คริปโต — ไม่มี 52w ในฟีดนี้ จุดอ้างอิงจึงมาจากที่ผู้ใช้ตั้งหรือ AI เก็บให้
   cryptoList.filter((c) => hasPrice(c.price)).forEach((c) => {
     const symbol = c.symbol.toUpperCase();
     result.push(
@@ -230,6 +248,7 @@ export function buildDrawdownAssets(params: {
         category: 'CRYPTO',
         currentPrice: c.price,
         customPeak: customPeaks[symbol],
+        autoPeak: autoPeaks[symbol],
         troughPrice: c.low,
         thresholds,
         daysFactor: 2.8,
@@ -248,6 +267,7 @@ export function buildDrawdownAssets(params: {
         category: 'FOREIGN_STOCK',
         currentPrice: s.price,
         customPeak: customPeaks[symbol],
+        autoPeak: autoPeaks[symbol],
         apiPeak: s.high52w,
         troughPrice: s.low52w,
         thresholds,
@@ -267,6 +287,7 @@ export function buildDrawdownAssets(params: {
         category: 'THAI_STOCK',
         currentPrice: s.price,
         customPeak: customPeaks[symbol],
+        autoPeak: autoPeaks[symbol],
         thresholds,
         daysFactor: 2.5,
       })
@@ -283,6 +304,7 @@ export function buildDrawdownAssets(params: {
         category: 'FOREX',
         currentPrice: f.price,
         customPeak: customPeaks[f.pair],
+        autoPeak: autoPeaks[f.pair],
         thresholds,
         daysFactor: 4.5,
       })

@@ -65,6 +65,14 @@ import { ChatModal } from './components/ChatModal';
 import { RiskCalculatorModal } from './components/RiskCalculatorModal';
 import { DrawdownAlertBanner } from './components/DrawdownAlertBanner';
 import { DrawdownMonitorModal } from './components/DrawdownMonitorModal';
+import {
+  autoPeakValues,
+  loadAutoPeaks,
+  observationsFromFeeds,
+  saveAutoPeaks,
+  trackPeaks,
+  type AutoPeakBook,
+} from './services/peakTracker';
 import { MascotOverlay } from './components/MascotOverlay';
 import { useMascotStore } from './services/mascotService';
 import { publishMascotFeed } from './mascot/feed';
@@ -214,6 +222,8 @@ export const App: React.FC = () => {
   const [drawdownDismissed, setDrawdownDismissed] = useState<boolean>(false);
   const [drawdownThresholds, setDrawdownThresholds] = useState<DrawdownThresholds>(loadThresholds);
   const [customPeaks, setCustomPeaks] = useState<Record<string, number>>(loadCustomPeaks);
+  // จุดพีคที่ AI เก็บให้อัตโนมัติ (high-water mark จากราคาสด)
+  const [autoPeaks, setAutoPeaks] = useState<AutoPeakBook>(loadAutoPeaks);
   const [geminiApiKey, setGeminiApiKey] = useState<string>('');
   const [historyEntries, setHistoryEntries] = useState<TradingHistoryEntry[]>([]);
   const [globalSession, setGlobalSession] = useState<any>(null);
@@ -246,6 +256,22 @@ export const App: React.FC = () => {
     return () => unsubscribe();
   }, []);
 
+  // AI ตั้งจุดพีคอัตโนมัติแบบเรียลไทม์ — ทุกครั้งที่ฟีดราคาใหม่เข้ามา
+  // (คริปโต/หุ้นไทย/หุ้นต่างประเทศ/ฟอเร็กซ์ อัปเดตทุก 15 วินาที) ระบบจะเก็บ
+  // high-water mark ไว้ใน localStorage ⇒ drawdown ทำงานได้ทันทีโดยไม่ต้อง onboard
+  useEffect(() => {
+    setAutoPeaks((prev) => {
+      const next = trackPeaks(
+        prev,
+        observationsFromFeeds({ cryptoList, thaiStocks, foreignStocks, forexRates })
+      );
+      if (next !== prev) saveAutoPeaks(next);
+      return next;
+    });
+  }, [cryptoList, thaiStocks, foreignStocks, forexRates]);
+
+  const aiPeakValues = useMemo(() => autoPeakValues(autoPeaks), [autoPeaks]);
+
   // Computed Drawdown Assets & Portfolio Risk Summary
   const drawdownAssets = useMemo(
     () =>
@@ -256,8 +282,9 @@ export const App: React.FC = () => {
         forexRates,
         thresholds: drawdownThresholds,
         customPeaks,
+        autoPeaks: aiPeakValues,
       }),
-    [cryptoList, thaiStocks, foreignStocks, forexRates, drawdownThresholds, customPeaks]
+    [cryptoList, thaiStocks, foreignStocks, forexRates, drawdownThresholds, customPeaks, aiPeakValues]
   );
 
   const portfolioDrawdownSummary = useMemo(
@@ -1373,6 +1400,15 @@ export const App: React.FC = () => {
 
                 {/* Asset Tabs & Filter — Floating Action Sidebar Style Bar */}
                 <div className="space-y-4">
+                  {selectedTab >= 2 && (
+                    /* ตัวเลขคงที่ (หุ้น/ดัชนี) ต้องมีป้ายบอกเวลาอ้างอิงเสมอ */
+                    <p className="text-[10px] text-[#8E8BA3] flex items-center gap-1.5 flex-wrap">
+                      <span className="text-[9px] font-bold px-1.5 py-0.2 rounded border bg-[#FFB86B]/15 border-[#FFB86B]/40 text-[#FFB86B]">
+                        ○ STALE
+                      </span>
+                      = ราคาอ้างอิง ณ เวลาที่ระบุบนการ์ด ไม่ใช่ราคาสด — ระบบไม่แต่งตัวเลขขึ้นเอง
+                    </p>
+                  )}
                   {/* Asset List Content */}
                   {selectedTab === 0 && (
                     <div className="space-y-3">
@@ -1556,6 +1592,8 @@ export const App: React.FC = () => {
               dividendYield={selectedThaiStock.dividendYield}
               marketCap={selectedThaiStock.marketCap}
               isThaiStock={true}
+              isLive={selectedThaiStock.isLive}
+              updatedAt={selectedThaiStock.updatedAt}
               useThb={useThb}
                             usdThbRate={usdThbRate}
               geminiApiKey={geminiApiKey}
@@ -1576,6 +1614,8 @@ export const App: React.FC = () => {
               pe={selectedForeignStock.pe}
               marketCap={selectedForeignStock.marketCap}
               isThaiStock={false}
+              isLive={selectedForeignStock.isLive}
+              updatedAt={selectedForeignStock.updatedAt}
               useThb={useThb}
                             usdThbRate={usdThbRate}
               geminiApiKey={geminiApiKey}

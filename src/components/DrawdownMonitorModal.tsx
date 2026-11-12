@@ -115,6 +115,9 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
     });
   }, [processedAssets, selectedCategory, searchQuery]);
 
+  // AI เติมจุดพีคให้เองทุกสินทรัพย์ที่มีราคา — โชว์จำนวนให้เห็นว่าไม่ต้อง onboard
+  const aiTrackedCount = processedAssets.filter((a) => a.referenceSource === 'AI_AUTO').length;
+
   const dialogRef = useModalA11y({ onClose, enabled: isOpen });
   if (!isOpen) return null;
 
@@ -241,6 +244,15 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
                 <span className="text-[10px] font-bold font-mono px-1.5 py-0.5 rounded bg-[#7C6CFF]/20 text-[#7C6CFF] border border-[#7C6CFF]/40">
                   DRAWDOWN STOP 5%
                 </span>
+                {aiTrackedCount > 0 && (
+                  <span
+                    className="text-[10px] font-bold font-mono px-1.5 py-0.5 rounded bg-[#7EE0B5]/15 text-[#7EE0B5] border border-[#7EE0B5]/40"
+                    data-testid="ai-peak-badge"
+                    title="AI เก็บจุดสูงสุด (high-water mark) ให้อัตโนมัติจากราคาสดทุก 15 วินาที"
+                  >
+                    AI PEAK • {aiTrackedCount} อัตโนมัติ
+                  </span>
+                )}
                 {stressTestDropPct !== 0 && (
                   <span className="text-[10px] font-bold font-mono px-1.5 py-0.5 rounded bg-[#FFB86B]/20 text-[#FFB86B] border border-amber-500/40 animate-pulse">
                     STRESS TEST: {stressTestDropPct}%
@@ -331,7 +343,8 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
                     className="w-full accent-amber-400 cursor-pointer"
                   />
                   <p className="text-[10px] text-[#A7A4B8]">
-                    แจ้งเตือนเมื่อราคาลดลงจาก “จุดพีค” ที่คุณบันทึกไว้ (ไม่ใช่ ATH ของตลาดหรือต้นทุนจริง)
+                    แจ้งเตือนเมื่อราคาลดลงจาก “จุดพีค” — AI เก็บจุดสูงสุดให้อัตโนมัติจากราคาสด
+                    (หรือคุณตั้งเองทับได้) ไม่ใช่ ATH ของตลาดหรือต้นทุนจริง
                   </p>
                 </div>
 
@@ -648,7 +661,7 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
                                     setCustomPeakInput(String(asset.currentPrice));
                                   }}
                                   className="text-[10px] font-semibold text-[#FFB86B] underline underline-offset-2"
-                                  title="ยังไม่มีจุดอ้างอิง — ตั้งจุดสูงสุดที่คุณต้องการเปรียบเทียบ"
+                                  title="AI จะเก็บจุดสูงสุดให้เองเมื่อมีราคาสด — หรือตั้งเองได้ที่นี่"
                                 >
                                   ตั้งจุดพีค
                                 </button>
@@ -657,9 +670,19 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
                                   <p className="font-mono font-bold text-sm text-[#ECEAF4]">
                                     {formatPriceDynamic(asset.peakPrice).replace('$', '')}
                                     {asset.referenceSource === 'API_52W' && (
-                                      <span className="ml-1 text-[9px] font-normal text-[#A7A4B8]">
-                                        52W
+                                      <span className="ml-1 text-[9px] font-normal text-[#A7A4B8]">52W</span>
+                                    )}
+                                    {asset.referenceSource === 'AI_AUTO' && (
+                                      <span
+                                        className="ml-1 text-[9px] font-semibold text-[#7EE0B5]"
+                                        data-testid={`ai-peak-${asset.symbol}`}
+                                        title="AI เก็บจุดสูงสุดให้อัตโนมัติจากราคาสด"
+                                      >
+                                        AI • อัตโนมัติ
                                       </span>
+                                    )}
+                                    {asset.referenceSource === 'CUSTOM' && (
+                                      <span className="ml-1 text-[9px] font-normal text-[#A7A4B8]">ผู้ใช้</span>
                                     )}
                                   </p>
                                   <button

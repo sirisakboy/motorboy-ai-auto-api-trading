@@ -1,7 +1,7 @@
 import React from 'react';
 import { Star, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { ForexPair, TradingSignal } from '../types';
-import { formatNumber } from '../utils';
+import { formatAsOfLabel, formatNumber } from '../utils';
 
 interface ForexCardProps {
   forex: ForexPair;
@@ -18,6 +18,7 @@ export const ForexCard: React.FC<ForexCardProps> = ({
   onToggleWatchlist,
   onSelect,
 }) => {
+  const asOfLabel = forex.isLive === false ? formatAsOfLabel(forex.updatedAt) : '';
   const currentSignal = signal || forex.signal;
   const isLong = currentSignal ? currentSignal.type === 'LONG' : forex.change >= 0;
   const isPositive = forex.change >= 0;
@@ -70,11 +71,22 @@ export const ForexCard: React.FC<ForexCardProps> = ({
                     ? 'bg-[#FFB86B]/15 border-[#FFB86B]/40 text-[#FFB86B]'
                     : 'bg-[#7EE0B5]/15 border-[#7EE0B5]/40 text-[#7EE0B5]'
                 }`}
-                title={forex.updatedAt ? `อัปเดต: ${forex.updatedAt}` : forex.isLive === false ? 'เรทล่าสุด (ออฟไลน์)' : 'เรท live'}
+                title={
+                  forex.isLive === false
+                    ? asOfLabel
+                      ? `${asOfLabel} — เรทอ้างอิง ไม่ใช่เรทสด`
+                      : 'เรทล่าสุด (ออฟไลน์)'
+                    : 'เรท live'
+                }
               >
                 {forex.isLive === false ? '○ STALE' : '● LIVE'}
               </span>
             </div>
+            {(forex.isLive === false ? asOfLabel : '') && (
+              <p className="text-[9px] text-[#8E8BA3] mt-0.5 tabular-nums" data-testid={`fx-as-of-${forex.pair}`}>
+                {asOfLabel}
+              </p>
+            )}
             <p className="text-[#A7A4B8] text-[11px] leading-tight mt-0.5 truncate">
               {currentSignal?.sources?.join(' • ') || 'open.er-api • Frankfurter • Bloomberg'}
             </p>
