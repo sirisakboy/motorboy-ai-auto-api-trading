@@ -33,10 +33,16 @@ npm run dev          # http://localhost:3000  (Express + Vite middleware)
 ```bash
 cp .env.example .env
 # GEMINI_API_KEY=...        # ใช้ฝั่งเซิร์ฟเวอร์ (สตรีมแชท, วิเคราะห์ตลาด)
-# VITE_GEMINI_API_KEY=...   # ฝังลง client — ใช้เฉพาะตอนพัฒนาเท่านั้น
+# GEMINI_MODEL=...          # เปลี่ยนโมเดลได้โดยไม่ต้องแก้โค้ด (ดีฟอลต์ gemini-3.8-flash)
+# VITE_GEMINI_API_KEY=...   # ฝังลง client — ใช้เฉพาะตอนพัฒนาเท่านั้น (ห้ามใช้บน production)
 ```
 
-ผู้ใช้ยังใส่คีย์ของตัวเองผ่านหน้า **ตั้งค่า** ได้ (เก็บใน localStorage ของเครื่องนั้น)
+ผู้ใช้ยังใส่คีย์ของตัวเองผ่านหน้า **ตั้งค่า** ได้ (เก็บใน localStorage ของเครื่องนั้น
+ไม่ส่งขึ้นคลาวด์) — ดูสถานะจริงได้ที่ `GET /api/gemini/config`
+
+**การเลือกโมเดล:** ระบบอ่าน `GEMINI_MODEL` (ถ้าไม่ตั้งจะใช้ `gemini-3.8-flash`)
+และมี fallback chain `gemini-3.6-flash → gemini-2.5-flash` เมื่อโมเดลหลักถูกปลดระวาง
+(แก้ที่ `src/server/geminiConfig.ts`)
 
 ---
 

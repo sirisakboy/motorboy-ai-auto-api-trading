@@ -938,9 +938,11 @@ export const App: React.FC = () => {
   };
 
   const handleSaveApiKey = async (newKey: string) => {
-    setGeminiApiKey(newKey);
+    // ตัดช่องว่างหัว-ท้ายเสมอ: คีย์ที่Copyมามักติดขึ้นบรรทัดใหม่ แล้วจะถูก Google ปฏิเสธ
+    const normalized = newKey.trim();
+    setGeminiApiKey(normalized);
     const targetUid = user?.uid || 'local';
-    await saveUserSettings(targetUid, { geminiApiKey: newKey });
+    await saveUserSettings(targetUid, { geminiApiKey: normalized });
   };
 
   const handleToggleCurrency = (val: boolean) => {
@@ -1629,6 +1631,7 @@ export const App: React.FC = () => {
 
           {/* Risk Calculator Modal */}
           <RiskCalculatorModal
+            riskTolerance={psychologySettings.riskToleranceLevel}
             isOpen={showRiskCalc}
             onClose={() => setShowRiskCalc(false)}
             useThb={useThb}

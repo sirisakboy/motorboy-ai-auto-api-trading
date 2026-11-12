@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   X,
   Settings,
@@ -24,6 +24,8 @@ import {
 import guideImg from '../assets/images/gemini_api_guide_1794356820031.jpg';
 import { TradingPsychologySettings } from '../types';
 import { testGeminiApiKeyWithSearch } from '../services/geminiService';
+import { checkGeminiKey, maskGeminiKey, normalizeGeminiKey } from '../services/geminiKey';
+import { RISK_PROFILE_LABEL_TH, parseRiskToleranceLevel } from '../services/riskProfile';
 import { useModalA11y } from '../hooks/useModalA11y';
 
 interface SettingsDialogProps {
@@ -73,38 +75,90 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
   const [symbolInput, setSymbolInput] = useState('BTC');
   const [priceInput, setPriceInput] = useState('');
   const [alertSavedText, setAlertSavedText] = useState('');
+  const [alertError, setAlertError] = useState('');
+
+  // โมเดล/คีย์ฝั่งเซิร์ฟเวอร์ — แสดงค่าจริงแทนการเดาจากฝั่ง client
+  const [geminiConfig, setGeminiConfig] = useState<{
+    model: string;
+    fallbackModels: string[];
+    serverKeyConfigured: boolean;
+  } | null>(null);
 
   useEffect(() => {
-    setKeyInput(geminiApiKey || '');
+    setKeyInput(normalizeGeminiKey(geminiApiKey));
   }, [geminiApiKey]);
 
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/gemini/config')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!cancelled && data?.model) setGeminiConfig(data);
+      })
+      .catch(() => {
+        /* config probe is best-effort; UI falls back to “ไม่ทราบรุ่น” */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // ตรวจรูปแบบคีย์แบบสด ๆ ระหว่างพิมพ์ (ไม่ยิงเน็ต)
+  const keyCheck = useMemo(() => checkGeminiKey(keyInput), [keyInput]);
+  const savedKeyMasked = useMemo(() => maskGeminiKey(geminiApiKey), [geminiApiKey]);
+  const storedKeyIsValid = useMemo(() => checkGeminiKey(geminiApiKey).valid, [geminiApiKey]);
+
   const handleSaveKey = async () => {
+    const normalized = normalizeGeminiKey(keyInput);
+
+    // ไม่บันทึกคีย์ที่ผิดรูป — ปล่อยไปจะทำให้ทุก route AI ล้มเงียบ ๆ
+    if (!keyCheck.valid) {
+      setKeyFeedback({ type: 'ERROR', message: keyCheck.hint });
+      return;
+    }
+
     setIsSavingKey(true);
     setKeyFeedback(null);
     try {
-      await onSaveApiKey(keyInput.trim());
+      await onSaveApiKey(normalized);
       setKeyFeedback({
         type: 'SUCCESS',
-        message: 'บันทึกและซิงค์ API Key ไปยังบัญชี Google สำเร็จเรียบร้อย ☁️',
+        message: 'บันทึก API Key ไว้ในเครื่องนี้แล้ว (localStorage) — ไม่ได้ส่งขึ้นคลาวด์',
       });
       setTimeout(() => setKeyFeedback(null), 4000);
     } catch (err) {
       console.error('Save key error:', err);
       setKeyFeedback({
         type: 'ERROR',
-        message: 'ไม่สามารถบันทึกได้ โปรดตรวจสอบการเชื่อมต่ออินเทอร์เน็ต',
+        message: 'บันทึกไม่สำเร็จ — พื้นที่เก็บข้อมูลของเบราว์เซอร์อาจถูกปิดกั้น',
       });
     } finally {
       setIsSavingKey(false);
     }
   };
 
-  const handleTestKey = async () => {
-    if (!keyInput.trim()) {
-      setTestResult({
-        success: false,
-        text: 'กรุณากรอก Google Gemini API Key ก่อนทำการทดสอบ',
+  const handleRemoveKey = async () => {
+    setIsSavingKey(true);
+    try {
+      await onSaveApiKey('');
+      setKeyInput('');
+      setTestResult(null);
+      setKeyFeedback({
+        type: 'SUCCESS',
+        message: 'ลบคีย์ออกจากเครื่องนี้แล้ว — ระบบ AI จะกลับไปใช้โหมดคำนวณพื้นฐาน',
       });
+      setTimeout(() => setKeyFeedback(null), 4000);
+    } catch (err) {
+      console.error('Remove key error:', err);
+      setKeyFeedback({ type: 'ERROR', message: 'ลบคีย์ไม่สำเร็จ — โปรดลองอีกครั้ง' });
+    } finally {
+      setIsSavingKey(false);
+    }
+  };
+
+  const handleTestKey = async () => {
+    if (!keyCheck.valid) {
+      setTestResult({ success: false, text: keyCheck.hint });
       return;
     }
 
@@ -112,13 +166,13 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
     setTestResult(null);
 
     try {
-      const res = await testGeminiApiKeyWithSearch(keyInput.trim(), userEmail);
+      const res = await testGeminiApiKeyWithSearch(normalizeGeminiKey(keyInput), userEmail);
       setTestResult(res);
-    } catch (error: unknown) {
-      const err = error as { message?: string };
+    } catch {
+      // ห้ามโชว์ข้อความภายใน (เช่น "fetch failed") ให้ผู้ใช้เห็น
       setTestResult({
         success: false,
-        text: `เชื่อมต่อไม่สำเร็จ: ${err.message || 'Invalid API Key'}`,
+        text: 'ทดสอบไม่สำเร็จ — เชื่อมต่อเซิร์ฟเวอร์ของแอปไม่ได้ ลองใหม่อีกครั้ง',
       });
     } finally {
       setIsTestingKey(false);
@@ -127,16 +181,40 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
 
   const handleSaveAlert = (e: React.FormEvent) => {
     e.preventDefault();
-    const p = parseFloat(priceInput);
-    if (!isNaN(p) && symbolInput.trim()) {
-      onSetAlert(symbolInput.toUpperCase(), p);
-      setAlertSavedText(`บันทึกการเตือน ${symbolInput.toUpperCase()} ที่ ${p} สำเร็จ!`);
-      setPriceInput('');
-      setTimeout(() => setAlertSavedText(''), 4000);
+    const price = Number.parseFloat(priceInput);
+    const symbol = symbolInput.trim().toUpperCase();
+
+    if (!symbol) {
+      setAlertError('กรุณาระบุชื่อสินทรัพย์ เช่น BTC หรือ XAU/USD');
+      return;
     }
+    if (!Number.isFinite(price) || price <= 0) {
+      setAlertError('ราคาเป้าหมายต้องเป็นตัวเลขมากกว่า 0');
+      return;
+    }
+
+    setAlertError('');
+    onSetAlert(symbol, price);
+    setAlertSavedText(`บันทึกการเตือน ${symbol} ที่ $${price.toLocaleString()} สำเร็จ!`);
+    setPriceInput('');
+    setTimeout(() => setAlertSavedText(''), 4000);
   };
 
   const dialogRef = useModalA11y({ onClose: onDismiss });
+  const helpDialogRef = useModalA11y({
+    onClose: () => setIsHelpModalOpen(false),
+    enabled: isHelpModalOpen,
+  });
+
+  const copyGuideLink = async () => {
+    try {
+      await navigator.clipboard.writeText('https://aistudio.google.com/app/apikey');
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2000);
+    } catch {
+      setCopiedLink(false);
+    }
+  };
 
   return (
     <div
@@ -187,13 +265,20 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                   <span className="w-1.5 h-1.5 rounded-full bg-[#7EE0B5]" />
                 </div>
                 <p className="text-xs text-white font-semibold">
-                  {userEmail || 'sirisakkhacha@gmail.com'}
+                  {userEmail || 'โหมดในเครื่อง (ยังไม่ลงชื่อเข้าใช้)'}
                 </p>
               </div>
             </div>
-            <div className="text-[10px] bg-[#7EE0B5]/15 border border-[#7EE0B5]/30 text-[#7EE0B5] font-bold px-2 py-0.5 rounded-full flex items-center space-x-1">
+            <div
+              className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center space-x-1 ${
+                userEmail
+                  ? 'bg-[#7EE0B5]/15 border border-[#7EE0B5]/30 text-[#7EE0B5]'
+                  : 'bg-[#A89FFF]/15 border border-[#A89FFF]/30 text-[#A89FFF]'
+              }`}
+              data-testid="settings-account-mode"
+            >
               <CheckCircle2 className="w-3 h-3" />
-              <span>SYNCED</span>
+              <span>{userEmail ? 'ลงชื่อเข้าใช้แล้ว' : 'เก็บในเครื่อง'}</span>
             </div>
           </div>
 
@@ -201,11 +286,14 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
             <div className="flex items-center space-x-2 text-[#A7A4B8]">
               <Globe className="w-3.5 h-3.5 text-[#4CC9F0]" />
               <span className="text-[11px] text-[#ECEAF4]">
-                Google Search เชื่อมโยงบัญชี Email: <span className="text-[#4CC9F0] font-medium">เปิดใช้งานค้นหาข้อมูลตลาดสด</span>
+                Google Search Grounding:{' '}
+                <span className="text-[#4CC9F0] font-medium">
+                  {storedKeyIsValid ? 'พร้อมใช้เมื่อคีย์รองรับ' : 'ต้องมี API Key ที่ใช้งานได้ก่อน'}
+                </span>
               </span>
             </div>
             <span className="text-[10px] bg-[#4CC9F0]/15 border border-[#4CC9F0]/30 text-[#4CC9F0] px-2 py-0.5 rounded-md font-semibold">
-              Live Grounding (MotorBoy Pro)
+              {geminiConfig?.model ?? 'Gemini'}
             </span>
           </div>
         </div>
@@ -232,8 +320,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                 </div>
                 <p className="text-[11px] text-[#A7A4B8]">
                   {geminiApiKey
-                    ? 'เชื่อมต่อและซิงค์คีย์ไว้แล้ว (คลิกเพื่อดูหรือแก้ไข)'
-                    : 'ซ่อนอยู่ (คลิกเพื่อเปิดใส่หรือแก้ไข API Key)'}
+                    ? `บันทึกคีย์ไว้ในเครื่อง: ${savedKeyMasked}`
+                    : 'ยังไม่มีคีย์ (คลิกเพื่อเปิดใส่หรือแก้ไข API Key)'}
                 </p>
               </div>
             </div>
@@ -274,7 +362,10 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
               </div>
 
               <p className="text-[11px] text-[#A7A4B8] leading-relaxed">
-                ใส่ Google Gemini API Key เพื่อเปิดใช้งานระบบวิเคราะห์ตลาดแบบเรียลไทม์ พร้อม Google Search Grounding สด (รองรับทั้งคีย์แบบดั้งเดิม AIzaSy... และคีย์รุ่นใหม่ AQ...)
+                คีย์นี้ใช้เรียกโมเดล Gemini ผ่านเซิร์ฟเวอร์ของแอป (ไม่ฝังในบันเดิล)
+                และถูกเก็บไว้ใน <span className="text-[#ECEAF4]">localStorage ของเครื่องนี้เท่านั้น</span> —
+                รองรับคีย์<span className="text-[#ECEAF4]">ทุกประเภท</span>จาก Google AI Studio
+                (ไม่กำหนดรูปแบบหรือคำขึ้นต้น) หากคีย์ไม่ถูกต้อง ระบบจะรายงานผลจาก Google ให้ทราบตอนกด “ทดสอบ”
               </p>
 
               <div className="space-y-1.5">
@@ -283,7 +374,10 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                     type={showKey ? 'text' : 'password'}
                     value={keyInput}
                     onChange={(e) => setKeyInput(e.target.value)}
-                    placeholder="AIzaSy... หรือ AQ..."
+                    placeholder="วาง API Key ที่นี่ (รูปแบบใดก็ได้)"
+                    aria-describedby="gemini-key-hint"
+                    autoComplete="off"
+                    spellCheck={false}
                     className="w-full bg-[#0F1117] border border-white/[0.07] focus:border-[#7C6CFF] rounded-xl pl-3.5 pr-20 py-2.5 text-xs text-white outline-none font-mono placeholder-[#8B88A0]"
                   />
                   <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center space-x-1">
@@ -306,6 +400,51 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                     </button>
                   </div>
                 </div>
+
+                <p
+                  id="gemini-key-hint"
+                  data-testid="gemini-key-hint"
+                  className={`text-[10px] leading-snug ${
+                    keyInput.trim().length === 0
+                      ? 'text-[#A7A4B8]'
+                      : keyCheck.valid
+                      ? 'text-[#7EE0B5]'
+                      : 'text-[#FFB86B]'
+                  }`}
+                >
+                  {keyCheck.hint}
+                </p>
+
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-1 text-[10px] text-[#A7A4B8]">
+                  <span>
+                    โมเดล:{' '}
+                    <span className="font-mono text-[#ECEAF4]">
+                      {geminiConfig?.model ?? 'กำลังตรวจสอบ…'}
+                    </span>
+                  </span>
+                  {geminiConfig?.fallbackModels?.length ? (
+                    <span>
+                      สำรอง:{' '}
+                      <span className="font-mono text-[#A7A4B8]">
+                        {geminiConfig.fallbackModels.join(' → ')}
+                      </span>
+                    </span>
+                  ) : null}
+                  <span>
+                    คีย์ฝั่งเซิร์ฟเวอร์:{' '}
+                    <span
+                      className={
+                        geminiConfig?.serverKeyConfigured ? 'text-[#7EE0B5]' : 'text-[#A7A4B8]'
+                      }
+                    >
+                      {geminiConfig
+                        ? geminiConfig.serverKeyConfigured
+                          ? 'มี (ใช้แทนได้เมื่อไม่ได้ใส่คีย์)'
+                          : 'ไม่มี'
+                        : '—'}
+                    </span>
+                  </span>
+                </div>
               </div>
 
               {/* Quick link to Google AI Studio */}
@@ -327,8 +466,9 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                 <button
                   type="button"
                   onClick={handleSaveKey}
-                  disabled={isSavingKey}
-                  className="flex-1 bg-[linear-gradient(135deg,#8E80FF,#4CC9F0)] hover:brightness-105 text-[#0F1117] font-bold text-xs py-2 rounded-xl transition-all flex items-center justify-center space-x-1.5 cursor-pointer disabled:opacity-50 shadow-[0_6px_18px_rgba(124,108,255,0.28)]"
+                  disabled={isSavingKey || !keyCheck.valid}
+                  title={!keyCheck.valid ? keyCheck.hint : 'บันทึกคีย์ไว้ในเครื่องนี้'}
+                  className="flex-1 bg-[linear-gradient(135deg,#8E80FF,#4CC9F0)] hover:brightness-105 text-[#0F1117] font-bold text-xs py-2 rounded-xl transition-all flex items-center justify-center space-x-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_6px_18px_rgba(124,108,255,0.28)]"
                 >
                   {isSavingKey ? (
                     <>
@@ -346,9 +486,9 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                 <button
                   type="button"
                   onClick={handleTestKey}
-                  disabled={isTestingKey}
-                  className="px-3.5 bg-[#141417] hover:bg-[#222640] border border-white/[0.07] text-[#4CC9F0] font-semibold text-xs py-2 rounded-xl transition-colors flex items-center space-x-1.5 cursor-pointer disabled:opacity-50"
-                  title="ทดสอบการเชื่อมต่อ Gemini AI และระบบค้นหาตลาดสด"
+                  disabled={isTestingKey || !keyCheck.valid}
+                  className="px-3.5 bg-[#141417] hover:bg-[#222640] border border-white/[0.07] text-[#4CC9F0] font-semibold text-xs py-2 rounded-xl transition-colors flex items-center space-x-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="ทดสอบการเชื่อมต่อ Gemini ด้วยคีย์ในช่องนี้"
                 >
                   {isTestingKey ? (
                     <>
@@ -362,6 +502,20 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                     </>
                   )}
                 </button>
+
+                {geminiApiKey && (
+                  <button
+                    type="button"
+                    onClick={handleRemoveKey}
+                    disabled={isSavingKey}
+                    className="px-3 bg-[#141417] hover:bg-[#FFB86B]/15 border border-white/[0.07] text-[#FFB86B] font-semibold text-xs py-2 rounded-xl transition-colors flex items-center space-x-1.5 cursor-pointer disabled:opacity-50"
+                    title="ลบคีย์ออกจากเครื่องนี้"
+                    data-testid="remove-gemini-key"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>ลบคีย์</span>
+                  </button>
+                )}
               </div>
 
               {/* Feedback message */}
@@ -465,11 +619,16 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
               <select
                 className="bg-[#141725] text-white rounded-lg p-1"
                 value={psychologySettings.riskToleranceLevel}
-                onChange={(e) => onSavePsychologySettings({ ...psychologySettings, riskToleranceLevel: e.target.value as any })}
+                onChange={(e) =>
+                  onSavePsychologySettings({
+                    ...psychologySettings,
+                    riskToleranceLevel: parseRiskToleranceLevel(e.target.value),
+                  })
+                }
               >
-                <option value="CONSERVATIVE">CONSERVATIVE</option>
-                <option value="MODERATE">MODERATE</option>
-                <option value="AGGRESSIVE">AGGRESSIVE</option>
+                <option value="CONSERVATIVE">{RISK_PROFILE_LABEL_TH.CONSERVATIVE}</option>
+                <option value="MODERATE">{RISK_PROFILE_LABEL_TH.MODERATE}</option>
+                <option value="AGGRESSIVE">{RISK_PROFILE_LABEL_TH.AGGRESSIVE}</option>
               </select>
             </div>
             <div className="flex items-center justify-between">
@@ -480,6 +639,10 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                 onChange={(e) => onSavePsychologySettings({ ...psychologySettings, enableEmotionalCheckIn: e.target.checked })}
               />
             </div>
+            <p className="text-[10px] text-[#A7A4B8] leading-snug pt-1 border-t border-white/[0.07]">
+              ระดับนี้เป็นค่าเริ่มต้นของช่อง Risk % ในเครื่องคำนวณพอร์ต (แนะนำ ไม่บังคับ) —
+              ระบบไม่ส่งคำสั่งซื้อขายอัตโนมัติใด ๆ
+            </p>
           </div>
         </div>
 
@@ -502,7 +665,9 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                 />
               </div>
               <div className="col-span-3">
-                <label className="text-[10px] text-[#A7A4B8] block mb-1">ราคาเป้าหมาย ($ USD)</label>
+                <label className="text-[10px] text-[#A7A4B8] block mb-1">
+                  ราคาเป้าหมาย (USD — แปลงเป็น ฿ อัตโนมัติเมื่อสลับสกุลเงิน)
+                </label>
                 <input
                   type="number"
                   step="any"
@@ -521,6 +686,12 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
               บันทึกการแจ้งเตือนราคา
             </button>
           </form>
+
+          {alertError && (
+            <p className="text-[#FFB86B] text-xs text-center" role="alert" data-testid="alert-error">
+              {alertError}
+            </p>
+          )}
 
           {alertSavedText && (
             <p className="text-[#7EE0B5] text-xs text-center animate-fade-in">
@@ -564,7 +735,9 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
         <div className="pt-2 border-t border-white/[0.07] flex items-center justify-between">
           <div className="flex items-center space-x-1 text-[11px] text-[#A7A4B8]">
             <ShieldCheck className="w-3.5 h-3.5 text-[#7EE0B5]" />
-            <span>ข้อมูลทั้งหมดซิงค์ด้วยบัญชี Google ของคุณ</span>
+            <span data-testid="settings-storage-note">
+              ตั้งค่าและคีย์ถูกเก็บในเครื่องนี้ (localStorage) — ไม่ส่งขึ้นคลาวด์
+            </span>
           </div>
           <button
             type="button"
@@ -579,6 +752,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
       {/* Guide Modal: How to obtain a new API Key from Google AI Studio */}
       {isHelpModalOpen && (
         <div
+          ref={helpDialogRef}
           role="dialog"
           aria-modal="true"
           aria-label="วิธีขอ Google Gemini API Key"
@@ -676,11 +850,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
 
               <button
                 type="button"
-                onClick={() => {
-                  navigator.clipboard.writeText('https://aistudio.google.com/app/apikey');
-                  setCopiedLink(true);
-                  setTimeout(() => setCopiedLink(false), 2000);
-                }}
+                onClick={copyGuideLink}
                 className="w-full sm:w-auto px-4 bg-[#141417] hover:bg-[#222640] border border-white/[0.07] text-[#ECEAF4] font-semibold text-xs py-2.5 rounded-xl transition-colors flex items-center justify-center space-x-1.5 cursor-pointer"
               >
                 {copiedLink ? (
