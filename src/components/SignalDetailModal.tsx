@@ -119,7 +119,9 @@ export const SignalDetailModal: React.FC<SignalDetailModalProps> = ({
     }
   };
 
-  const displayPrice = formatPrice(signal.price);
+  // ราคาที่ใช้แสดง/ตรวจ คือราคาสดถ้ามี (ตรงกับการ์ด) ไม่ใช่ราคา ณ ตอนสร้างสัญญาณ
+  const referencePrice = coin?.price ?? signal.price;
+  const displayPrice = formatPrice(referencePrice);
   const displaySl = formatPrice(signal.sl);
   const displayTp = formatPrice(signal.tp);
 
@@ -135,10 +137,10 @@ export const SignalDetailModal: React.FC<SignalDetailModalProps> = ({
   const slPercent = Math.abs((1.0 - signal.sl / signal.price) * 100).toFixed(1);
   const tpPercent = Math.abs((signal.tp / signal.price - 1.0) * 100).toFixed(1);
 
-  // SL/TP ต้องอยู่ถูกฝั่งของราคา ถ้าไม่ใช่ = ข้อมูลผิด ห้ามโชว์ตัวเลขเหมือนใช้ได้
+  // SL/TP ต้องอยู่ถูกฝั่งของราคาที่แสดง (referencePrice) ถ้าไม่ใช่ = ข้อมูลผิด ห้ามโชว์ตัวเลขเหมือนใช้ได้
   const signalValidation = validateTradingSignal({
     type: signal.type,
-    price: signal.price,
+    price: referencePrice,
     sl: signal.sl,
     tp: signal.tp,
   });

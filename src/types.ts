@@ -418,6 +418,13 @@ export interface NewsAnalysisResult {
 /** Drawdown Monitor & Peak-to-Trough Analytics Types */
 export type DrawdownRiskStatus = 'NORMAL' | 'WARNING' | 'CRITICAL' | 'EXTREME';
 
+/**
+ * จุดอ้างอิงที่ใช้คำนวณ drawdown — ต้องเป็นข้อมูลจริงเท่านั้น
+ * CUSTOM = จุดสูงสุด/ต้นทุนที่ผู้ใช้บันทึกเอง · API_52W = 52-week high จากผู้ให้บริการข้อมูล
+ * NONE = ยังไม่มีจุดอ้างอิง (ห้ามแต่งตัวเลขขึ้นมาเอง)
+ */
+export type DrawdownReferenceSource = 'CUSTOM' | 'API_52W' | 'NONE';
+
 export interface DrawdownAsset {
   id: string;
   symbol: string;
@@ -425,6 +432,8 @@ export interface DrawdownAsset {
   category: 'CRYPTO' | 'THAI_STOCK' | 'FOREIGN_STOCK' | 'FOREX';
   currentPrice: number;
   peakPrice: number;
+  /** ที่มาของ peakPrice — 'NONE' แปลว่ายังติดตามไม่ได้ (แสดง 0% ไม่ใช่ค่าสมมติ) */
+  referenceSource?: DrawdownReferenceSource;
   troughPrice: number;
   currentDrawdownPct: number;
   maxDrawdownPct: number;

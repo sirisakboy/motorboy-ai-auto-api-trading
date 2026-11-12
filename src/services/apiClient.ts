@@ -15,13 +15,23 @@ import {
   ForeignStock,
 } from '../types';
 
+/**
+ * รายชื่อสินทรัพย์ที่ติดตาม — **ไม่มีราคา/เปอร์เซ็นต์ตัวอย่าง**
+ *
+ * เดิมไฟล์นี้ฝังราคาปลอมไว้ (BTC 92,450 / SHIB 0.0000245) และถูกใช้เป็นค่าเริ่มต้น
+ * ก่อนข้อมูลจริงจะมาถึง ทำให้เกิดบั๊กที่ผู้ใช้เห็น: การ์ดโชว์ราคาสด $71,692
+ * แต่ SL/TP คำนวณจาก 92,450 → SL 90,364 สูงกว่าราคาเข้าในไม้ LONG
+ *
+ * กติกาใหม่: price = 0 แปลว่า "ยังไม่รู้ราคา" — UI ต้องรอข้อมูลจริงและไม่สร้างสัญญาณ
+ * จนกว่าจะมีราคา (ดู isUsablePrice ใน generateRealSignals)
+ */
 export const CRYPTO_INITIAL: CryptoCoin[] = [
-  { id: 'bitcoin', symbol: 'BTC', name: 'Bitcoin', binanceSymbol: 'BTCUSDT', price: 92450.0, change: 2.35, high: 93200.0, low: 90100.0, volume: 34500000.0, flash: 'NONE' },
-  { id: 'ethereum', symbol: 'ETH', name: 'Ethereum', binanceSymbol: 'ETHUSDT', price: 3420.5, change: 1.82, high: 3480.0, low: 3340.0, volume: 18200000.0, flash: 'NONE' },
-  { id: 'solana', symbol: 'SOL', name: 'Solana', binanceSymbol: 'SOLUSDT', price: 212.4, change: 4.15, high: 218.0, low: 202.0, volume: 8900000.0, flash: 'NONE' },
-  { id: 'binancecoin', symbol: 'BNB', name: 'BNB', binanceSymbol: 'BNBUSDT', price: 645.2, change: 0.95, high: 652.0, low: 638.0, volume: 4300000.0, flash: 'NONE' },
-  { id: 'ripple', symbol: 'XRP', name: 'XRP', binanceSymbol: 'XRPUSDT', price: 2.48, change: -1.20, high: 2.58, low: 2.42, volume: 12400000.0, flash: 'NONE' },
-  { id: 'shiba-inu', symbol: 'SHIB', name: 'Shiba Inu', binanceSymbol: 'SHIBUSDT', price: 0.0000245, change: 3.12, high: 0.0000260, low: 0.0000230, volume: 450000000.0, flash: 'NONE' },
+  { id: 'bitcoin', symbol: 'BTC', name: 'Bitcoin', binanceSymbol: 'BTCUSDT', price: 0, change: 0, flash: 'NONE' },
+  { id: 'ethereum', symbol: 'ETH', name: 'Ethereum', binanceSymbol: 'ETHUSDT', price: 0, change: 0, flash: 'NONE' },
+  { id: 'solana', symbol: 'SOL', name: 'Solana', binanceSymbol: 'SOLUSDT', price: 0, change: 0, flash: 'NONE' },
+  { id: 'binancecoin', symbol: 'BNB', name: 'BNB', binanceSymbol: 'BNBUSDT', price: 0, change: 0, flash: 'NONE' },
+  { id: 'ripple', symbol: 'XRP', name: 'XRP', binanceSymbol: 'XRPUSDT', price: 0, change: 0, flash: 'NONE' },
+  { id: 'shiba-inu', symbol: 'SHIB', name: 'Shiba Inu', binanceSymbol: 'SHIBUSDT', price: 0, change: 0, flash: 'NONE' },
 ];
 
 export const FOREX_PAIRS: string[] = [
@@ -1342,19 +1352,25 @@ async function fetchFrankfurterSeries(pair: string): Promise<number[] | null> {
 }
 
 /**
+ * ราคาที่ใช้สร้างสัญญาณต้องเป็นค่าจริงเท่านั้น (>0 และ finite)
+ *
+ * บั๊กเดิม: ถ้าราคายังไม่มา generator จะแทนด้วยราคาสมมติ (BTC 92,500 / SHIB 0.0000245)
+ * ทำให้การ์ดแสดง "ราคาจริง $71,361" แต่ SL/TP คำนวณจาก 92,500 → SL 90,364 สูงกว่าราคาเข้า
+ * ทั้งที่สัญญาณเป็น LONG = ข้อมูลที่ดูน่าเชื่อถือแต่ผิด
+ * ทางแก้: ไม่มีราคา = ไม่มีสัญญาณ (ดีกว่าแสดงแผนที่ใช้ไม่ได้)
+ */
+function isUsablePrice(price: unknown): price is number {
+  return typeof price === 'number' && Number.isFinite(price) && price > 0;
+}
+
+/**
  * Generate real-time trading signals with technical levels, SL/TP and AI similarity
+ * (ข้ามสินทรัพย์ที่ยังไม่มีราคาจริง — ไม่แต่งตัวเลขขึ้นมาเอง)
  */
 export function generateRealSignals(coins: CryptoCoin[]): TradingSignal[] {
-  return coins.map((coin, idx) => {
+  return coins.filter((coin) => isUsablePrice(coin.price)).map((coin, idx) => {
     const isLong = coin.change >= 0;
-    const p = coin.price > 0 ? coin.price : (
-      coin.symbol === 'BTC' ? 92500.0 :
-      coin.symbol === 'ETH' ? 3450.0 :
-      coin.symbol === 'SOL' ? 210.0 :
-      coin.symbol === 'BNB' ? 640.0 :
-      coin.symbol === 'XRP' ? 2.45 :
-      coin.symbol === 'SHIB' ? 0.0000245 : 100.0
-    );
+    const p = coin.price;
 
     const momentumVol = Math.abs(coin.change) / 100.0;
     // Adaptive risk levels scaled by 24h volatility (clamped 2%-20% of price)
@@ -1415,9 +1431,9 @@ export function generateRealSignals(coins: CryptoCoin[]): TradingSignal[] {
  * technical levels (Support & Resistance), central bank drivers, and AI similarity.
  */
 export function generateForexSignals(forexRates: ForexPair[]): TradingSignal[] {
-  return forexRates.map((f, idx) => {
+  return forexRates.filter((f) => isUsablePrice(f.price)).map((f, idx) => {
     const isLong = f.change >= 0;
-    const p = f.price > 0 ? f.price : 1.0;
+    const p = f.price;
     const [base, quote] = f.pair.split('/');
 
     // Realistic Forex Pip Variations (e.g. 40-70 pips SL, 90-150 pips TP)
@@ -1662,7 +1678,7 @@ export async function fetchForeignStockPrices(prev: ForeignStock[] = FOREIGN_STO
  * Generate trading signals for Thai stocks
  */
 export function generateThaiStockSignals(stocks: ThaiStock[]): TradingSignal[] {
-  return stocks.map((stock, idx) => {
+  return stocks.filter((stock) => isUsablePrice(stock.price)).map((stock, idx) => {
     const isLong = stock.change >= 0;
     const p = stock.price;
 
@@ -1712,7 +1728,7 @@ export function generateThaiStockSignals(stocks: ThaiStock[]): TradingSignal[] {
  * Generate trading signals for Foreign stocks
  */
 export function generateForeignStockSignals(stocks: ForeignStock[]): TradingSignal[] {
-  return stocks.map((stock, idx) => {
+  return stocks.filter((stock) => isUsablePrice(stock.price)).map((stock, idx) => {
     const isLong = stock.change >= 0;
     const p = stock.price;
 

@@ -186,6 +186,18 @@ export function formatCryptoPrice({
   return `${sign}${getCurrencyPrefix(mode)}${formatted}`;
 }
 
+/**
+ * ทางลัดสำหรับ component ที่ต้องการแค่ "ราคาที่อ่านได้" ตามขนาดจริง
+ * (เช่น หน้า DrawdownMonitor ที่เคยใช้ toLocaleString() จน SHIB กลายเป็น 0)
+ */
+export function formatPriceDynamic(
+  price: number,
+  mode: CurrencyMode = 'USD',
+  usdThbRate?: number
+): string {
+  return formatCryptoPrice({ price, mode, usdThbRate });
+}
+
 /* ============================================================================
  * Trading-signal validation
  *

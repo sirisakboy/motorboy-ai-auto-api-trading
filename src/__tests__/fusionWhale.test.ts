@@ -10,6 +10,7 @@ import {
   STOCK_SYMBOLS,
   THAI_STOCKS,
 } from '../services/apiClient';
+import { LIVE_CRYPTO_FEED } from './fixtures/liveCryptoFeed';
 import {
   DEADZONE,
   PROFILES,
@@ -524,7 +525,8 @@ describe('fusion/adapters — วิ่งบนข้อมูลตั้ง�
   });
 
   it('อ่านข้อมูลจริงแล้วบอกทิศทางเดียวกับส่วนเปลี่ยนของราคา', () => {
-    const upCoin = CRYPTO_INITIAL.find((coin) => coin.change > 2) as CryptoCoin;
+    // CRYPTO_INITIAL ในโปรดักชันเป็น roster เปล่า (price = 0) — ใช้ฟีดตัวอย่างสำหรับเทสต์
+    const upCoin = LIVE_CRYPTO_FEED.find((coin) => coin.change > 2) as CryptoCoin;
     expect(upCoin).toBeDefined();
     const up = quoteFromCryptoCoin(upCoin);
     expect(analyzeWhaleFromApp(up).score).toBeGreaterThan(0);

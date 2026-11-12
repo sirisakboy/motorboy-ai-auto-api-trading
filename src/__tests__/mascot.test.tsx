@@ -10,7 +10,8 @@ import {
   resetMascotAiCooldown,
   MASCOT_AI_COOLDOWN_MS,
 } from '../services/mascotAiService';
-import { CRYPTO_INITIAL, generateRealSignals } from '../services/apiClient';
+import { generateRealSignals } from '../services/apiClient';
+import { LIVE_CRYPTO_FEED as CRYPTO_INITIAL } from './fixtures/liveCryptoFeed';
 import { loadJournal, loadMascotPosition, saveMascotSettings } from '../mascot/journal';
 import { publishMascotFeed, resetMascotFeed } from '../mascot/feed';
 import { clearEndingsCache } from '../mascot/endings';

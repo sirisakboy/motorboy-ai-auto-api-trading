@@ -36,10 +36,14 @@ export const CryptoCard: React.FC<CryptoCardProps> = ({
     usdThbRate,
   });
 
+  // ตรวจกับ "ราคาที่การ์ดแสดงจริง" (coin.price) ไม่ใช่ราคาตอนสร้างสัญญาณ:
+  // ถาราคาเปลี่ยนหลังสร้างสัญญาณ SL/TP เดิมอาจอยู่ผิดฝั่งไปแล้ว
+  const referencePrice = coin?.price ?? signal.price;
+
   // SL/TP ที่อยู่ผิดฝั่งของราคา = ข้อมูลเสีย ห้ามแสดงเป็นตัวเลขปกติ
   const validation = validateTradingSignal({
     type: signal.type,
-    price: signal.price,
+    price: referencePrice,
     sl: signal.sl,
     tp: signal.tp,
   });
