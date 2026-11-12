@@ -1,6 +1,11 @@
 import React from 'react';
 import { Star } from 'lucide-react';
 import { TradingSignal, CryptoCoin } from '../types';
+import {
+  formatCryptoPrice,
+  validateTradingSignal,
+  INCONSISTENT_SIGNAL_LABEL,
+} from '../utils';
 
 interface CryptoCardProps {
   signal: TradingSignal;
@@ -22,25 +27,25 @@ export const CryptoCard: React.FC<CryptoCardProps> = ({
   onSelect,
 }) => {
   const isLong = signal.type === 'LONG';
-  const isForex = signal.symbol.includes('/');
-  const decimals = isForex && signal.price < 100 ? 4 : 2;
-  const multiplier = useThb ? usdThbRate : 1;
-  const currencyPrefix = useThb ? '฿' : '$';
+  const priceMode = useThb ? 'THB' : 'USD';
 
-  const displayPrice = ((coin?.price || signal.price) * multiplier).toLocaleString(undefined, {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
+  // ทศนิยมแบบไดนามิก: SHIB (< 0.01) ต้องเห็น 8 ตำแหน่ง ไม่ใช่ $0.00
+  const displayPrice = formatCryptoPrice({
+    price: coin?.price ?? signal.price,
+    mode: priceMode,
+    usdThbRate,
   });
 
-  const displaySl = (signal.sl * multiplier).toLocaleString(undefined, {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
+  // SL/TP ที่อยู่ผิดฝั่งของราคา = ข้อมูลเสีย ห้ามแสดงเป็นตัวเลขปกติ
+  const validation = validateTradingSignal({
+    type: signal.type,
+    price: signal.price,
+    sl: signal.sl,
+    tp: signal.tp,
   });
 
-  const displayTp = (signal.tp * multiplier).toLocaleString(undefined, {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
-  });
+  const displaySl = formatCryptoPrice({ price: signal.sl, mode: priceMode, usdThbRate });
+  const displayTp = formatCryptoPrice({ price: signal.tp, mode: priceMode, usdThbRate });
 
   const currentChange = coin?.change ?? signal.change;
   const isPositive = currentChange >= 0;
@@ -122,7 +127,7 @@ export const CryptoCard: React.FC<CryptoCardProps> = ({
       {/* Price & Change */}
       <div className="mt-1.5 flex flex-wrap items-baseline justify-between gap-x-2">
         <span className="text-white text-[22px] font-black tracking-tight">
-          {currencyPrefix}{displayPrice}
+          {displayPrice}
         </span>
         <span
           className={`text-base font-extrabold ${
@@ -146,12 +151,20 @@ export const CryptoCard: React.FC<CryptoCardProps> = ({
       {/* SL & TP Quick view + trigger */}
       <div className="mt-3 flex flex-wrap items-center justify-between text-xs gap-2">
         <div className="flex items-center space-x-3">
-          <span className="font-semibold text-[#FFB86B]">
-            SL: {currencyPrefix}{displaySl}
-          </span>
-          <span className="font-semibold text-[#7EE0B5]">
-            TP: {currencyPrefix}{displayTp}
-          </span>
+          {validation.valid ? (
+            <>
+              <span className="font-semibold text-[#FFB86B]">SL: {displaySl}</span>
+              <span className="font-semibold text-[#7EE0B5]">TP: {displayTp}</span>
+            </>
+          ) : (
+            <span
+              className="font-semibold text-[#FFB86B]"
+              title={validation.detail}
+              data-testid={`signal_inconsistent_${signal.symbol.toLowerCase()}`}
+            >
+              {INCONSISTENT_SIGNAL_LABEL}
+            </span>
+          )}
         </div>
         <span className="font-bold text-[#7C6CFF] hover:underline shrink-0">
           ดูโบ๊ะแตกเพิ่มเติม →

@@ -211,7 +211,7 @@ export const PriceChartCanvas: React.FC<PriceChartCanvasProps> = ({
           }`}
         >
           {chartData?.isLive === false
-            ? `○ ออฟไลน์${chartData?.source ? ` • ${chartData.source}` : ''} — ไม่มีข้อมูลจริง`
+            ? `○ ออฟไลน์${chartData?.source ? ` • ${chartData.source}` : ''} — โหมดสำรอง: แสดงข้อมูลล่าสุดที่บันทึกได้`
             : `● LIVE${chartData?.source ? ` • ${chartData.source}` : ''}`}
         </span>
         <span className="text-[#A7A4B8] font-mono text-[10px]">

@@ -25,7 +25,12 @@ import {
   fetchMarketSentimentScore,
 } from '../services/geminiService';
 import { useModalA11y } from '../hooks/useModalA11y';
-import { formatNumber } from '../utils';
+import {
+  formatNumber,
+  momentumLabel,
+  validateTradingSignal,
+  INCONSISTENT_SIGNAL_LABEL,
+} from '../utils';
 
 interface ForexDetailModalProps {
   forex: ForexPair | null;
@@ -105,6 +110,14 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
   const resDistancePercent = Math.abs((resistanceVal / forex.price - 1.0) * 100).toFixed(2);
   const slPercent = Math.abs((1.0 - activeSignal.sl / forex.price) * 100).toFixed(2);
   const tpPercent = Math.abs((activeSignal.tp / forex.price - 1.0) * 100).toFixed(2);
+
+  // ตรวจ SL/TP เทียบกับราคาตลาดจริง (forex.price) ไม่ใช่ราคาในสัญญาณ
+  const signalValidation = validateTradingSignal({
+    type: activeSignal.type,
+    price: forex.price,
+    sl: activeSignal.sl,
+    tp: activeSignal.tp,
+  });
 
   const handleFetchSentiment = async () => {
     setIsFetchingSentiment(true);
@@ -642,16 +655,21 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
                 </div>
 
                 <div className="bg-[#0F1117] border border-white/[0.07] rounded-xl p-3">
-                  <span className="text-[#A7A4B8] text-[10px] block">EMA & Momentum</span>
+                  <span className="text-[#A7A4B8] text-[10px] block">
+                    EMA & Momentum ({activeSignal?.timeframe ?? '24H'})
+                  </span>
                   <p
-                    className={`text-xs font-bold mt-0.5 ${
-                      forex.change >= 0 ? 'text-[#7EE0B5]' : 'text-[#FFB86B]'
-                    }`}
+                    className="text-xs font-bold mt-0.5 text-[#A89FFF]"
+                    data-testid="momentum-label-forex"
                   >
-                    {forex.change >= 0 ? 'โมเมนตัมแข็งค่า (Bullish)' : 'โมเมนตัมอ่อนค่า (Bearish)'}
+                    {momentumLabel({
+                      changePct: forex.change,
+                      timeframe: activeSignal?.timeframe ?? '24H',
+                      direction: activeSignal?.type,
+                    })}
                   </p>
                   <p className="text-[#A7A4B8] text-[10px] mt-0.5 leading-snug">
-                    EMA20 / EMA50 Dynamic Bands
+                    EMA20 / EMA50 Dynamic Bands • เทียบกับแนวโน้มหลักของสัญญาณ
                   </p>
                 </div>
               </div>
@@ -708,31 +726,49 @@ export const ForexDetailModal: React.FC<ForexDetailModalProps> = ({
                 <span>การบริหารความเสี่ยง • SL/TP & แนวรับ-แนวต้าน Forex</span>
               </h4>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                <div className="bg-[#FFB86B]/15 border border-[#FFB86B]/40 rounded-xl p-3">
-                  <span className="text-[#FFB86B] text-[11px] block font-medium">
-                    Stop Loss (SL)
-                  </span>
-                  <span className="text-white font-mono font-bold text-sm block mt-0.5">
-                    {displaySl}
-                  </span>
-                  <span className="text-[#A7A4B8] text-[10px] block mt-0.5">
-                    -{slPercent}% จากจุดเข้า (ใต้แนวรับ {displaySupport})
-                  </span>
-                </div>
+              {signalValidation.valid ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <div className="bg-[#FFB86B]/15 border border-[#FFB86B]/40 rounded-xl p-3">
+                    <span className="text-[#FFB86B] text-[11px] block font-medium">
+                      Stop Loss (SL)
+                    </span>
+                    <span className="text-white font-mono font-bold text-sm block mt-0.5">
+                      {displaySl}
+                    </span>
+                    <span className="text-[#A7A4B8] text-[10px] block mt-0.5">
+                      -{slPercent}% จากจุดเข้า (ใต้แนวรับ {displaySupport})
+                    </span>
+                  </div>
 
-                <div className="bg-[#7EE0B5]/15 border border-[#7EE0B5]/40 rounded-xl p-3">
-                  <span className="text-[#7EE0B5] text-[11px] block font-medium">
-                    Take Profit (TP)
-                  </span>
-                  <span className="text-white font-mono font-bold text-sm block mt-0.5">
-                    {displayTp}
-                  </span>
-                  <span className="text-[#A7A4B8] text-[10px] block mt-0.5">
-                    +{tpPercent}% เป้ากำไร (ใกล้แนวต้าน {displayResistance})
-                  </span>
+                  <div className="bg-[#7EE0B5]/15 border border-[#7EE0B5]/40 rounded-xl p-3">
+                    <span className="text-[#7EE0B5] text-[11px] block font-medium">
+                      Take Profit (TP)
+                    </span>
+                    <span className="text-white font-mono font-bold text-sm block mt-0.5">
+                      {displayTp}
+                    </span>
+                    <span className="text-[#A7A4B8] text-[10px] block mt-0.5">
+                      +{tpPercent}% เป้ากำไร (ใกล้แนวต้าน {displayResistance})
+                    </span>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div
+                  className="bg-[#FFB86B]/15 border border-[#FFB86B]/40 rounded-xl p-3 space-y-1"
+                  role="alert"
+                  data-testid="forex-signal-inconsistent-warning"
+                >
+                  <p className="text-[#FFB86B] text-xs font-bold">
+                    {INCONSISTENT_SIGNAL_LABEL}
+                  </p>
+                  <p className="text-[#A7A4B8] text-[10px] leading-snug">
+                    {signalValidation.detail} — ซ่อนตัวเลข SL/TP ไว้จนกว่าข้อมูลจะถูกแก้ไข
+                  </p>
+                  <p className="text-[#A7A4B8] text-[10px] leading-snug">
+                    ราคาตลาดปัจจุบัน {displayPrice} • {activeSignal.type}
+                  </p>
+                </div>
+              )}
 
               <div className="space-y-1.5 text-xs text-[#A7A4B8] pt-1">
                 <p>• คำนวณ Lot Size และ Pip Value ให้เหมาะสม ไม่เสี่ยงเกิน 1-2% ของพอร์ต</p>
