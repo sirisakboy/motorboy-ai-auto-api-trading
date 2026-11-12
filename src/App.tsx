@@ -131,9 +131,11 @@ export const App: React.FC = () => {
   const [cryptoList, setCryptoList] = useState<CryptoCoin[]>(CRYPTO_INITIAL);
   const [forexRates, setForexRates] = useState<ForexPair[]>([]);
   const [stockIndices, setStockIndices] = useState<StockIndex[]>(STOCK_SYMBOLS);
-  const [signals, setSignals] = useState<TradingSignal[]>(() =>
-    generateRealSignals(CRYPTO_INITIAL)
-  );
+  /* สัญญาณคริปโตคำนวณจาก cryptoList ตรง ๆ (derived state)
+     เดิมใช้ state + interval 15 วิ ทำให้การ์ดแสดงราคาสดแต่ SL/TP มาจากราคาเก่า
+     (ผู้ใช้เห็น LONG ราคา $71,692 แต่ SL $90,364) — ตอนนี้คำนวณใหม่ทุกครั้งที่ราคาเปลี่ยน */
+  const signals: TradingSignal[] = useMemo(() => generateRealSignals(cryptoList), [cryptoList]);
+
   const [forexSignals, setForexSignals] = useState<TradingSignal[]>([]);
   const [thaiStocks, setThaiStocks] = useState<ThaiStock[]>(THAI_STOCKS);
   const [foreignStocks, setForeignStocks] = useState<ForeignStock[]>(FOREIGN_STOCKS);
@@ -579,16 +581,9 @@ export const App: React.FC = () => {
     };
   }, [updateCryptoPrices]);
 
-  // 2. Refresh crypto signals on a 15s throttle
-  useEffect(() => {
-    const updateSignals = () => setSignals(generateRealSignals(cryptoListRef.current));
-    updateSignals();
-    const interval = setInterval(() => {
-      if (document.hidden) return; // ไม่ต้องคำนวณใหม่ตอนแท็บถูกซ่อน
-      updateSignals();
-    }, 15000);
-    return () => clearInterval(interval);
-  }, []);
+  // 2. Crypto signals are derived from the live list (see `signals` below).
+  //    Keeping a separate state here is what allowed SL/TP to drift away from
+  //    the price shown on the card, so the 15s refresh loop is gone.
 
   // 3. Crypto REST Fallback Polling (immediate mount + every 30s)
   useEffect(() => {
@@ -1279,14 +1274,16 @@ export const App: React.FC = () => {
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 mb-3 border-b border-white/[0.07]/60 gap-2">
                     <div>
                       <h2 className="text-white font-bold text-sm">
-                        กราฟราคา 90 วัน & ค่าเฉลี่ย EMA (20/50)
+                        กราฟราคา 1,000 วัน & ค่าเฉลี่ย EMA (20/50)
                       </h2>
                       <p className="text-[#A7A4B8] text-[11px] mt-0.5">
-                        {selectedTab === 0 && 'ดึงข้อมูล Binance 1D Klines จริง วิเคราะห์เส้น EMA (20/50) และแนวรับ-แนวต้าน'}
-                        {selectedTab === 1 && 'ดึงข้อมูลอัตราแลกเปลี่ยน Forex 1D Closes จริง วิเคราะห์กรอบสวิง 90 วัน'}
-                        {selectedTab === 2 && 'ดึงข้อมูลราคาปิดหุ้นไทย SET (.BK) รายวันจากตลาดหลักทรัพย์ พร้อมแนวรับ-แนวต้าน'}
-                        {selectedTab === 3 && 'ดึงข้อมูลหุ้นสหรัฐฯ (US Equities) รายวันจาก NASDAQ/NYSE พร้อมเส้น EMA'}
-                        {selectedTab === 4 && 'ดึงข้อมูลดัชนีตลาดหลักทรัพย์ (SET, NASDAQ, S&P 500, DJI) กรอบย้อนหลัง 90 วัน'}
+                        {/* ไม่ยืนยันว่าเป็นข้อมูลสดตรงนี้ — ให้ป้ายบนกราฟเป็นผู้บอกสถานะจริง/สำรอง
+                            (เดิมบรรทัดนี้เขียนว่า "ดึงข้อมูลจริง" ขณะที่ป้ายบนกราฟขึ้น "ออฟไลน์") */}
+                        {selectedTab === 0 && 'Binance 1D Klines 1,000 วัน · EMA (20/50) · แนวรับ-แนวต้าน — สถานะข้อมูลดูที่ป้ายบนกราฟ'}
+                        {selectedTab === 1 && 'Forex 1D Closes · กรอบสวิง — สถานะข้อมูลดูที่ป้ายบนกราฟ'}
+                        {selectedTab === 2 && 'หุ้นไทย SET (.BK) รายวัน · แนวรับ-แนวต้าน — สถานะข้อมูลดูที่ป้ายบนกราฟ'}
+                        {selectedTab === 3 && 'หุ้นสหรัฐฯ (US Equities) รายวัน · EMA — สถานะข้อมูลดูที่ป้ายบนกราฟ'}
+                        {selectedTab === 4 && 'ดัชนีตลาด (SET, NASDAQ, S&P 500, DJI) 1,000 วัน — สถานะข้อมูลดูที่ป้ายบนกราฟ'}
                       </p>
                     </div>
 

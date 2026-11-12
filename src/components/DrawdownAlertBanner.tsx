@@ -56,7 +56,7 @@ export const DrawdownAlertBanner: React.FC<DrawdownAlertBannerProps> = ({
           <div className="text-xs leading-snug truncate">
             <span className="font-semibold mr-1.5">{headline}:</span>
             <span className="text-[#A7A4B8]">
-              {breachedAssets.length} ตัวลงเกินเกณฑ์ที่ตั้งไว้ พักสักครู่ไหมครับ
+              {breachedAssets.length} ตัวลงเกินเกณฑ์ เทียบ “จุดพีคที่คุณบันทึกไว้” — พักสักครู่ไหมครับ
             </span>
             <span className="text-[#A7A4B8] font-mono ml-1.5 tabular-nums">
               [{breachedAssets.slice(0, 3).map((a) => `${a.symbol} ${a.currentDrawdownPct}%`).join(', ')}

@@ -29,6 +29,7 @@ import {
   playDrawdownAlertChime,
 } from '../services/drawdownService';
 import { useModalA11y } from '../hooks/useModalA11y';
+import { formatPriceDynamic } from '../utils';
 
 interface DrawdownMonitorModalProps {
   isOpen: boolean;
@@ -154,7 +155,7 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
       `--- รายการสินทรัพย์ที่น่าจับตามอง ---`,
       ...processedAssets.slice(0, 8).map(
         (a) =>
-          `• ${a.symbol} (${a.category}): ราคา $${a.currentPrice.toLocaleString()} | จุดพีค $${a.peakPrice.toLocaleString()} | ย่อตัว ${a.currentDrawdownPct}% (ต้องการ +${a.recoveryNeededPct}% ฟื้นตัว) [สถานะ: ${a.status}]`
+          `• ${a.symbol} (${a.category}): ราคา ${formatPriceDynamic(a.currentPrice)} | จุดพีค ${formatPriceDynamic(a.peakPrice)} | ย่อตัว ${a.currentDrawdownPct}% (ต้องการ +${a.recoveryNeededPct}% ฟื้นตัว) [สถานะ: ${a.status}]`
       ),
       ``,
       `คำแนะนำกลยุทธ์: ${summary.recommendedActionTh}`,
@@ -329,7 +330,9 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
                     onChange={(e) => setLocalWarning(Number(e.target.value))}
                     className="w-full accent-amber-400 cursor-pointer"
                   />
-                  <p className="text-[10px] text-[#A7A4B8]">แจ้งเตือนเตือนภัยเมื่อราคาลดลงจากจุดพีค</p>
+                  <p className="text-[10px] text-[#A7A4B8]">
+                    แจ้งเตือนเมื่อราคาลดลงจาก “จุดพีค” ที่คุณบันทึกไว้ (ไม่ใช่ ATH ของตลาดหรือต้นทุนจริง)
+                  </p>
                 </div>
 
                 {/* Critical Slider */}
@@ -612,7 +615,7 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
                         <div>
                           <p className="text-[10px] text-[#A7A4B8] font-mono uppercase">ราคาปัจจุบัน</p>
                           <p className="font-mono font-bold text-sm text-white">
-                            ${asset.currentPrice.toLocaleString()}
+                            {formatPriceDynamic(asset.currentPrice).replace('$', '')}
                           </p>
                         </div>
                         <div>
@@ -637,20 +640,41 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
                             </div>
                           ) : (
                             <div className="flex items-center justify-end gap-1 group">
-                              <p className="font-mono font-bold text-sm text-[#ECEAF4]">
-                                ${asset.peakPrice.toLocaleString()}
-                              </p>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setEditingSymbol(asset.symbol);
-                                  setCustomPeakInput(String(asset.peakPrice));
-                                }}
-                                className="text-[#8B88A0] hover:text-white transition-colors"
-                                title="แก้ไขจุดพีคเปรียบเทียบ"
-                              >
-                                <Edit2 className="w-3 h-3" />
-                              </button>
+                              {asset.referenceSource === 'NONE' ? (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setEditingSymbol(asset.symbol);
+                                    setCustomPeakInput(String(asset.currentPrice));
+                                  }}
+                                  className="text-[10px] font-semibold text-[#FFB86B] underline underline-offset-2"
+                                  title="ยังไม่มีจุดอ้างอิง — ตั้งจุดสูงสุดที่คุณต้องการเปรียบเทียบ"
+                                >
+                                  ตั้งจุดพีค
+                                </button>
+                              ) : (
+                                <>
+                                  <p className="font-mono font-bold text-sm text-[#ECEAF4]">
+                                    {formatPriceDynamic(asset.peakPrice).replace('$', '')}
+                                    {asset.referenceSource === 'API_52W' && (
+                                      <span className="ml-1 text-[9px] font-normal text-[#A7A4B8]">
+                                        52W
+                                      </span>
+                                    )}
+                                  </p>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setEditingSymbol(asset.symbol);
+                                      setCustomPeakInput(String(asset.peakPrice));
+                                    }}
+                                    className="text-[#8B88A0] hover:text-white transition-colors"
+                                    title="แก้ไขจุดพีคเปรียบเทียบ"
+                                  >
+                                    <Edit2 className="w-3 h-3" />
+                                  </button>
+                                </>
+                              )}
                             </div>
                           )}
                         </div>
@@ -677,7 +701,7 @@ export const DrawdownMonitorModal: React.FC<DrawdownMonitorModalProps> = ({
                       <div className="md:col-span-5 space-y-1">
                         <div className="flex justify-between text-[10px] font-mono text-[#A7A4B8]">
                           <span>ระยะย่อตัวจากจุดพีค</span>
-                          <span>ลดลง -${asset.declineAmount.toLocaleString()}</span>
+                          <span>ลดลง -{formatPriceDynamic(asset.declineAmount).replace('$', '')}</span>
                         </div>
                         <div className="h-2 w-full bg-[#141725] rounded-full overflow-hidden relative border border-white/[0.07]">
                           {/* Fill Bar */}

@@ -19,38 +19,6 @@ export const DEFAULT_THRESHOLDS: DrawdownThresholds = {
 const STORAGE_KEY_THRESHOLDS = 'trading_engine_drawdown_thresholds';
 const STORAGE_KEY_CUSTOM_PEAKS = 'trading_engine_drawdown_custom_peaks';
 
-/** Known reference peaks / ATHs if 52w high is unavailable */
-const KNOWN_PEAKS: Record<string, { peak: number; trough: number }> = {
-  BTC: { peak: 108900, trough: 62000 },
-  ETH: { peak: 4090, trough: 2150 },
-  SOL: { peak: 260, trough: 110 },
-  BNB: { peak: 720, trough: 450 },
-  XRP: { peak: 2.85, trough: 0.48 },
-  SHIB: { peak: 0.0000350, trough: 0.0000120 },
-  ADA: { peak: 1.25, trough: 0.32 },
-  DOGE: { peak: 0.48, trough: 0.09 },
-  AOT: { peak: 74.5, trough: 52.0 },
-  CPALL: { peak: 71.0, trough: 54.0 },
-  PTT: { peak: 36.5, trough: 30.5 },
-  DELTA: { peak: 165.0, trough: 68.0 },
-  SCC: { peak: 310.0, trough: 195.0 },
-  KBANK: { peak: 158.0, trough: 122.0 },
-  BH: { peak: 285.0, trough: 210.0 },
-  ADVANC: { peak: 295.0, trough: 205.0 },
-  GULF: { peak: 68.5, trough: 42.0 },
-  TRUE: { peak: 12.8, trough: 6.8 },
-  AAPL: { peak: 242.0, trough: 165.0 },
-  NVDA: { peak: 153.0, trough: 85.0 },
-  TSLA: { peak: 358.0, trough: 138.0 },
-  GOOGL: { peak: 193.0, trough: 130.0 },
-  MSFT: { peak: 468.0, trough: 388.0 },
-  META: { peak: 610.0, trough: 420.0 },
-  AMZN: { peak: 220.0, trough: 145.0 },
-  AVGO: { peak: 185.0, trough: 115.0 },
-  'USD/THB': { peak: 37.2, trough: 32.1 },
-  'EUR/USD': { peak: 1.12, trough: 1.03 },
-};
-
 export function loadThresholds(): DrawdownThresholds {
   try {
     const raw = localStorage.getItem(STORAGE_KEY_THRESHOLDS);
@@ -130,7 +98,105 @@ function generateUnderwaterCurve(
 }
 
 /**
- * Builds standard DrawdownAsset objects from market feeds
+ * ปัดราคาตามขนาดจริง (SHIB ต้องไม่ถูกปัดเป็น 0.00)
+ * ใช้กติกาเดียวกับ formatCryptoPrice: <0.01 → 8 ตำแหน่ง, <1 → 4, >=1 → 2
+ */
+function roundPrice(value: number): number {
+  if (!Number.isFinite(value)) return 0;
+  const abs = Math.abs(value);
+  const decimals = abs < 0.01 ? 8 : abs < 1 ? 4 : 2;
+  return Number(value.toFixed(decimals));
+}
+
+/**
+ * จุดพีคที่ "ใช้ได้จริง" เท่านั้น:
+ * ต้องเป็นค่าบวก finite, ต้องสูงกว่าราคาปัจจุบัน (ไม่งั้นไม่ใช่จุดพีค)
+ * และต้องไม่ผิดสเกลจนเกิน 20 เท่า (เช่น ข้อมูลคนละหน่วย/คนละสินทรัพย์)
+ */
+function sanitizePeak(peak: number | undefined | null, currentPrice: number): number | null {
+  if (typeof peak !== 'number' || !Number.isFinite(peak) || peak <= 0) return null;
+  if (!Number.isFinite(currentPrice) || currentPrice <= 0) return null;
+  if (peak <= currentPrice) return null;
+  if (peak > currentPrice * 20) return null;
+  return peak;
+}
+
+interface BuildRowParams {
+  id: string;
+  symbol: string;
+  name: string;
+  category: DrawdownAsset['category'];
+  currentPrice: number;
+  /** จุดสูงสุดที่ผู้ใช้บันทึกเอง (มาก่อนเสมอ) */
+  customPeak?: number;
+  /** 52-week high จากผู้ให้บริการข้อมูล (มีเฉพาะหุ้นต่างประเทศ) */
+  apiPeak?: number;
+  troughPrice?: number;
+  thresholds: DrawdownThresholds;
+  /** ตัวคูณประมาณจำนวนวันใน drawdown (ใช้เฉพาะเมื่อมีจุดอ้างอิงจริง) */
+  daysFactor: number;
+}
+
+/**
+ * สร้างแถว drawdown จาก "จุดอ้างอิงจริง" เท่านั้น
+ *
+ * บั๊กเดิม: ถ้าไม่มีข้อมูล peak โค้ดจะแต่งขึ้นมา (`currentPrice * 1.25`) และมี
+ * ตาราง KNOWN_PEAKS ที่ฝัง ATH เก่าไว้ (SHIB 0.0000350) → แบนเนอร์เด้งว่า
+ * "พอร์ตย่อตัวแรง SHIB -85.79%" ทั้งที่ราคาปัจจุบันเพิ่งวิ่งขึ้น
+ * ตอนนี้: ไม่มีจุดอ้างอิง = 0% + `referenceSource: 'NONE'` (ไม่แจ้งเตือน)
+ */
+function buildDrawdownRow(params: BuildRowParams): DrawdownAsset {
+  const {
+    id, symbol, name, category, currentPrice, customPeak, apiPeak, troughPrice, thresholds, daysFactor,
+  } = params;
+
+  const custom = sanitizePeak(customPeak, currentPrice);
+  const fromApi = sanitizePeak(apiPeak, currentPrice);
+  const peakPrice = custom ?? fromApi ?? null;
+  const referenceSource = custom !== null ? 'CUSTOM' : fromApi !== null ? 'API_52W' : 'NONE';
+
+  const currentDrawdownPct =
+    peakPrice !== null ? Number((((currentPrice - peakPrice) / peakPrice) * 100).toFixed(2)) : 0;
+
+  const effectivePeak = peakPrice ?? currentPrice;
+  const effectiveTrough =
+    typeof troughPrice === 'number' && Number.isFinite(troughPrice) && troughPrice > 0 && troughPrice < effectivePeak
+      ? troughPrice
+      : effectivePeak;
+  const maxDrawdownPct =
+    effectivePeak > 0
+      ? Number((((effectiveTrough - effectivePeak) / effectivePeak) * 100).toFixed(2))
+      : currentDrawdownPct;
+
+  const recoveryNeededPct =
+    peakPrice !== null && currentPrice > 0
+      ? Number((((peakPrice / currentPrice) - 1) * 100).toFixed(2))
+      : 0;
+
+  return {
+    id,
+    symbol,
+    name,
+    category,
+    currentPrice: roundPrice(currentPrice),
+    peakPrice: roundPrice(effectivePeak),
+    troughPrice: roundPrice(effectiveTrough),
+    currentDrawdownPct,
+    maxDrawdownPct,
+    recoveryNeededPct,
+    declineAmount: peakPrice !== null ? roundPrice(peakPrice - currentPrice) : 0,
+    status: peakPrice !== null ? determineRiskStatus(currentDrawdownPct, thresholds) : 'NORMAL',
+    daysInDrawdown:
+      peakPrice !== null ? Math.max(1, Math.round(Math.abs(currentDrawdownPct) * daysFactor)) : 0,
+    underwaterCurve: generateUnderwaterCurve(currentDrawdownPct, maxDrawdownPct),
+    referenceSource,
+    lastUpdated: new Date().toLocaleTimeString('th-TH'),
+  };
+}
+
+/**
+ * Builds standard DrawdownAsset objects from market feeds.
+ * เฉพาะสินทรัพย์ที่มีราคาจริง และมี "จุดอ้างอิงจริง" เท่านั้นที่จะถูกนับเป็น drawdown
  */
 export function buildDrawdownAssets(params: {
   cryptoList?: CryptoCoin[];
@@ -150,144 +216,86 @@ export function buildDrawdownAssets(params: {
   } = params;
 
   const result: DrawdownAsset[] = [];
+  const hasPrice = (price: unknown): price is number =>
+    typeof price === 'number' && Number.isFinite(price) && price > 0;
 
-  // 1. Process Cryptos
-  cryptoList.forEach((c) => {
+  // 1) คริปโต — จุดอ้างอิงมาจากที่ผู้ใช้บันทึกเท่านั้น (ข้อมูล 52w ไม่มีในฟีดนี้)
+  cryptoList.filter((c) => hasPrice(c.price)).forEach((c) => {
     const symbol = c.symbol.toUpperCase();
-    const currentPrice = c.price;
-    const known = KNOWN_PEAKS[symbol];
-    const custom = customPeaks[symbol];
-    const peakPrice = custom || (c.high && c.high > currentPrice ? c.high * 1.15 : known?.peak || currentPrice * 1.25);
-    const troughPrice = known?.trough || (c.low && c.low < currentPrice ? c.low * 0.9 : currentPrice * 0.7);
-
-    const currentDrawdownPct = peakPrice > 0 ? ((currentPrice - peakPrice) / peakPrice) * 100 : 0;
-    const maxDrawdownPct = peakPrice > 0 ? ((troughPrice - peakPrice) / peakPrice) * 100 : currentDrawdownPct;
-    const recoveryNeededPct = currentPrice > 0 ? ((peakPrice / currentPrice) - 1) * 100 : 0;
-    const declineAmount = Math.max(0, peakPrice - currentPrice);
-    const status = determineRiskStatus(currentDrawdownPct, thresholds);
-
-    result.push({
-      id: `crypto_${symbol}`,
-      symbol,
-      name: c.name || symbol,
-      category: 'CRYPTO',
-      currentPrice,
-      peakPrice: +peakPrice.toFixed(2),
-      troughPrice: +troughPrice.toFixed(2),
-      currentDrawdownPct: +currentDrawdownPct.toFixed(2),
-      maxDrawdownPct: +maxDrawdownPct.toFixed(2),
-      recoveryNeededPct: +recoveryNeededPct.toFixed(2),
-      declineAmount: +declineAmount.toFixed(2),
-      status,
-      daysInDrawdown: Math.max(1, Math.round(Math.abs(currentDrawdownPct) * 2.8)),
-      underwaterCurve: generateUnderwaterCurve(currentDrawdownPct, maxDrawdownPct),
-      lastUpdated: new Date().toLocaleTimeString('th-TH'),
-    });
+    result.push(
+      buildDrawdownRow({
+        id: `crypto_${symbol}`,
+        symbol,
+        name: c.name || symbol,
+        category: 'CRYPTO',
+        currentPrice: c.price,
+        customPeak: customPeaks[symbol],
+        troughPrice: c.low,
+        thresholds,
+        daysFactor: 2.8,
+      })
+    );
   });
 
-  // 2. Process Foreign / US Stocks
-  foreignStocks.forEach((s) => {
+  // 2) หุ้นสหรัฐฯ — ใช้ 52-week high จากผู้ให้บริการข้อมูลเป็นจุดอ้างอิงจริงได้
+  foreignStocks.filter((s) => hasPrice(s.price)).forEach((s) => {
     const symbol = s.symbol.toUpperCase();
-    const currentPrice = s.price;
-    const known = KNOWN_PEAKS[symbol];
-    const custom = customPeaks[symbol];
-    const peakPrice = custom || s.high52w || known?.peak || currentPrice * 1.18;
-    const troughPrice = s.low52w || known?.trough || currentPrice * 0.78;
-
-    const currentDrawdownPct = peakPrice > 0 ? ((currentPrice - peakPrice) / peakPrice) * 100 : 0;
-    const maxDrawdownPct = peakPrice > 0 ? ((troughPrice - peakPrice) / peakPrice) * 100 : currentDrawdownPct;
-    const recoveryNeededPct = currentPrice > 0 ? ((peakPrice / currentPrice) - 1) * 100 : 0;
-    const declineAmount = Math.max(0, peakPrice - currentPrice);
-    const status = determineRiskStatus(currentDrawdownPct, thresholds);
-
-    result.push({
-      id: `us_${symbol}`,
-      symbol,
-      name: s.name || symbol,
-      category: 'FOREIGN_STOCK',
-      currentPrice,
-      peakPrice: +peakPrice.toFixed(2),
-      troughPrice: +troughPrice.toFixed(2),
-      currentDrawdownPct: +currentDrawdownPct.toFixed(2),
-      maxDrawdownPct: +maxDrawdownPct.toFixed(2),
-      recoveryNeededPct: +recoveryNeededPct.toFixed(2),
-      declineAmount: +declineAmount.toFixed(2),
-      status,
-      daysInDrawdown: Math.max(1, Math.round(Math.abs(currentDrawdownPct) * 3.2)),
-      underwaterCurve: generateUnderwaterCurve(currentDrawdownPct, maxDrawdownPct),
-      lastUpdated: new Date().toLocaleTimeString('th-TH'),
-    });
+    result.push(
+      buildDrawdownRow({
+        id: `us_${symbol}`,
+        symbol,
+        name: s.name || symbol,
+        category: 'FOREIGN_STOCK',
+        currentPrice: s.price,
+        customPeak: customPeaks[symbol],
+        apiPeak: s.high52w,
+        troughPrice: s.low52w,
+        thresholds,
+        daysFactor: 3.2,
+      })
+    );
   });
 
-  // 3. Process Thai Stocks
-  thaiStocks.forEach((s) => {
+  // 3) หุ้นไทย
+  thaiStocks.filter((s) => hasPrice(s.price)).forEach((s) => {
     const symbol = s.symbol.toUpperCase();
-    const currentPrice = s.price;
-    const known = KNOWN_PEAKS[symbol];
-    const custom = customPeaks[symbol];
-    const peakPrice = custom || known?.peak || +(currentPrice * 1.15).toFixed(2);
-    const troughPrice = known?.trough || +(currentPrice * 0.85).toFixed(2);
-
-    const currentDrawdownPct = peakPrice > 0 ? ((currentPrice - peakPrice) / peakPrice) * 100 : 0;
-    const maxDrawdownPct = peakPrice > 0 ? ((troughPrice - peakPrice) / peakPrice) * 100 : currentDrawdownPct;
-    const recoveryNeededPct = currentPrice > 0 ? ((peakPrice / currentPrice) - 1) * 100 : 0;
-    const declineAmount = Math.max(0, peakPrice - currentPrice);
-    const status = determineRiskStatus(currentDrawdownPct, thresholds);
-
-    result.push({
-      id: `thai_${symbol}`,
-      symbol,
-      name: s.nameEn || s.name || symbol,
-      category: 'THAI_STOCK',
-      currentPrice,
-      peakPrice: +peakPrice.toFixed(2),
-      troughPrice: +troughPrice.toFixed(2),
-      currentDrawdownPct: +currentDrawdownPct.toFixed(2),
-      maxDrawdownPct: +maxDrawdownPct.toFixed(2),
-      recoveryNeededPct: +recoveryNeededPct.toFixed(2),
-      declineAmount: +declineAmount.toFixed(2),
-      status,
-      daysInDrawdown: Math.max(1, Math.round(Math.abs(currentDrawdownPct) * 2.5)),
-      underwaterCurve: generateUnderwaterCurve(currentDrawdownPct, maxDrawdownPct),
-      lastUpdated: new Date().toLocaleTimeString('th-TH'),
-    });
+    result.push(
+      buildDrawdownRow({
+        id: `thai_${symbol}`,
+        symbol,
+        name: s.nameEn || s.name || symbol,
+        category: 'THAI_STOCK',
+        currentPrice: s.price,
+        customPeak: customPeaks[symbol],
+        thresholds,
+        daysFactor: 2.5,
+      })
+    );
   });
 
-  // 4. Process Key Forex Pairs
-  forexRates.slice(0, 4).forEach((f) => {
-    const symbol = f.pair;
-    const currentPrice = f.price;
-    const known = KNOWN_PEAKS[symbol];
-    const custom = customPeaks[symbol];
-    const peakPrice = custom || known?.peak || +(currentPrice * 1.05).toFixed(4);
-    const troughPrice = known?.trough || +(currentPrice * 0.95).toFixed(4);
-
-    const currentDrawdownPct = peakPrice > 0 ? ((currentPrice - peakPrice) / peakPrice) * 100 : 0;
-    const maxDrawdownPct = peakPrice > 0 ? ((troughPrice - peakPrice) / peakPrice) * 100 : currentDrawdownPct;
-    const recoveryNeededPct = currentPrice > 0 ? ((peakPrice / currentPrice) - 1) * 100 : 0;
-    const declineAmount = Math.max(0, peakPrice - currentPrice);
-    const status = determineRiskStatus(currentDrawdownPct, thresholds);
-
-    result.push({
-      id: `fx_${symbol}`,
-      symbol,
-      name: `อัตราแลกเปลี่ยน ${symbol}`,
-      category: 'FOREX',
-      currentPrice,
-      peakPrice: +peakPrice.toFixed(4),
-      troughPrice: +troughPrice.toFixed(4),
-      currentDrawdownPct: +currentDrawdownPct.toFixed(2),
-      maxDrawdownPct: +maxDrawdownPct.toFixed(2),
-      recoveryNeededPct: +recoveryNeededPct.toFixed(2),
-      declineAmount: +declineAmount.toFixed(4),
-      status,
-      daysInDrawdown: Math.max(1, Math.round(Math.abs(currentDrawdownPct) * 4.5)),
-      underwaterCurve: generateUnderwaterCurve(currentDrawdownPct, maxDrawdownPct),
-      lastUpdated: new Date().toLocaleTimeString('th-TH'),
-    });
+  // 4) คู่เงินหลัก
+  forexRates.filter((f) => hasPrice(f.price)).slice(0, 4).forEach((f) => {
+    result.push(
+      buildDrawdownRow({
+        id: `fx_${f.pair}`,
+        symbol: f.pair,
+        name: `อัตราแลกเปลี่ยน ${f.pair}`,
+        category: 'FOREX',
+        currentPrice: f.price,
+        customPeak: customPeaks[f.pair],
+        thresholds,
+        daysFactor: 4.5,
+      })
+    );
   });
 
-  return result.sort((a, b) => a.currentDrawdownPct - b.currentDrawdownPct);
+  // สินทรัพย์ที่ยังไม่มีจุดอ้างอิงไปท้ายรายการ (ให้ผู้ใช้ตั้งจุดพีคก่อน)
+  return result.sort((a, b) => {
+    const aNone = a.referenceSource === 'NONE' ? 1 : 0;
+    const bNone = b.referenceSource === 'NONE' ? 1 : 0;
+    if (aNone !== bNone) return aNone - bNone;
+    return a.currentDrawdownPct - b.currentDrawdownPct;
+  });
 }
 
 /**
@@ -310,13 +318,31 @@ export function computePortfolioDrawdownSummary(
     };
   }
 
+  // นับเฉพาะสินทรัพย์ที่มี "จุดอ้างอิงจริง" — สินทรัพย์ที่ยังไม่มีจุดพีค
+  // ไม่ควรถูกนับเป็น 0% แล้วถ่วงค่าเฉลี่ยจนดูปลอดภัยกว่าความเป็นจริง
+  const monitored = assets.filter((a) => a.referenceSource !== 'NONE');
+  if (monitored.length === 0) {
+    return {
+      monitoredCount: 0,
+      warningCount: 0,
+      criticalCount: 0,
+      extremeCount: 0,
+      worstAssetSymbol: '-',
+      worstDrawdownPct: 0,
+      avgDrawdownPct: 0,
+      portfolioStatus: 'NORMAL',
+      recommendedActionTh:
+        'ยังไม่มีจุดอ้างอิงสำหรับคำนวณ Drawdown — เปิดหน้าติดตามแล้วตั้ง “จุดสูงสุด” ของสินทรัพย์ที่คุณถืออยู่ก่อน',
+    };
+  }
+
   let warningCount = 0;
   let criticalCount = 0;
   let extremeCount = 0;
   let totalDrawdown = 0;
-  let worstAsset = assets[0];
+  let worstAsset = monitored[0];
 
-  assets.forEach((a) => {
+  monitored.forEach((a) => {
     totalDrawdown += a.currentDrawdownPct;
     if (a.status === 'EXTREME') extremeCount++;
     else if (a.status === 'CRITICAL') criticalCount++;
@@ -327,7 +353,7 @@ export function computePortfolioDrawdownSummary(
     }
   });
 
-  const avgDrawdownPct = +(totalDrawdown / assets.length).toFixed(2);
+  const avgDrawdownPct = +(totalDrawdown / monitored.length).toFixed(2);
 
   let portfolioStatus: DrawdownRiskStatus = 'NORMAL';
   let recommendedActionTh = 'พอร์ตโฟลิโออยู่ในเกณฑ์ปกติ การย่อตัวยังอยู่ในกรอบบริหารความเสี่ยงทั่วไป';
@@ -344,7 +370,7 @@ export function computePortfolioDrawdownSummary(
   }
 
   return {
-    monitoredCount: assets.length,
+    monitoredCount: monitored.length,
     warningCount,
     criticalCount,
     extremeCount,

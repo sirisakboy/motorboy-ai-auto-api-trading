@@ -4,7 +4,7 @@ import {
   computeAtsMatrixAnalysis,
   getBtcFromCryptoList,
 } from '../services/atsMatrixService';
-import { CRYPTO_INITIAL } from '../services/apiClient';
+import { LIVE_CRYPTO_FEED as CRYPTO_INITIAL } from './fixtures/liveCryptoFeed';
 import { generateAiChatReply } from '../services/aiChatService';
 
 describe('isAtsMatrixTrigger (search-box trigger)', () => {
