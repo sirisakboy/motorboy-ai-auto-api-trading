@@ -199,6 +199,40 @@ export function formatPriceDynamic(
 }
 
 /* ============================================================================
+ * "ณ เวลา/วันที่" — for data that is not live
+ * ========================================================================== */
+
+const THAI_DATE_TIME = new Intl.DateTimeFormat('th-TH', {
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+  timeZone: 'Asia/Bangkok',
+});
+
+/**
+ * แสดงเวลาอ้างอิงของข้อมูลที่ไม่ใช่ข้อมูลสด เช่น "12 พ.ย. 2026 16:00"
+ * คืนสตริงว่างเมื่อไม่มี/แปลงไม่ได้ เพื่อให้ผู้เรียกเลือกซ่อนป้ายได้
+ */
+export function formatAsOf(iso?: string | null): string {
+  if (!iso) return '';
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '';
+  try {
+    return THAI_DATE_TIME.format(date);
+  } catch {
+    return '';
+  }
+}
+
+/** ป้ายพร้อมคำนำหน้า: "ณ 12 พ.ย. 2026 16:00" */
+export function formatAsOfLabel(iso?: string | null): string {
+  const formatted = formatAsOf(iso);
+  return formatted ? `ณ ${formatted}` : '';
+}
+
+/* ============================================================================
  * Trading-signal validation
  *
  * ตัวเลข SL/TP ที่สลับข้างกัน (SL อยู่เหนือราคาในไม้ LONG) คือสัญญาณที่ "ผิด"

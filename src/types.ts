@@ -423,7 +423,14 @@ export type DrawdownRiskStatus = 'NORMAL' | 'WARNING' | 'CRITICAL' | 'EXTREME';
  * CUSTOM = จุดสูงสุด/ต้นทุนที่ผู้ใช้บันทึกเอง · API_52W = 52-week high จากผู้ให้บริการข้อมูล
  * NONE = ยังไม่มีจุดอ้างอิง (ห้ามแต่งตัวเลขขึ้นมาเอง)
  */
-export type DrawdownReferenceSource = 'CUSTOM' | 'API_52W' | 'NONE';
+/**
+ * ที่มาของจุดพีคที่ใช้คำนวณ drawdown
+ * - CUSTOM: ผู้ใช้ตั้งเอง (ชนะเสมอ)
+ * - API_52W: จุดสูงสุด 52 สัปดาห์จากผู้ให้บริการข้อมูล
+ * - AI_AUTO: AI เก็บ high-water mark จากราคาสดที่แอปเห็น (เรียลไทม์)
+ * - NONE: ยังไม่มีจุดอ้างอิงจริง (ไม่นับ ไม่แจ้งเตือน)
+ */
+export type DrawdownReferenceSource = 'CUSTOM' | 'API_52W' | 'AI_AUTO' | 'NONE';
 
 export interface DrawdownAsset {
   id: string;

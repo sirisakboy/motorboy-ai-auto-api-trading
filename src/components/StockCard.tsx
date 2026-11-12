@@ -1,5 +1,6 @@
 import React from 'react';
 import { StockIndex } from '../types';
+import { formatAsOfLabel } from '../utils';
 
 interface StockCardProps {
   stock: StockIndex;
@@ -54,6 +55,11 @@ export const StockCard: React.FC<StockCardProps> = ({
             >
               {stock.isLive ? '● LIVE' : '○ สำรอง'}
             </span>
+            {formatAsOfLabel(stock.updatedAt) && (
+              <span className="block text-[9px] text-[#A7A4B8] mt-0.5 tabular-nums">
+                {formatAsOfLabel(stock.updatedAt)}
+              </span>
+            )}
           </div>
           <div className="text-white font-black text-lg">
             {currencySymbol}{displayPrice}

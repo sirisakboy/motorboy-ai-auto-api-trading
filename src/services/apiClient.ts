@@ -43,12 +43,30 @@ export const FOREX_PAIRS: string[] = [
   'USD/CHF',
 ];
 
-export const STOCK_SYMBOLS: StockIndex[] = [
+/**
+ * เวลาที่ข้อมูลตัวอย่าง (bundled snapshot) ถูกบันทึกไว้
+ * ใช้ติดป้าย "ณ วันที่/เวลา" ทุกครั้งที่ยังไม่ได้ดึงข้อมูลสด
+ * — ตัวเลขคงที่ต้องไม่ถูกนำเสนอเสมือนราคาปัจจุบัน
+ */
+export const SEED_SNAPSHOT_AT = '2026-10-01T09:00:00.000Z';
+
+/** ติดธง "ไม่ใช่ข้อมูลสด" + เวลาอ้างอิงให้ข้อมูลตั้งต้นทุกก้อน */
+function stampSeedSnapshot<T extends { isLive?: boolean; updatedAt?: string }>(items: T[]): T[] {
+  return items.map((item) => ({
+    ...item,
+    isLive: false,
+    updatedAt: item.updatedAt ?? SEED_SNAPSHOT_AT,
+  }));
+}
+
+const STOCK_SYMBOLS_RAW: StockIndex[] = [
   { symbol: 'SET', name: 'SET Index', price: 1378.45, change: 0.42, status: 'CLOSED', schedule: 'SET Mon-Fri 10:00-12:30, 14:30-16:30 ICT', isLive: false },
   { symbol: 'NASDAQ', name: 'NASDAQ', price: 18942.10, change: 1.15, status: 'CLOSED', schedule: 'US Market 09:30-16:00 EST', isLive: false },
   { symbol: 'S&P500', name: 'S&P 500', price: 5983.25, change: 0.68, status: 'CLOSED', schedule: 'US Market 09:30-16:00 EST', isLive: false },
   { symbol: 'DJI', name: 'Dow Jones', price: 43729.80, change: -0.12, status: 'CLOSED', schedule: 'US Market 09:30-16:00 EST', isLive: false },
 ];
+
+export const STOCK_SYMBOLS: StockIndex[] = stampSeedSnapshot(STOCK_SYMBOLS_RAW);
 
 /** Yahoo Finance symbols for live index quotes. */
 const INDEX_YAHOO_MAP: Record<string, string> = {
@@ -119,7 +137,7 @@ export async function fetchStockIndices(prev: StockIndex[] = STOCK_SYMBOLS): Pro
   return prev.map((s) => ({ ...s, isLive: false }));
 }
 
-export const THAI_STOCKS: ThaiStock[] = [
+const THAI_STOCKS_RAW: ThaiStock[] = [
   { symbol: 'AOT', name: 'ท่าอากาศยานไทย', nameEn: 'Airports of Thailand', sector: 'ท่องเที่ยว & การบิน', price: 62.50, change: 1.25, volume: 18500000, marketCap: '875,000', pe: 32.5, dividendYield: 1.8, googleFinanceUrl: 'https://www.google.com/finance/quote/AOT:SET' },
   { symbol: 'CPALL', name: 'ซีพีออลล์', nameEn: 'CP All', sector: 'ค้าปลีก', price: 58.75, change: 0.85, volume: 12300000, marketCap: '421,000', pe: 24.8, dividendYield: 2.1, googleFinanceUrl: 'https://www.google.com/finance/quote/CPALL:SET' },
   { symbol: 'SCC', name: 'เอสซีจี', nameEn: 'Siam Cement', sector: 'วัสดุก่อสร้าง', price: 285.00, change: -0.52, volume: 3200000, marketCap: '405,000', pe: 15.2, dividendYield: 3.8, googleFinanceUrl: 'https://www.google.com/finance/quote/SCC:SET' },
@@ -132,7 +150,9 @@ export const THAI_STOCKS: ThaiStock[] = [
   { symbol: 'TRUE', name: 'ทรู', nameEn: 'True Corporation', sector: 'สื่อสาร', price: 11.80, change: -0.84, volume: 32100000, marketCap: '168,000', pe: 45.2, dividendYield: 0.5, googleFinanceUrl: 'https://www.google.com/finance/quote/TRUE:SET' },
 ];
 
-export const FOREIGN_STOCKS: ForeignStock[] = [
+export const THAI_STOCKS: ThaiStock[] = stampSeedSnapshot(THAI_STOCKS_RAW);
+
+const FOREIGN_STOCKS_RAW: ForeignStock[] = [
   { symbol: 'AAPL', name: 'Apple Inc.', sector: 'Technology', price: 234.80, change: 1.52, volume: 52300000, marketCap: '3.62T', pe: 32.5, high52w: 244.50, low52w: 164.08, googleFinanceUrl: 'https://www.google.com/finance/quote/AAPL:NASDAQ' },
   { symbol: 'NVDA', name: 'NVIDIA Corp', sector: 'Semiconductor', price: 142.65, change: 4.28, volume: 89200000, marketCap: '3.48T', pe: 62.8, high52w: 153.13, low52w: 75.61, googleFinanceUrl: 'https://www.google.com/finance/quote/NVDA:NASDAQ' },
   { symbol: 'TSLA', name: 'Tesla Inc.', sector: 'EV & Clean Energy', price: 412.50, change: -2.15, volume: 78500000, marketCap: '1.32T', pe: 115.2, high52w: 488.54, low52w: 138.80, googleFinanceUrl: 'https://www.google.com/finance/quote/TSLA:NASDAQ' },
@@ -142,6 +162,8 @@ export const FOREIGN_STOCKS: ForeignStock[] = [
   { symbol: 'AMZN', name: 'Amazon.com', sector: 'E-Commerce & Cloud', price: 228.50, change: 1.05, volume: 35600000, marketCap: '2.41T', pe: 42.1, high52w: 242.52, low52w: 161.02, googleFinanceUrl: 'https://www.google.com/finance/quote/AMZN:NASDAQ' },
   { symbol: 'AVGO', name: 'Broadcom Inc.', sector: 'Semiconductor', price: 198.75, change: 3.18, volume: 31200000, marketCap: '932B', pe: 45.8, high52w: 251.88, low52w: 128.00, googleFinanceUrl: 'https://www.google.com/finance/quote/AVGO:NASDAQ' },
 ];
+
+export const FOREIGN_STOCKS: ForeignStock[] = stampSeedSnapshot(FOREIGN_STOCKS_RAW);
 
 const NEWS_SOURCES = [
   { url: 'https://www.coindesk.com/arc/outboundfeeds/rss/', name: 'CoinDesk', category: 'CRYPTO' as const },
@@ -682,14 +704,14 @@ export async function fetchForexRates(prevRates: ForexPair[] = []): Promise<Fore
   if (prevRates.length > 0) {
     return prevRates.map((p) => ({ ...p, flash: 'NONE' as const, isLive: false }));
   }
-  return [
+  return stampSeedSnapshot<ForexPair>([
     { pair: 'EUR/USD', price: 1.0845, change: 0.12, flash: 'NONE', isLive: false },
     { pair: 'USD/JPY', price: 154.20, change: -0.25, flash: 'NONE', isLive: false },
     { pair: 'GBP/USD', price: 1.2980, change: 0.08, flash: 'NONE', isLive: false },
     { pair: 'USD/THB', price: 36.45, change: -0.15, flash: 'NONE', isLive: false },
     { pair: 'AUD/USD', price: 0.6550, change: 0.30, flash: 'NONE', isLive: false },
     { pair: 'USD/CHF', price: 0.8860, change: -0.05, flash: 'NONE', isLive: false },
-  ];
+  ]);
 }
 
 function analyzeSentiment(title: string): Sentiment {

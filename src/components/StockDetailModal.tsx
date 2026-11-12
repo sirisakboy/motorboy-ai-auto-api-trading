@@ -20,6 +20,7 @@ import {
   fetchMarketSentimentScore,
 } from '../services/geminiService';
 import { useModalA11y } from '../hooks/useModalA11y';
+import { formatAsOfLabel } from '../utils';
 
 interface StockDetailModalProps {
   symbol: string;
@@ -33,6 +34,10 @@ interface StockDetailModalProps {
   dividendYield?: number;
   marketCap?: string;
   isThaiStock?: boolean;
+  /** false = ข้อมูลตั้งต้น/ตลาดปิด ไม่ใช่ราคาสด */
+  isLive?: boolean;
+  /** เวลาอ้างอิงของราคาที่แสดง (ISO) */
+  updatedAt?: string;
   useThb?: boolean;
   usdThbRate?: number;
   geminiApiKey: string;
@@ -42,13 +47,14 @@ interface StockDetailModalProps {
 
 export const StockDetailModal: React.FC<StockDetailModalProps> = ({
   symbol, name, nameEn, price, change, volume, sector, pe, dividendYield, marketCap,
-  isThaiStock = false, useThb = false, usdThbRate = 36.45, geminiApiKey, onSaveToHistory, onDismiss,
+  isThaiStock = false, isLive, updatedAt, useThb = false, usdThbRate = 36.45, geminiApiKey, onSaveToHistory, onDismiss,
 }) => {
   const [activeTab, setActiveTab] = useState<'gemini' | 'fundamentals' | 'risk'>('gemini');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [aiResult, setAiResult] = useState<AiAnalysisResult | null>(null);
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [sentiment, setSentiment] = useState<MarketSentimentScore | null>(null);
+  const asOfLabel = isLive === false ? formatAsOfLabel(updatedAt) : '';
   const multiplier = !isThaiStock && useThb ? usdThbRate : 1;
   const currency = isThaiStock || useThb ? '\u0e3f' : '$';
 
@@ -109,6 +115,14 @@ export const StockDetailModal: React.FC<StockDetailModalProps> = ({
               <span className={`text-xl font-black ${change >= 0 ? 'text-[#7EE0B5]' : 'text-[#FFB86B]'}`}>{currency}{(price * multiplier).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               <span className={`text-sm font-bold ${change >= 0 ? 'text-[#7EE0B5]' : 'text-[#FFB86B]'}`}>{change >= 0 ? '+' : ''}{change.toFixed(2)}%</span>
             </div>
+            {asOfLabel && (
+              <p
+                className="text-[10px] text-[#8E8BA3] mt-1 tabular-nums"
+                data-testid="stock-detail-as-of"
+              >
+                {asOfLabel} • ราคาอ้างอิง ไม่ใช่ราคาสด
+              </p>
+            )}
           </div>
           <button type="button" onClick={onDismiss} aria-label="ปิดหน้าต่างรายละเอียดหุ้น" className="text-[#A7A4B8] hover:text-white p-1.5 rounded-lg hover:bg-[#222640] transition-colors shrink-0"><X className="w-5 h-5" /></button>
         </div>

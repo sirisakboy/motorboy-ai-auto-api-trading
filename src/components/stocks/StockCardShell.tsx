@@ -1,6 +1,6 @@
 import React from 'react';
 import { Star, TrendingDown, TrendingUp } from 'lucide-react';
-import { formatPercent } from '../../utils';
+import { formatPercent, formatAsOf, formatAsOfLabel } from '../../utils';
 
 export type StockAccent = 'amber' | 'lavender';
 
@@ -107,11 +107,12 @@ export const StockCardShell: React.FC<StockCardView> = ({
 }) => {
   const tone = ACCENT[accent];
   const isPositive = change >= 0;
-  const liveTitle = updatedAt
-    ? `อัปเดต: ${updatedAt}`
-    : isLive === false
-      ? 'ราคาล่าสุดที่ดึงได้ (ตลาดปิด/ออฟไลน์)'
-      : 'ราคา live';
+  const asOfLabel = isLive === false ? formatAsOfLabel(updatedAt) : '';
+  const liveTitle = isLive === false
+    ? asOfLabel
+      ? `ข้อมูล ณ ${formatAsOf(updatedAt)} — ไม่ใช่ราคาสด (ตลาดปิด/ออฟไลน์)`
+      : 'ราคาล่าสุดที่ดึงได้ (ตลาดปิด/ออฟไลน์)'
+    : 'ราคา live';
 
   return (
     <div
@@ -152,6 +153,16 @@ export const StockCardShell: React.FC<StockCardView> = ({
               </span>
             </div>
             <p className="text-[#A7A4B8] text-[11px] mt-0.5 truncate">{name}</p>
+            {/* ข้อมูลที่ไม่ใช่ราคาสดต้องบอกเวลาอ้างอิงเสมอ */}
+            {asOfLabel && (
+              <p
+                className="text-[9px] text-[#8E8BA3] mt-0.5 tabular-nums"
+                data-testid={`as-of-${symbol}`}
+                title={`ข้อมูล ณ ${formatAsOf(updatedAt)} (ไม่ใช่ราคาสด)`}
+              >
+                {asOfLabel}
+              </p>
+            )}
           </div>
         </div>
 
