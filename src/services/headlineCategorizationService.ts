@@ -34,6 +34,29 @@ export function categorizeHeadlinesHeuristic(article: NewsArticle): 'HIGH' | 'ME
   return 'LOW';
 }
 
+const blockedHeadlineKeys = new Set<string>();
+let serverKeyProbe: boolean | null = null;
+
+async function isServerKeyAvailable(): Promise<boolean> {
+  if (serverKeyProbe !== null) return serverKeyProbe;
+  try {
+    const res = await fetch('/api/gemini/config');
+    if (!res.ok) return false;
+    const data = await res.json();
+    serverKeyProbe = Boolean(data?.serverKeyConfigured);
+    return serverKeyProbe;
+  } catch {
+    return false;
+  }
+}
+
+function applyHeuristicFallback(articles: NewsArticle[]): NewsArticle[] {
+  return articles.map((art) => ({
+    ...art,
+    impact: art.impact || categorizeHeadlinesHeuristic(art),
+  }));
+}
+
 /**
  * Periodically categorizes global financial headlines into High/Medium/Low market impact via Server Gemini API.
  */
@@ -43,26 +66,50 @@ export async function categorizeHeadlinesWithGemini(
 ): Promise<NewsArticle[]> {
   if (!articles || articles.length === 0) return articles;
 
+  const keyToken = geminiApiKey?.trim() || '';
+  if (blockedHeadlineKeys.has(keyToken)) {
+    return applyHeuristicFallback(articles);
+  }
+
+  if (!keyToken) {
+    const hasServerKey = await isServerKeyAvailable();
+    if (!hasServerKey) {
+      blockedHeadlineKeys.add('');
+      return applyHeuristicFallback(articles);
+    }
+  }
+
   try {
     const res = await fetch('/api/gemini/categorize-headlines', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ articles, apiKey: geminiApiKey }),
+      body: JSON.stringify({ articles, apiKey: keyToken || undefined }),
     });
 
-    if (res.ok) {
-      const data = await res.json();
-      if (Array.isArray(data.articles) && data.articles.length > 0) {
-        return data.articles;
-      }
+    const data = await res.json().catch(() => null);
+
+    if (res.ok && Array.isArray(data?.articles) && data.articles.length > 0) {
+      blockedHeadlineKeys.delete(keyToken);
+      return data.articles;
     }
-  } catch (err) {
-    console.warn('Headline categorization server endpoint warning (fallback to heuristic):', err);
+
+    const kind = data?.kind;
+    const code = data?.error;
+    if (
+      res.status === 400 ||
+      res.status === 401 ||
+      res.status === 403 ||
+      kind === 'INVALID_KEY' ||
+      kind === 'MISSING_KEY' ||
+      kind === 'PERMISSION_DENIED' ||
+      code === 'invalid_api_key' ||
+      code === 'missing_gemini_key'
+    ) {
+      blockedHeadlineKeys.add(keyToken);
+    }
+  } catch {
+    // Fallback cleanly to local heuristic without noisy console errors
   }
 
-  // Fallback for all articles if server call fails
-  return articles.map((art) => ({
-    ...art,
-    impact: art.impact || categorizeHeadlinesHeuristic(art),
-  }));
+  return applyHeuristicFallback(articles);
 }

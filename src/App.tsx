@@ -99,6 +99,7 @@ import {
 
 export const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(() => auth.currentUser || ({ uid: 'guest', displayName: 'Guest' } as unknown as User));
+  const [authReady, setAuthReady] = useState<boolean>(false);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((currentUser) => {
@@ -107,6 +108,7 @@ export const App: React.FC = () => {
       } else {
         setUser({ uid: 'guest', displayName: 'Guest' } as unknown as User);
       }
+      setAuthReady(true);
     });
     return () => unsubscribe();
   }, []);
@@ -237,24 +239,24 @@ export const App: React.FC = () => {
   // Music removed.
 
   useEffect(() => {
+    if (!authReady || !user || user.uid === 'guest') return;
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) return;
+
     const docRef = doc(db, 'sessions', 'global');
     const unsubscribe = onSnapshot(
       docRef,
       (docSnap) => {
         if (docSnap.exists()) {
-          const data = docSnap.data();
-          setGlobalSession(data);
-          console.log('Global Session Data Updated:', data);
-        } else {
-          console.warn('Global session document does not exist.');
+          setGlobalSession(docSnap.data());
         }
       },
-      (e) => {
-        console.error('Error in onSnapshot for global session:', e);
+      (e: { code?: string; message?: string }) => {
+        if (e?.code === 'unavailable' || e?.code === 'permission-denied') return;
+        console.warn('Firestore global session listener warning:', e?.code || e?.message);
       }
     );
     return () => unsubscribe();
-  }, []);
+  }, [authReady, user?.uid]);
 
   // AI ตั้งจุดพีคอัตโนมัติแบบเรียลไทม์ — ทุกครั้งที่ฟีดราคาใหม่เข้ามา
   // (คริปโต/หุ้นไทย/หุ้นต่างประเทศ/ฟอเร็กซ์ อัปเดตทุก 15 วินาที) ระบบจะเก็บ

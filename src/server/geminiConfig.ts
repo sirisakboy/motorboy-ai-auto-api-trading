@@ -23,10 +23,34 @@ export const DEFAULT_GEMINI_MODEL = 'gemini-3.1-flash-lite';
  */
 export const GEMINI_MODEL_FALLBACKS = ['gemini-3.6-flash', 'gemini-2.5-flash'];
 
+const MODEL_ALIASES: Record<string, string> = {
+  'gemini 3.1 flash lite': 'gemini-3.1-flash-lite',
+  'gemini-3.1-flash-lite': 'gemini-3.1-flash-lite',
+  'gemini lite': 'gemini-3.1-flash-lite',
+  'flash lite': 'gemini-3.1-flash-lite',
+  'gemini flash': 'gemini-4-hydrogen',
+  'gemini 4 flash': 'gemini-4-hydrogen',
+  'gemini hydrogen': 'gemini-4-hydrogen',
+  'gemini 4 hydrogen': 'gemini-4-hydrogen',
+  'gemini carbon': 'gemini-4-carbon',
+  'gemini 4 carbon': 'gemini-4-carbon',
+  'gemini pro': 'gemini-4-argon',
+  'gemini 4': 'gemini-4-argon',
+  'gemini argon': 'gemini-4-argon',
+  'gemini 4 argon': 'gemini-4-argon',
+};
+
 /** Read `GEMINI_MODEL` from the environment, falling back to the default. */
 export function resolveGeminiModel(env: Record<string, string | undefined> = {}): string {
-  const fromEnv = typeof env.GEMINI_MODEL === 'string' ? env.GEMINI_MODEL.trim() : '';
-  return fromEnv || DEFAULT_GEMINI_MODEL;
+  const raw = typeof env.GEMINI_MODEL === 'string' ? env.GEMINI_MODEL.trim() : '';
+  if (!raw) return DEFAULT_GEMINI_MODEL;
+
+  const normalized = raw.toLowerCase().replace(/\s+/g, ' ');
+  if (MODEL_ALIASES[normalized]) {
+    return MODEL_ALIASES[normalized];
+  }
+
+  return normalized.includes(' ') ? normalized.replace(/\s+/g, '-') : raw;
 }
 
 /** Ordered, de-duplicated chain: primary first, then the fallbacks. */
@@ -110,9 +134,6 @@ export function classifyGeminiError(error: unknown): GeminiErrorInfo {
   })();
 
   const status = numericStatus ?? statusFromText;
-
-  console.log(`[classifyGeminiError] Detail: "${detail}", Status: ${status}`);
-
 
   const make = (
     kind: GeminiErrorKind,

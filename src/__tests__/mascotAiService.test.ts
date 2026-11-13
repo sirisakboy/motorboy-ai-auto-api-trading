@@ -87,6 +87,27 @@ describe('fetchMascotLine', () => {
     }));
     await expect(fetchMascotLine({ state: 'IDLE' })).resolves.toBeNull();
   });
+
+  it('circuit-breaks background calls after 400 invalid_api_key until key changes or forced', async () => {
+    const fetchMock = vi.fn(async () => ({
+      ok: false,
+      status: 400,
+      json: async () => ({ error: 'invalid_api_key', kind: 'INVALID_KEY' }),
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    // First background call hits the server once and records the rejected key
+    expect(await fetchMascotLine({ state: 'IDLE', apiKey: 'bad-key' })).toBeNull();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    // Subsequent background call with the same bad key is skipped (even after reset of cooldown timer if we test same state)
+    expect(await fetchMascotLine({ state: 'SCANNING', apiKey: 'bad-key' })).toBeNull();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    // Explicit user click (force: true) still attempts again
+    expect(await fetchMascotLine({ state: 'IDLE', apiKey: 'bad-key', force: true })).toBeNull();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
 });
 
 describe('timeoutSignal', () => {

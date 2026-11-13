@@ -20,6 +20,7 @@ export const MASCOT_AI_MAX_BACKOFF_MS = 120_000;
 let lastRequestAt = 0;
 let consecutiveFailures = 0;
 let inFlight: Promise<string | null> | null = null;
+const blockedKeyTokens = new Set<string>();
 
 /**
  * `AbortSignal.timeout` is not in every browser this app supports (Safari < 16,
@@ -71,6 +72,21 @@ export interface FetchMascotLineOptions extends MascotAiContext {
   signal?: AbortSignal;
 }
 
+function isKeyRejectedPayload(status: number | undefined, data: any): boolean {
+  if (status === 400 || status === 401 || status === 403) return true;
+  const kind = data?.kind;
+  const code = data?.error;
+  return (
+    kind === 'INVALID_KEY' ||
+    kind === 'MISSING_KEY' ||
+    kind === 'PERMISSION_DENIED' ||
+    code === 'invalid_api_key' ||
+    code === 'missing_gemini_key' ||
+    code === 'permission_denied' ||
+    code === 'invalid_key_format'
+  );
+}
+
 /**
  * Ask the server (which owns the Gemini key) for one in-character line.
  * Returns `null` on any failure — callers fall back to the canned message.
@@ -79,6 +95,9 @@ export async function fetchMascotLine(options: FetchMascotLineOptions): Promise<
   // One request at a time: state churn used to fire several in parallel and the
   // bubble flickered between answers. Concurrent callers share the answer.
   if (inFlight) return inFlight;
+
+  const keyToken = options.apiKey?.trim() || '';
+  if (!options.force && blockedKeyTokens.has(keyToken)) return null;
 
   const now = Date.now();
   if (!options.force && now - lastRequestAt < currentCooldownMs()) return null;
@@ -93,22 +112,28 @@ export async function fetchMascotLine(options: FetchMascotLineOptions): Promise<
         body: JSON.stringify({
           state: options.state,
           marketBrief: buildMascotMarketBrief(options),
-          apiKey: options.apiKey?.trim() || undefined,
+          apiKey: keyToken || undefined,
         }),
         signal: options.signal ?? timeoutSignal(),
       });
 
+      const data = await res.json().catch(() => null);
+
       if (!res.ok) {
         consecutiveFailures = Math.min(consecutiveFailures + 1, 4);
+        if (isKeyRejectedPayload(res.status, data)) {
+          blockedKeyTokens.add(keyToken);
+        }
         return null;
       }
-      const data = await res.json();
+
       const line = typeof data?.line === 'string' ? data.line.trim() : '';
       if (line.length === 0) {
         consecutiveFailures = Math.min(consecutiveFailures + 1, 4);
         return null;
       }
       consecutiveFailures = 0;
+      blockedKeyTokens.delete(keyToken);
       return line;
     } catch {
       consecutiveFailures = Math.min(consecutiveFailures + 1, 4);
@@ -131,4 +156,5 @@ export function resetMascotAiCooldown(): void {
   lastRequestAt = 0;
   consecutiveFailures = 0;
   inFlight = null;
+  blockedKeyTokens.clear();
 }

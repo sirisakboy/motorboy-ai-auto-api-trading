@@ -639,7 +639,7 @@ function generateGeneralMarketSynthesis(query: string, ctx: AiChatContext): stri
 - สอบถามจุดเข้าซื้อ/เป้าขาย: เช่น "BTC ซื้อตรงไหนดี", "แนวต้าน NVDA", "Stop loss ควรตั้งตรงไหน"
 - สอบถามทิศทางและแนวโน้ม: เช่น "USD/THB จะแข็งค่าไหม", "ทองคำน่าซื้อไหม", "AOT แนวรับเท่าไหร่"
 - พิมพ์ "ATS" เพื่อขอรายงาน ATS Matrix & Polymarket Inefficiency
-- ใส่ Gemini API Key ในเมนูตั้งค่า เพื่อเปิดใช้งานโมเดล Gemini 3.8 Flash พร้อมค้นหาข้อมูล Google สด
+- ใส่ Gemini API Key ในเมนูตั้งค่า เพื่อเปิดใช้งานโมเดล Gemini 3.1 Flash Lite พร้อมค้นหาข้อมูล Google สด
 
 นี่คือการวิเคราะห์ ไม่ใช่คำแนะนำการลงทุน`;
 }

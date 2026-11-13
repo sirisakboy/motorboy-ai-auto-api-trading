@@ -69,8 +69,10 @@ describe('geminiConfig — model resolution', () => {
     expect(resolveGeminiModel({ GEMINI_MODEL: '   ' })).toBe(DEFAULT_GEMINI_MODEL);
   });
 
-  it('honours GEMINI_MODEL from the environment', () => {
+  it('honours GEMINI_MODEL from the environment and normalizes aliases', () => {
     expect(resolveGeminiModel({ GEMINI_MODEL: ' gemini-3.6-flash ' })).toBe('gemini-3.6-flash');
+    expect(resolveGeminiModel({ GEMINI_MODEL: 'Gemini 3.1 Flash Lite' })).toBe('gemini-3.1-flash-lite');
+    expect(resolveGeminiModel({ GEMINI_MODEL: 'gemini 4 flash' })).toBe('gemini-4-hydrogen');
   });
 
   it('builds a de-duplicated chain', () => {

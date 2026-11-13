@@ -44,14 +44,9 @@ app.use('/api', apiRateLimiter);
 const GEMINI_MODEL = resolveGeminiModel(process.env);
 const GEMINI_MODEL_CHAIN = buildModelChain(GEMINI_MODEL);
 
-/** Helper to instantiate GoogleGenAI client on the server (strict key shape check) */
-function getGeminiClient(userApiKey?: string) {
-  // ลำดับความสำคัญ: คีย์ของผู้ใช้ → คีย์ฝั่งเซิร์ฟเวอร์ (env) → ไม่มีคีย์
-  const resolved = resolveGeminiKey(userApiKey, process.env);
-  if (resolved.source === 'none') return null;
-
+function createGeminiClient(apiKey: string): GoogleGenAI {
   return new GoogleGenAI({
-    apiKey: resolved.key,
+    apiKey,
     httpOptions: {
       headers: {
         'User-Agent': 'aistudio-build',
@@ -60,18 +55,34 @@ function getGeminiClient(userApiKey?: string) {
   });
 }
 
+/** Helper to instantiate GoogleGenAI client on the server (strict key shape check) */
+function getGeminiClient(userApiKey?: string) {
+  // ลำดับความสำคัญ: คีย์ของผู้ใช้ → คีย์ฝั่งเซิร์ฟเวอร์ (env) → ไม่มีคีย์
+  const resolved = resolveGeminiKey(userApiKey, process.env);
+  if (resolved.source === 'none') return null;
+
+  return createGeminiClient(resolved.key);
+}
+
 /** สร้าง client พร้อมบอกที่มาของคีย์ (ใช้ใน route test-key เพื่อรายงานผลให้ตรง) */
 function getGeminiClientWithSource(userApiKey?: string) {
   const resolved = resolveGeminiKey(userApiKey, process.env);
   if (resolved.source === 'none') return { client: null as GoogleGenAI | null, source: 'none' as const, key: '' };
   return {
-    client: new GoogleGenAI({
-      apiKey: resolved.key,
-      httpOptions: { headers: { 'User-Agent': 'aistudio-build' } },
-    }),
+    client: createGeminiClient(resolved.key),
     source: resolved.source,
     key: resolved.key,
   };
+}
+
+/** Strip sampling params that gemini-4-* models reject with 400 BAD_REQUEST */
+function sanitizeConfigForModel(
+  model: string,
+  config?: Record<string, any>
+): Record<string, any> | undefined {
+  if (!config || !model.startsWith('gemini-4-')) return config;
+  const { temperature: _t, topP: _p, topK: _k, candidateCount: _c, ...rest } = config;
+  return rest;
 }
 
 /**
@@ -83,7 +94,12 @@ async function generateGeminiContent(
   params: { contents: any; config?: Record<string, any> }
 ) {
   return withModelFallback(
-    (model) => ai.models.generateContent({ model, contents: params.contents, config: params.config }),
+    (model) =>
+      ai.models.generateContent({
+        model,
+        contents: params.contents,
+        config: sanitizeConfigForModel(model, params.config),
+      }),
     {
       chain: GEMINI_MODEL_CHAIN,
       onFallback: (failed, next, info) =>
@@ -98,13 +114,64 @@ async function generateGeminiStream(
   params: { contents: any; config?: Record<string, any> }
 ) {
   return withModelFallback(
-    (model) => ai.models.generateContentStream({ model, contents: params.contents, config: params.config }),
+    (model) =>
+      ai.models.generateContentStream({
+        model,
+        contents: params.contents,
+        config: sanitizeConfigForModel(model, params.config),
+      }),
     {
       chain: GEMINI_MODEL_CHAIN,
       onFallback: (failed, next, info) =>
         console.warn(`Gemini stream model "${failed}" unavailable (${info.kind}), retrying with "${next}"`),
     }
   );
+}
+
+const rejectedServerKeys = new Set<string>();
+
+/**
+ * Execute an operational Gemini task with automatic fallback from an expired/invalid
+ * user key to the configured server key (never used by /api/gemini/test-key).
+ */
+async function runWithUserOrServerKey<T>(
+  userApiKey: string | undefined,
+  task: (ai: GoogleGenAI) => Promise<T>
+): Promise<T> {
+  const primary = resolveGeminiKey(userApiKey, process.env);
+  if (primary.source === 'none') {
+    throw new Error('MISSING_KEY');
+  }
+  try {
+    const result = await task(createGeminiClient(primary.key));
+    if (primary.source === 'server') rejectedServerKeys.delete(primary.key);
+    return result;
+  } catch (err) {
+    const info = classifyGeminiError(err);
+    if (info.kind === 'INVALID_KEY' || info.kind === 'PERMISSION_DENIED') {
+      if (primary.source === 'server') {
+        rejectedServerKeys.add(primary.key);
+      } else if (primary.source === 'user') {
+        const serverFallback = resolveGeminiKey(undefined, process.env);
+        if (
+          serverFallback.source === 'server' &&
+          serverFallback.key !== primary.key &&
+          !rejectedServerKeys.has(serverFallback.key)
+        ) {
+          try {
+            return await task(createGeminiClient(serverFallback.key));
+          } catch (fallbackErr) {
+            const fbInfo = classifyGeminiError(fallbackErr);
+            if (fbInfo.kind === 'INVALID_KEY' || fbInfo.kind === 'PERMISSION_DENIED') {
+              rejectedServerKeys.add(serverFallback.key);
+            }
+            throw fallbackErr;
+          }
+        }
+      }
+    }
+    throw err;
+  }
 }
 
 /**
@@ -116,6 +183,8 @@ function sendKeyProblem(res: express.Response, userKey?: string) {
   const empty = !userKey || !String(userKey).trim();
   return res.status(400).json({
     error: empty ? 'missing_gemini_key' : 'invalid_key_format',
+    kind: empty ? 'MISSING_KEY' : 'INVALID_KEY',
+    retryable: false,
     message: empty
       ? 'ยังไม่ได้ตั้งค่า Gemini API Key — ไปที่ การตั้งค่า (⚙️) เพื่อใส่คีย์'
       : resolved.check.hint,
@@ -128,8 +197,9 @@ function sendKeyProblem(res: express.Response, userKey?: string) {
  */
 function sendGeminiError(res: express.Response, error: unknown, context: string) {
   const info = classifyGeminiError(error);
-  console.warn(`[gemini:${context}] ${info.kind} — ${info.detail || 'no detail'}`);
-  console.log(`[gemini:${context}] Sending JSON response:`, JSON.stringify(info));
+  if (info.kind !== 'INVALID_KEY' && info.kind !== 'MISSING_KEY') {
+    console.warn(`[gemini:${context}] ${info.kind} (${info.code})`);
+  }
   return res.status(info.httpStatus).json({
     error: info.code,
     message: info.messageTh,
@@ -211,10 +281,12 @@ async function generateWithGroundingFallback(
 /** 0. Config probe — ให้ UI แสดงโมเดลจริงและสถานะคีย์ฝั่งเซิร์ฟเวอร์ได้ */
 app.get('/api/gemini/config', (_req, res) => {
   const serverKey = resolveGeminiKey(undefined, process.env);
+  const configured =
+    serverKey.source === 'server' && !rejectedServerKeys.has(serverKey.key);
   return res.json({
     model: GEMINI_MODEL,
     fallbackModels: GEMINI_MODEL_CHAIN.slice(1),
-    serverKeyConfigured: serverKey.source === 'server',
+    serverKeyConfigured: configured,
   });
 });
 
@@ -280,7 +352,6 @@ app.post('/api/gemini/test-key', async (req, res) => {
         : `เชื่อมต่อ Gemini (${GEMINI_MODEL}) สำเร็จ!${emailNotice} ${keyNotice} • โหมดไม่ค้นหาเว็บ ✓`,
     });
   } catch (error: unknown) {
-    console.warn('[gemini:test-key]', classifyGeminiError(error).detail);
     return sendGeminiError(res, error, 'test-key');
   }
 });
@@ -320,7 +391,9 @@ ${signal ? `- สัญญาณเทคนิค: ${signal.type} (ความ
   "whaleActivity": "ACCUMULATION" หรือ "DISTRIBUTION" หรือ "NEUTRAL"
 }`;
 
-    const response = await generateWithGroundingFallback(ai, prompt);
+    const response = await runWithUserOrServerKey(apiKey, (client) =>
+      generateWithGroundingFallback(client, prompt)
+    );
 
     const parsed = extractJsonFromText<any>(response.text || '{}');
     if (!parsed) throw new Error('Unparseable sentiment JSON');
@@ -384,7 +457,9 @@ ${signal ? `- สัญญาณเทคนิคระบบ: ${signal.type} (
   "whaleActivity": "ACCUMULATION" หรือ "DISTRIBUTION" หรือ "NEUTRAL"
 }`;
 
-    const response = await generateWithGroundingFallback(ai, prompt);
+    const response = await runWithUserOrServerKey(apiKey, (client) =>
+      generateWithGroundingFallback(client, prompt)
+    );
 
     const parsed = extractJsonFromText<any>(response.text || '{}');
     if (!parsed) throw new Error('Unparseable market analysis response');
@@ -453,7 +528,9 @@ app.post('/api/gemini/analyze-news', async (req, res) => {
   "riskFactors": ["ปัจจัยเสี่ยงข้อที่ 1 ที่ต้องจับตา", "ปัจจัยเสี่ยงข้อที่ 2 ที่ต้องจับตา"]
 }`;
 
-    const response = await generateWithGroundingFallback(ai, prompt);
+    const response = await runWithUserOrServerKey(apiKey, (client) =>
+      generateWithGroundingFallback(client, prompt)
+    );
 
     const parsed = extractJsonFromText<any>(response.text || '{}');
     if (!parsed) throw new Error('Unparseable news analysis JSON');
@@ -524,7 +601,9 @@ ${topNewsSummary}
   "riskFactor": "ปัจจัยเสี่ยงสำคัญที่สุด 1 ข้อที่ต้องจับตาอย่างใกล้ชิด"
 }`;
 
-    const response = await generateWithGroundingFallback(ai, prompt);
+    const response = await runWithUserOrServerKey(apiKey, (client) =>
+      generateWithGroundingFallback(client, prompt)
+    );
 
     const parsed = extractJsonFromText<any>(response.text || '{}');
     if (!parsed) throw new Error('Unparseable holistic stance response');
@@ -585,7 +664,9 @@ ${topSignals.map((s: any) => `- ${s.symbol}: ${s.type} (ราคา $${s.price}
   "actionableSummary": "สรุปคำแนะนำสั้นกระชับสำหรับผู้ใช้"
 }`;
 
-    const response = await generateWithGroundingFallback(ai, prompt);
+    const response = await runWithUserOrServerKey(apiKey, (client) =>
+      generateWithGroundingFallback(client, prompt)
+    );
 
     const parsed = extractJsonFromText<any>(response.text || '{}');
     if (!parsed) throw new Error('Unparseable synthesis response');
@@ -644,7 +725,9 @@ app.post('/api/gemini/longterm-project', async (req, res) => {
   "strategyAdvice": "คำแนะนำการสะสมหุ้นสำหรับนักลงทุนระยะยาว"
 }`;
 
-    const response = await generateWithGroundingFallback(ai, prompt);
+    const response = await runWithUserOrServerKey(apiKey, (client) =>
+      generateWithGroundingFallback(client, prompt)
+    );
 
     const parsed = extractJsonFromText<any>(response.text || '{}');
     if (!parsed) throw new Error('Unparseable project analysis JSON');
@@ -694,10 +777,12 @@ Respond ONLY with valid JSON array of objects:
   { "id": "2", "impact": "MEDIUM" }
 ]`;
 
-    const response = await generateGeminiContent(ai, {
-      contents: prompt,
-      config: { responseMimeType: 'application/json' },
-    });
+    const response = await runWithUserOrServerKey(apiKey, (client) =>
+      generateGeminiContent(client, {
+        contents: prompt,
+        config: { responseMimeType: 'application/json' },
+      })
+    );
 
     const parsed = extractJsonFromText<any[]>(response.text || '[]');
     if (!Array.isArray(parsed)) throw new Error('Unparseable headlines array');
@@ -755,7 +840,9 @@ app.post('/api/gemini/chat-reply', async (req, res) => {
   });
 
   try {
-    const response = await generateWithGroundingFallback(ai, prompt);
+    const response = await runWithUserOrServerKey(geminiApiKey, (client) =>
+      generateWithGroundingFallback(client, prompt)
+    );
 
     if (response?.text) {
       return res.json({ reply: response.text, source: 'GEMINI_AI' });
@@ -777,7 +864,7 @@ app.post('/api/gemini/mascot-line', async (req, res) => {
 
   const ai = getGeminiClient(apiKey);
   if (!ai) {
-    return res.status(400).json({ error: 'missing_gemini_key' });
+    return sendKeyProblem(res, apiKey);
   }
 
   const prompt = `คุณคือ "น้องมอเตอร์บอย" (Nong MotorBoy) มาสคอตคู่คิดของเทรดเดอร์ในแอป Trading Engine Pro
@@ -794,10 +881,12 @@ app.post('/api/gemini/mascot-line', async (req, res) => {
 
   try {
     // temperature 0.95: บรรทัดมาสคอตควรมีสีสัน แต่ยังคุมความยาวด้วย maxOutputTokens
-    const response = await generateGeminiContent(ai, {
-      contents: prompt,
-      config: { maxOutputTokens: 200, temperature: 0.95 },
-    });
+    const response = await runWithUserOrServerKey(apiKey, (client) =>
+      generateGeminiContent(client, {
+        contents: prompt,
+        config: { maxOutputTokens: 200, temperature: 0.95 },
+      })
+    );
 
     const line = String(response?.text || '')
       .replace(/\s+/g, ' ')
@@ -815,9 +904,8 @@ app.post('/api/gemini/mascot-line', async (req, res) => {
       source: 'GEMINI_AI',
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
-    console.warn('Mascot line error:', error?.message || error);
-    return res.status(502).json({ error: 'mascot_line_failed' });
+  } catch (error: unknown) {
+    return sendGeminiError(res, error, 'mascot-line');
   }
 });
 
@@ -839,7 +927,7 @@ app.post('/api/gemini/mascot-action', async (req, res) => {
 
   const ai = getGeminiClient(body.apiKey);
   if (!ai) {
-    return res.status(400).json({ error: 'missing_gemini_key' });
+    return sendKeyProblem(res, body.apiKey);
   }
 
   const prompt = `คุณคือ "น้องมอเตอร์บอย" ผู้ช่วยในแอปเทรดนี้ ตอบเป็นภาษาไทยสั้น ๆ และสั่งงานส่วนติดต่อผู้ใช้ได้เฉพาะคำสั่งที่อนุญาตด้านล่าง
@@ -860,10 +948,12 @@ ${MASCOT_ACTION_CATALOG}
 
   try {
     // อุณหภูมิคุมความเพี้ยนของ JSON: คำสั่ง UI ต้องนิ่ง (0.4) มากกว่าบทสนทนา (0.95)
-    const response = await generateGeminiContent(ai, {
-      contents: prompt,
-      config: { maxOutputTokens: 220, temperature: 0.4, responseMimeType: 'application/json' },
-    });
+    const response = await runWithUserOrServerKey(body.apiKey, (client) =>
+      generateGeminiContent(client, {
+        contents: prompt,
+        config: { maxOutputTokens: 220, temperature: 0.4, responseMimeType: 'application/json' },
+      })
+    );
 
     const raw = String(response?.text || '').trim();
     let parsed: any = null;
@@ -895,8 +985,15 @@ ${MASCOT_ACTION_CATALOG}
   } catch (error: unknown) {
     // ไม่ส่งข้อความภายในออกไปให้ client (ให้ UI จัดการรหัสเดียวจบ)
     const info = classifyGeminiError(error);
-    console.warn(`[gemini:mascot-action] ${info.kind} — ${info.detail || 'no detail'}`);
-    return res.status(502).json({ error: 'mascot_action_failed', kind: info.kind });
+    if (info.kind !== 'INVALID_KEY' && info.kind !== 'MISSING_KEY') {
+      console.warn(`[gemini:mascot-action] ${info.kind} (${info.code})`);
+    }
+    return res.status(info.httpStatus).json({
+      error: info.code,
+      kind: info.kind,
+      retryable: info.retryable,
+      message: info.messageTh,
+    });
   }
 });
 
@@ -919,8 +1016,9 @@ app.post('/api/gemini/chat-stream', async (req, res) => {
     return res.status(400).json({ error: 'Missing query' });
   }
 
-  const ai = getGeminiClient(typeof body.geminiApiKey === 'string' ? body.geminiApiKey : undefined);
-  if (!ai) return sendKeyProblem(res, typeof body.geminiApiKey === 'string' ? body.geminiApiKey : undefined);
+  const userGeminiKey = typeof body.geminiApiKey === 'string' ? body.geminiApiKey : undefined;
+  const ai = getGeminiClient(userGeminiKey);
+  if (!ai) return sendKeyProblem(res, userGeminiKey);
 
   res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
   res.setHeader('Cache-Control', 'no-cache, no-transform');
@@ -940,8 +1038,8 @@ app.post('/api/gemini/chat-stream', async (req, res) => {
 
   const prompt = buildChatPrompt({ query, marketBrief, tone, sources });
 
-  const runStream = async (withSearch: boolean) => {
-    const stream = await generateGeminiStream(ai, {
+  const runStream = async (client: GoogleGenAI, withSearch: boolean) => {
+    const stream = await generateGeminiStream(client, {
       contents: prompt,
       config: withSearch ? { tools: [{ googleSearch: {} }] } : {},
     });
@@ -959,14 +1057,19 @@ app.post('/api/gemini/chat-stream', async (req, res) => {
   };
 
   try {
-    let full: string | null;
-    try {
-      full = await runStream(true);
-    } catch (searchError: any) {
-      if (controller.signal.aborted) return res.end();
-      console.warn('Gemini search-grounded stream failed, retrying plain:', searchError?.message);
-      full = await runStream(false);
-    }
+    const full = await runWithUserOrServerKey(userGeminiKey, async (client) => {
+      try {
+        return await runStream(client, true);
+      } catch (searchError: unknown) {
+        if (controller.signal.aborted) return null;
+        const searchInfo = classifyGeminiError(searchError);
+        if (searchInfo.kind !== 'QUOTA' && searchInfo.kind !== 'BAD_REQUEST') {
+          throw searchError;
+        }
+        console.warn(`[gemini:chat-stream] search grounding unavailable (${searchInfo.kind}), retrying plain`);
+        return await runStream(client, false);
+      }
+    });
 
     if (controller.signal.aborted) return res.end();
     send('done', { text: full ?? '', finishReason: 'STOP' });
@@ -974,7 +1077,9 @@ app.post('/api/gemini/chat-stream', async (req, res) => {
   } catch (error: unknown) {
     if (controller.signal.aborted) return res.end();
     const info = classifyGeminiError(error);
-    console.warn(`[gemini:chat-stream] ${info.kind} — ${info.detail || 'no detail'}`);
+    if (info.kind !== 'INVALID_KEY' && info.kind !== 'MISSING_KEY') {
+      console.warn(`[gemini:chat-stream] ${info.kind} (${info.code})`);
+    }
     send('error', {
       code: info.code,
       kind: info.kind,
