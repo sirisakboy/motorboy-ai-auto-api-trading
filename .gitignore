@@ -21,8 +21,9 @@ Thumbs.db
 # Logs
 *.log
 
-# Connector downloads (transient)
+# Connector downloads & backend market archives
 google_drive/
+.data/
 
 
 # Local secrets — never commit

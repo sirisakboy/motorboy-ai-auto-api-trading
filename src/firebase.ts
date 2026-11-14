@@ -7,7 +7,8 @@ const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
 /** Firebase Authentication (Google SSO) */
 export const auth = getAuth(app);
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+const firestoreDbId = (firebaseConfig as { firestoreDatabaseId?: string }).firestoreDatabaseId;
+export const db = firestoreDbId ? getFirestore(app, firestoreDbId) : getFirestore(app);
 
 // Enable Firestore offline persistence
 enableIndexedDbPersistence(db).catch((err) => {
@@ -46,6 +47,8 @@ export const GMAIL_SCOPES = [
 
 export const CALENDAR_SCOPES = ['https://www.googleapis.com/auth/calendar.events'];
 
+export const DRIVE_SCOPES = ['https://www.googleapis.com/auth/drive.file'];
+
 /**
  * Google Chat is not used anywhere in the app. Kept as an empty export so
  * existing imports/tests keep compiling; do not re-add scopes without code.
@@ -57,6 +60,10 @@ GMAIL_SCOPES.forEach((scope) => {
 });
 
 CALENDAR_SCOPES.forEach((scope) => {
+  workspaceGoogleProvider.addScope(scope);
+});
+
+DRIVE_SCOPES.forEach((scope) => {
   workspaceGoogleProvider.addScope(scope);
 });
 

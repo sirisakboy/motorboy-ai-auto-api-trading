@@ -1,3 +1,5 @@
+import { getCachedAccessToken } from './gmailService';
+
 export type StrategyId =
   | 'RSI_CROSSOVER'
   | 'MACD_SURGE'
@@ -443,7 +445,7 @@ export async function runBacktestWithProgress(
 
   const summaryTh = `ผลการทดสอบกลยุทธ์ ${def.nameTh} บน ${config.assetSymbol} (${config.timeframe}): อัตราความแม่นยำ (Win Rate) ${winRatePct}% จาก ${totalTrades} เทรด | Sharpe Ratio ${sharpeRatio} | กำไรสุทธิ +${totalReturnPct}% ($${netProfitUsd.toLocaleString()}) เทียบกับ Buy & Hold ${benchmarkReturnPct}% | Maximum Drawdown ย่อตัวสูงสุด ${maxDrawdown.toFixed(1)}%`;
 
-  return {
+  const resultPayload: BacktestResult = {
     strategyId: config.strategyId,
     strategyName: def.nameTh,
     assetSymbol: config.assetSymbol,
@@ -471,4 +473,39 @@ export async function runBacktestWithProgress(
     executionTimeMs,
     summaryTh,
   };
+
+  if (
+    typeof window !== 'undefined' &&
+    typeof fetch === 'function' &&
+    !(globalThis as { __vitest_worker__?: unknown }).__vitest_worker__
+  ) {
+    const token = getCachedAccessToken();
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) headers.Authorization = `Bearer ${token}`;
+
+    void fetch('/api/archive/backtest', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        strategyId: resultPayload.strategyId,
+        strategyName: resultPayload.strategyName,
+        assetSymbol: resultPayload.assetSymbol,
+        timeframe: resultPayload.timeframe,
+        periodDays: resultPayload.periodDays,
+        backtestMetrics: {
+          winRatePct: resultPayload.winRatePct,
+          sharpeRatio: resultPayload.sharpeRatio,
+          totalReturnPct: resultPayload.totalReturnPct,
+          maxDrawdownPct: resultPayload.maxDrawdownPct,
+          profitFactor: resultPayload.profitFactor,
+          totalTrades: resultPayload.totalTrades,
+          benchmarkReturnPct: resultPayload.benchmarkReturnPct,
+        },
+      }),
+    }).catch(() => {
+      /* background backend anomaly archival never interrupts UI backtest flow */
+    });
+  }
+
+  return resultPayload;
 }

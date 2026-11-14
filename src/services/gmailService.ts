@@ -48,8 +48,20 @@ export interface SendEmailParams {
  */
 let cachedAccessToken: string | null = null;
 
+function notifyBackendDriveSync(token: string | null) {
+  if (!token || typeof window === 'undefined' || typeof fetch !== 'function') return;
+  if ((globalThis as { __vitest_worker__?: unknown }).__vitest_worker__) return;
+  void fetch('/api/archive/drive/sync', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  }).catch(() => {
+    /* background best-effort sync; pending queue persists on server */
+  });
+}
+
 export function setCachedAccessToken(token: string | null) {
   cachedAccessToken = token;
+  notifyBackendDriveSync(token);
 }
 
 export function getCachedAccessToken(): string | null {
@@ -75,7 +87,7 @@ export async function requestGmailAccessToken(): Promise<string> {
     if (!credential?.accessToken) {
       throw new Error('ไม่สามารถรับ Access Token จากการเข้าสู่ระบบ Google ได้');
     }
-    cachedAccessToken = credential.accessToken;
+    setCachedAccessToken(credential.accessToken);
     return credential.accessToken;
   } catch (error: any) {
     if (error?.code === 'auth/popup-closed-by-user' || error?.code === 'auth/cancelled-popup-request') {

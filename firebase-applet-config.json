@@ -1,12 +1,11 @@
 {
-  "projectId": "celestial-cirrus-bdpgw",
-  "appId": "1:177112210436:web:0382ce82048ac012482951",
-  "apiKey": "AIzaSyA4uHPRYjey5kurfrNivoBDyUx2bDSNDjk",
-  "authDomain": "celestial-cirrus-bdpgw.firebaseapp.com",
-  "firestoreDatabaseId": "ai-studio-motorboyaiautoap-6e9377d9-4b62-4e05-bdf4-6ec0cc2eec78",
-  "storageBucket": "celestial-cirrus-bdpgw.firebasestorage.app",
-  "messagingSenderId": "177112210436",
+  "projectId": "gen-lang-client-0700971095",
+  "appId": "1:1030721704898:web:d683785de22bb43d5ffc5b",
+  "apiKey": "AIzaSyDQrMgXpedNU6p1xy3ZVXM2KKIha-GUEUs",
+  "authDomain": "gen-lang-client-0700971095.firebaseapp.com",
+  "storageBucket": "gen-lang-client-0700971095.firebasestorage.app",
+  "messagingSenderId": "1030721704898",
   "measurementId": "",
-  "oAuthClientId": "177112210436-dl0pc2mglsfu9pur6b2n768a7k6305o0.apps.googleusercontent.com",
+  "oAuthClientId": "1030721704898-qe6bp4ffd5h0q72numut7db6smn8q85o.apps.googleusercontent.com",
   "recaptchaSiteKey": ""
 }

@@ -14,6 +14,19 @@ import {
   withModelFallback,
 } from './src/server/geminiConfig';
 import type { ChatTone } from './src/services/chatStreamCore';
+import {
+  extractBearerToken,
+  rememberRuntimeDriveToken,
+  syncPendingToGoogleDrive,
+} from './src/server/googleDriveArchive';
+import {
+  getArchiveOverviewStatus,
+  listBacktestArchives,
+  readSensitivityMatrix,
+  recordBacktestArchive,
+  runDailyArchive,
+  startDailyArchiveScheduler,
+} from './src/server/marketArchiveEngine';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -195,11 +208,15 @@ function sendKeyProblem(res: express.Response, userKey?: string) {
  * แปลง error จาก Gemini เป็น response ที่ปลอดภัย: โค้ดคงที่ + ข้อความไทย
  * ไม่ส่งข้อความภายใน (เช่น "fetch failed") ออกไปให้ client เห็น
  */
-function sendGeminiError(res: express.Response, error: unknown, context: string) {
-  const info = classifyGeminiError(error);
-  if (info.kind !== 'INVALID_KEY' && info.kind !== 'MISSING_KEY') {
+function logUnexpectedGeminiError(info: ReturnType<typeof classifyGeminiError>, context: string) {
+  if (info.kind === 'SERVER_ERROR' || info.kind === 'MODEL_NOT_FOUND' || info.kind === 'UNKNOWN') {
     console.warn(`[gemini:${context}] ${info.kind} (${info.code})`);
   }
+}
+
+function sendGeminiError(res: express.Response, error: unknown, context: string) {
+  const info = classifyGeminiError(error);
+  logUnexpectedGeminiError(info, context);
   return res.status(info.httpStatus).json({
     error: info.code,
     message: info.messageTh,
@@ -267,7 +284,6 @@ async function generateWithGroundingFallback(
     // • QUOTA / BAD_REQUEST (free tier ไม่รองรับ googleSearch) → ลองใหม่แบบไม่มี tool
     // • INVALID_KEY / PERMISSION / NETWORK → โยนต่อทันที (ยิงซ้ำก็ไม่ช่วย)
     if (info.kind === 'QUOTA' || info.kind === 'BAD_REQUEST') {
-      console.warn(`Search grounding unavailable (${info.kind}), retrying without tools`);
       return await generateGeminiContent(ai, { contents, config: baseConfig });
     }
     throw searchError;
@@ -324,7 +340,6 @@ app.post('/api/gemini/test-key', async (req, res) => {
       const info = classifyGeminiError(groundingErr);
       // ลองใหม่แบบไม่มี tool เฉพาะเมื่อปัญหาคือ "เครื่องมือค้นหา" ไม่ใช่คีย์ผิด
       if (info.kind !== 'QUOTA' && info.kind !== 'BAD_REQUEST') throw groundingErr;
-      console.warn(`Test-key grounding attempt failed (${info.kind}), retrying plain`);
       searchGrounded = false;
       response = await runTestGeneration(false);
     }
@@ -985,9 +1000,7 @@ ${MASCOT_ACTION_CATALOG}
   } catch (error: unknown) {
     // ไม่ส่งข้อความภายในออกไปให้ client (ให้ UI จัดการรหัสเดียวจบ)
     const info = classifyGeminiError(error);
-    if (info.kind !== 'INVALID_KEY' && info.kind !== 'MISSING_KEY') {
-      console.warn(`[gemini:mascot-action] ${info.kind} (${info.code})`);
-    }
+    logUnexpectedGeminiError(info, 'mascot-action');
     return res.status(info.httpStatus).json({
       error: info.code,
       kind: info.kind,
@@ -1066,7 +1079,6 @@ app.post('/api/gemini/chat-stream', async (req, res) => {
         if (searchInfo.kind !== 'QUOTA' && searchInfo.kind !== 'BAD_REQUEST') {
           throw searchError;
         }
-        console.warn(`[gemini:chat-stream] search grounding unavailable (${searchInfo.kind}), retrying plain`);
         return await runStream(client, false);
       }
     });
@@ -1077,9 +1089,7 @@ app.post('/api/gemini/chat-stream', async (req, res) => {
   } catch (error: unknown) {
     if (controller.signal.aborted) return res.end();
     const info = classifyGeminiError(error);
-    if (info.kind !== 'INVALID_KEY' && info.kind !== 'MISSING_KEY') {
-      console.warn(`[gemini:chat-stream] ${info.kind} (${info.code})`);
-    }
+    logUnexpectedGeminiError(info, 'chat-stream');
     send('error', {
       code: info.code,
       kind: info.kind,
@@ -1087,6 +1097,108 @@ app.post('/api/gemini/chat-stream', async (req, res) => {
       message: info.messageTh,
     });
     return res.end();
+  }
+});
+
+// ============================================================================
+// BACKEND MARKET, NEWS-VOLATILITY CORRELATION & GOOGLE DRIVE ARCHIVE ROUTES
+// ============================================================================
+
+app.get('/api/archive/status', async (_req, res) => {
+  try {
+    const overview = await getArchiveOverviewStatus();
+    return res.json(overview);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Failed to read archive status';
+    return res.status(500).json({ error: 'archive_status_failed', message });
+  }
+});
+
+app.get('/api/archive/sensitivity', async (req, res) => {
+  try {
+    const matrix = await readSensitivityMatrix();
+    const symbolQuery = typeof req.query?.symbol === 'string' ? req.query.symbol.trim().toUpperCase() : '';
+    if (symbolQuery) {
+      const asset = matrix.assets[symbolQuery];
+      if (!asset) {
+        return res.status(404).json({ error: 'asset_not_found', symbol: symbolQuery });
+      }
+      return res.json({ updatedAt: matrix.updatedAt, recordedDates: matrix.recordedDates, asset });
+    }
+    return res.json(matrix);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Failed to read sensitivity matrix';
+    return res.status(500).json({ error: 'sensitivity_read_failed', message });
+  }
+});
+
+app.post('/api/archive/daily/run', async (req, res) => {
+  try {
+    const bearerToken = extractBearerToken(req.headers.authorization);
+    const force = Boolean(req.body?.force);
+    const outcome = await runDailyArchive({ force, bearerToken });
+    return res.json({ success: true, ...outcome });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Failed to execute daily archive';
+    return res.status(500).json({ error: 'daily_archive_failed', message });
+  }
+});
+
+app.post('/api/archive/backtest', async (req, res) => {
+  const body = req.body || {};
+  const assetSymbol = typeof body.assetSymbol === 'string' ? body.assetSymbol.trim().slice(0, 32) : '';
+  const strategyId = typeof body.strategyId === 'string' ? body.strategyId.trim().slice(0, 64) : 'CUSTOM';
+  const timeframe = typeof body.timeframe === 'string' ? body.timeframe.trim().slice(0, 12) : '1d';
+  const periodDays = Number.isFinite(Number(body.periodDays)) ? Number(body.periodDays) : 90;
+
+  if (!assetSymbol) {
+    return res.status(400).json({ error: 'missing_asset_symbol' });
+  }
+
+  try {
+    const bearerToken = extractBearerToken(req.headers.authorization);
+    const archived = await recordBacktestArchive({
+      strategyId,
+      strategyName: typeof body.strategyName === 'string' ? body.strategyName.slice(0, 120) : undefined,
+      assetSymbol,
+      timeframe,
+      periodDays,
+      backtestMetrics:
+        body.backtestMetrics && typeof body.backtestMetrics === 'object'
+          ? (body.backtestMetrics as Record<string, unknown>)
+          : undefined,
+      bearerToken,
+    });
+    return res.json({ success: true, ...archived });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Failed to record backtest archive';
+    return res.status(500).json({ error: 'backtest_archive_failed', message });
+  }
+});
+
+app.get('/api/archive/backtest', async (req, res) => {
+  try {
+    const limit = Math.min(50, Math.max(1, Number(req.query?.limit) || 20));
+    const symbol = typeof req.query?.symbol === 'string' ? req.query.symbol.trim() : undefined;
+    const records = await listBacktestArchives(limit, symbol);
+    return res.json({ count: records.length, records });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Failed to list backtest archives';
+    return res.status(500).json({ error: 'backtest_list_failed', message });
+  }
+});
+
+app.post('/api/archive/drive/sync', async (req, res) => {
+  try {
+    const bearerToken = extractBearerToken(req.headers.authorization);
+    if (bearerToken) {
+      rememberRuntimeDriveToken(bearerToken);
+    }
+    const summary = await syncPendingToGoogleDrive(bearerToken);
+    return res.json({ success: true, ...summary });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Failed to sync archive to Google Drive';
+    return res.status(500).json({ error: 'drive_sync_failed', message });
   }
 });
 
@@ -1126,6 +1238,7 @@ async function startServer() {
 
   httpServer.listen(Number(PORT), '0.0.0.0', () => {
     console.log(`Server listening on http://0.0.0.0:${PORT}`);
+    startDailyArchiveScheduler();
   });
 }
 
