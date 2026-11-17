@@ -21,7 +21,7 @@ export const DEFAULT_GEMINI_MODEL = 'gemini-3.1-flash-lite';
  * Tried in order when the primary model is unavailable (404 / NOT_FOUND).
  * Keep this list short and free-tier friendly; each entry costs one retry.
  */
-export const GEMINI_MODEL_FALLBACKS = ['gemini-3.6-flash', 'gemini-2.5-flash'];
+export const GEMINI_MODEL_FALLBACKS = ['gemini-4-hydrogen'];
 
 const MODEL_ALIASES: Record<string, string> = {
   'gemini 3.1 flash lite': 'gemini-3.1-flash-lite',
@@ -240,7 +240,7 @@ export function classifyGeminiError(error: unknown): GeminiErrorInfo {
 
 /** True when the caller should silently move to the next model in the chain. */
 export function shouldTryFallbackModel(info: GeminiErrorInfo): boolean {
-  return info.kind === 'MODEL_NOT_FOUND';
+  return info.kind === 'MODEL_NOT_FOUND' || info.kind === 'SERVER_ERROR';
 }
 
 export interface ModelFallbackOptions {

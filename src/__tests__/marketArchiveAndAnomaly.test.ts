@@ -171,3 +171,63 @@ describe('backtestAnomalyRecorder — real-chart anomaly date window detection',
     expect(csv).toContain(candles[28].date);
   });
 });
+
+describe('historicalCandleCache — 1-asset/day rotation & 1,000-day internal-first backtest feed', () => {
+  it('rotates strictly one asset per day and serves subsequent backtests from internal archive without fetching', async () => {
+    const fs = await import('node:fs/promises');
+    const os = await import('node:os');
+    const path = await import('node:path');
+    const { vi } = await import('vitest');
+    const {
+      getHistoricalCandlesInternalFirst,
+      rotateOneAsset1000DayHistory,
+    } = await import('../server/historicalCandleCache');
+
+    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'motorboy-cache-test-'));
+    const prevEnv = process.env.ARCHIVE_DATA_DIR;
+    process.env.ARCHIVE_DATA_DIR = tmpDir;
+
+    // Mock 1,000 daily candles from Binance API
+    const mockKlines = Array.from({ length: 1000 }, (_, i) => {
+      const ts = new Date('2024-01-01T00:00:00Z').getTime() + i * 86_400_000;
+      const open = 40000 + i * 15;
+      return [ts, String(open), String(open + 120), String(open - 80), String(open + 50), '1500'];
+    });
+
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      json: async () => mockKlines,
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    try {
+      // Day 1 rotation refreshes index 0 (BTC, 1,000 candles)
+      const day1 = await rotateOneAsset1000DayHistory('2026-11-14');
+      expect(day1.rotated).toBe(true);
+      expect(day1.skipped).toBe(false);
+      expect(day1.assetSymbol).toBe('BTC');
+      expect(day1.candleCount).toBe(1000);
+      expect(day1.nextAssetIndex).toBe(1);
+
+      // Re-running on the SAME date skips cleanly (strictly 1 asset per day)
+      const day1Repeat = await rotateOneAsset1000DayHistory('2026-11-14');
+      expect(day1Repeat.rotated).toBe(false);
+      expect(day1Repeat.skipped).toBe(true);
+      expect(day1Repeat.reason).toBe('ALREADY_ROTATED_ONE_ASSET_TODAY');
+
+      // Backtest request for BTC serves directly from internal cache with ZERO external fetch calls
+      fetchMock.mockClear();
+      const internalServe = await getHistoricalCandlesInternalFirst('BTCUSDT', 365);
+      expect(internalServe.usedInternalCache).toBe(true);
+      expect(internalServe.externalFetchPerformed).toBe(false);
+      expect(internalServe.totalCachedCandles).toBe(1000);
+      expect(internalServe.candles.length).toBeGreaterThanOrEqual(365);
+      expect(fetchMock).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllGlobals();
+      if (prevEnv === undefined) delete process.env.ARCHIVE_DATA_DIR;
+      else process.env.ARCHIVE_DATA_DIR = prevEnv;
+      await fs.rm(tmpDir, { recursive: true, force: true });
+    }
+  });
+});

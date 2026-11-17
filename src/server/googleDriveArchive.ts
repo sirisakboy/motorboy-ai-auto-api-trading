@@ -10,11 +10,19 @@
  * disk, never persisted in localStorage, never returned in API responses).
  */
 
+import fsSync from 'node:fs';
 import fs from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
 import crypto from 'node:crypto';
 
-export type ArchiveSubfolder = 'root' | 'daily-snapshots' | 'backtest-anomalies';
+export type ArchiveSubfolder =
+  | 'root'
+  | 'daily-snapshots'
+  | 'backtest-anomalies'
+  | 'daily-csv-combined'
+  | 'daily-csv-prices'
+  | 'daily-csv-news';
 
 export interface PendingSyncItem {
   id: string;
@@ -32,6 +40,7 @@ export interface DriveUploadResult {
   fileId?: string;
   webViewLink?: string;
   fileName: string;
+  driveFolderPath?: string;
   reason?: string;
 }
 
@@ -42,36 +51,84 @@ export interface DriveSyncSummary {
   results: Array<DriveUploadResult>;
 }
 
-const ARCHIVE_ROOT_DIR = path.resolve(process.cwd(), '.data', 'market-archive');
-const DAILY_DIR = path.join(ARCHIVE_ROOT_DIR, 'daily');
-const BACKTEST_DIR = path.join(ARCHIVE_ROOT_DIR, 'backtest');
-const PENDING_SYNC_FILE = path.join(ARCHIVE_ROOT_DIR, 'pending-drive-sync.json');
-
 const DRIVE_ROOT_FOLDER_NAME = 'MotorBoy-AI-TH-Archive';
 const DRIVE_SUBFOLDERS: Record<Exclude<ArchiveSubfolder, 'root'>, string> = {
   'daily-snapshots': 'daily-snapshots',
   'backtest-anomalies': 'backtest-anomalies',
+  'daily-csv-combined': 'daily-csv/combined-backtest',
+  'daily-csv-prices': 'daily-csv/prices',
+  'daily-csv-news': 'daily-csv/news',
 };
 
 /** Strictly in-memory session OAuth token — cleared on 401 or server restart. */
 let memoryAccessToken: string | null = null;
 let cachedServiceAccountToken: { token: string; expiresAt: number } | null = null;
 const cachedFolderIds = new Map<string, string>();
+let fallbackTmpRootDir: string | null = null;
+
+function isDirectoryWritable(candidateDir: string): boolean {
+  try {
+    fsSync.mkdirSync(candidateDir, { recursive: true });
+    fsSync.accessSync(candidateDir, fsSync.constants.W_OK);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function resolveWritableArchiveRoot(): string {
+  const customDir = process.env.ARCHIVE_DATA_DIR?.trim();
+  if (customDir) {
+    return path.resolve(customDir);
+  }
+  if (fallbackTmpRootDir) {
+    return fallbackTmpRootDir;
+  }
+  const workspaceDir = path.resolve(process.cwd(), '.data', 'market-archive');
+  if (isDirectoryWritable(workspaceDir)) {
+    return workspaceDir;
+  }
+  fallbackTmpRootDir = path.join(os.tmpdir(), 'motorboy-market-archive');
+  return fallbackTmpRootDir;
+}
 
 export function getArchivePaths() {
+  const rootDir = resolveWritableArchiveRoot();
+  const dailyDir = path.join(rootDir, 'daily');
   return {
-    rootDir: ARCHIVE_ROOT_DIR,
-    dailyDir: DAILY_DIR,
-    backtestDir: BACKTEST_DIR,
-    sensitivityMatrixFile: path.join(ARCHIVE_ROOT_DIR, 'sensitivity-matrix.json'),
-    stateFile: path.join(ARCHIVE_ROOT_DIR, 'archive-state.json'),
-    pendingSyncFile: PENDING_SYNC_FILE,
+    rootDir,
+    dailyDir,
+    dailyCsvDir: path.join(dailyDir, 'csv'),
+    backtestDir: path.join(rootDir, 'backtest'),
+    sensitivityMatrixFile: path.join(rootDir, 'sensitivity-matrix.json'),
+    stateFile: path.join(rootDir, 'archive-state.json'),
+    pendingSyncFile: path.join(rootDir, 'pending-drive-sync.json'),
   };
 }
 
+export function getDriveFolderDisplayPath(subfolder: ArchiveSubfolder): string {
+  if (subfolder === 'root') return DRIVE_ROOT_FOLDER_NAME;
+  return `${DRIVE_ROOT_FOLDER_NAME}/${DRIVE_SUBFOLDERS[subfolder]}`;
+}
+
 export async function ensureArchiveDirectories(): Promise<void> {
-  await fs.mkdir(DAILY_DIR, { recursive: true });
-  await fs.mkdir(BACKTEST_DIR, { recursive: true });
+  const paths = getArchivePaths();
+  try {
+    await fs.mkdir(paths.dailyDir, { recursive: true });
+    await fs.mkdir(paths.dailyCsvDir, { recursive: true });
+    await fs.mkdir(paths.backtestDir, { recursive: true });
+  } catch (err) {
+    const code = (err as NodeJS.ErrnoException | undefined)?.code;
+    if (!process.env.ARCHIVE_DATA_DIR?.trim() && (code === 'EACCES' || code === 'EROFS' || code === 'EPERM')) {
+      fallbackTmpRootDir = path.join(os.tmpdir(), 'motorboy-market-archive');
+      const fallback = getArchivePaths();
+      await fs.mkdir(fallback.dailyDir, { recursive: true });
+      await fs.mkdir(fallback.dailyCsvDir, { recursive: true });
+      await fs.mkdir(fallback.backtestDir, { recursive: true });
+      return;
+    }
+    throw err;
+  }
 }
 
 export function extractBearerToken(authHeader?: string | null): string | null {
@@ -247,10 +304,36 @@ async function findOrCreateDriveFolder(
   return created.id;
 }
 
-async function resolveTargetFolderId(token: string, subfolder: ArchiveSubfolder): Promise<string> {
-  const rootId = await findOrCreateDriveFolder(token, DRIVE_ROOT_FOLDER_NAME);
-  if (subfolder === 'root') return rootId;
-  return await findOrCreateDriveFolder(token, DRIVE_SUBFOLDERS[subfolder], rootId);
+async function resolveTargetFolderId(
+  token: string,
+  subfolder: ArchiveSubfolder,
+  customSubpath?: string
+): Promise<{ folderId: string; displayPath: string }> {
+  let parentId = await findOrCreateDriveFolder(token, DRIVE_ROOT_FOLDER_NAME);
+  const segments: string[] = [];
+
+  if (subfolder !== 'root') {
+    for (const seg of DRIVE_SUBFOLDERS[subfolder].split('/').filter(Boolean)) {
+      parentId = await findOrCreateDriveFolder(token, seg, parentId);
+      segments.push(seg);
+    }
+  }
+
+  if (customSubpath) {
+    const cleanSegments = customSubpath
+      .split('/')
+      .map((s) => s.replace(/[^A-Za-z0-9._\-\s]/g, '').trim())
+      .filter((s) => s.length > 0 && s !== '.' && s !== '..')
+      .slice(0, 3);
+    for (const seg of cleanSegments) {
+      parentId = await findOrCreateDriveFolder(token, seg, parentId);
+      segments.push(seg);
+    }
+  }
+
+  const displayPath =
+    segments.length > 0 ? `${DRIVE_ROOT_FOLDER_NAME}/${segments.join('/')}` : DRIVE_ROOT_FOLDER_NAME;
+  return { folderId: parentId, displayPath };
 }
 
 async function findExistingFileId(token: string, fileName: string, folderId: string): Promise<string | null> {
@@ -271,8 +354,13 @@ export async function uploadFileToGoogleDrive(params: {
   content: string;
   mimeType: string;
   subfolder: ArchiveSubfolder;
+  customSubpath?: string;
 }): Promise<DriveUploadResult> {
-  const folderId = await resolveTargetFolderId(params.token, params.subfolder);
+  const { folderId, displayPath } = await resolveTargetFolderId(
+    params.token,
+    params.subfolder,
+    params.customSubpath
+  );
   const existingId = await findExistingFileId(params.token, params.fileName, folderId);
 
   const boundary = `motorboy_drive_${crypto.randomUUID()}`;
@@ -321,12 +409,14 @@ export async function uploadFileToGoogleDrive(params: {
     fileId: uploaded.id,
     webViewLink: uploaded.webViewLink,
     fileName: uploaded.name || params.fileName,
+    driveFolderPath: displayPath,
   };
 }
 
 export async function readPendingSyncQueue(): Promise<PendingSyncItem[]> {
   try {
-    const raw = await fs.readFile(PENDING_SYNC_FILE, 'utf8');
+    const { pendingSyncFile } = getArchivePaths();
+    const raw = await fs.readFile(pendingSyncFile, 'utf8');
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? (parsed as PendingSyncItem[]) : [];
   } catch {
@@ -336,7 +426,8 @@ export async function readPendingSyncQueue(): Promise<PendingSyncItem[]> {
 
 async function writePendingSyncQueue(items: PendingSyncItem[]): Promise<void> {
   await ensureArchiveDirectories();
-  await fs.writeFile(PENDING_SYNC_FILE, JSON.stringify(items, null, 2), 'utf8');
+  const { pendingSyncFile } = getArchivePaths();
+  await fs.writeFile(pendingSyncFile, JSON.stringify(items, null, 2), 'utf8');
 }
 
 /**
@@ -382,7 +473,12 @@ export async function saveLocallyAndSyncToDrive(params: {
         mimeType: params.mimeType,
         lastError: reason,
       });
-      return { uploaded: false, fileName: params.fileName, reason };
+      return {
+        uploaded: false,
+        fileName: params.fileName,
+        driveFolderPath: getDriveFolderDisplayPath(params.subfolder),
+        reason,
+      };
     }
   }
 
@@ -396,6 +492,7 @@ export async function saveLocallyAndSyncToDrive(params: {
   return {
     uploaded: false,
     fileName: params.fileName,
+    driveFolderPath: getDriveFolderDisplayPath(params.subfolder),
     reason: 'QUEUED_FOR_DRIVE_SYNC',
   };
 }

@@ -138,12 +138,12 @@ export async function fetchRealHistoricalDailyCandles(
   source: 'BINANCE_SPOT_DAILY' | 'YAHOO_FINANCE_DAILY' | 'SYNTHETIC_FALLBACK';
 }> {
   const assetClass = inferAssetClass(assetSymbol);
-  const clampedDays = Math.min(730, Math.max(30, Math.round(periodDays)));
+  const clampedDays = Math.min(1000, Math.max(30, Math.round(periodDays)));
 
   if (assetClass === 'CRYPTO') {
     const pair = normalizeCryptoPair(assetSymbol);
     try {
-      const limit = Math.min(1000, clampedDays + 25); // extra lookback for rolling baseline
+      const limit = Math.min(1000, clampedDays === 1000 ? 1000 : clampedDays + 25); // extra lookback for rolling baseline
       const res = await fetch(
         `https://api.binance.com/api/v3/klines?symbol=${encodeURIComponent(pair)}&interval=1d&limit=${limit}`,
         { signal: AbortSignal.timeout(8000) }
@@ -181,7 +181,7 @@ export async function fetchRealHistoricalDailyCandles(
       : resolveYahooSymbol(assetSymbol, assetClass);
 
   const range =
-    clampedDays <= 60 ? '3mo' : clampedDays <= 150 ? '6mo' : clampedDays <= 340 ? '1y' : '2y';
+    clampedDays <= 60 ? '3mo' : clampedDays <= 150 ? '6mo' : clampedDays <= 340 ? '1y' : clampedDays <= 680 ? '2y' : '5y';
 
   for (const host of ['https://query1.finance.yahoo.com', 'https://query2.finance.yahoo.com']) {
     try {

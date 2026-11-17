@@ -40,58 +40,28 @@ cp .env.example .env
 ผู้ใช้ยังใส่คีย์ของตัวเองผ่านหน้า **ตั้งค่า** ได้ (เก็บใน localStorage ของเครื่องนั้น
 ไม่ส่งขึ้นคลาวด์) — ดูสถานะจริงได้ที่ `GET /api/gemini/config`
 
-**การเลือกโมเดล:** ระบบอ่าน `GEMINI_MODEL` (ถ้าไม่ตั้งจะใช้ `gemini-3.8-flash`)
-และมี fallback chain `gemini-3.6-flash → gemini-2.5-flash` เมื่อโมเดลหลักถูกปลดระวาง
+**การเลือกโมเดล:** ระบบอ่าน `GEMINI_MODEL` (ถ้าไม่ตั้งจะใช้ `gemini-3.1-flash-lite`)
+และมี fallback chain `gemini-4-hydrogen` เมื่อโมเดลหลักไม่พร้อมใช้งาน
 (แก้ที่ `src/server/geminiConfig.ts`)
-
----
-
-## โครงสร้าง
-
-```
-server.ts                  Express API (Gemini proxy, SSE streaming, rate limit, static SPA)
-src/
-  components/              UI ทั้งหมด (การ์ดตลาด, modal, แชท, มาสคอต)
-    chat/                  ชิ้นส่วนแชท AI (bubble, composer, markdown)
-  services/                การเรียกข้อมูล + AI (apiClient, chatStreamClient, geminiService…)
-  mascot/                  ตัวละครน้องมอเตอร์บอย (poses, moods, endings model)
-  server/                  โค้ดฝั่งเซิร์ฟเวอร์ที่แยกมาเทสต์ได้ (rate limiter)
-  __tests__/               Vitest (jsdom) — 166 เทสต์
-docs/
-  brand/                   Brand Book v2.0 (แหล่งอ้างอิงสี/โทเคน)
-  CALM-SYSTEM-v2-applied.md สรุปการลงสีในโปรเจกต์
-  CHAT-UPGRADE.md          สรุปการอัปเกรดแชท AI v2
-  DEEP-REVIEW-2026-11.md   ผลรีวิวเชิงลึก + สิ่งที่แก้
-```
-
----
-
-## API หลัก
-
-| Route | ใช้ทำอะไร |
-|---|---|
-| `POST /api/gemini/chat-stream` | สตรีมคำตอบแชท (SSE: `meta → delta… → done`) |
-| `POST /api/gemini/chat-reply` | คำตอบแบบก้อนเดียว (fallback) |
-| `POST /api/gemini/analyze-market` · `analyze-news` · `holistic-stance` | วิเคราะห์ตลาด/ข่าว |
-| `POST /api/gemini/mascot-line` | ประโยคสั้นของมาสคอต |
-
-ทุก route ใต้ `/api` ถูกจำกัด 60 คำขอ/นาทีต่อ IP และรับ body ได้ไม่เกิน 1 MB
-
----
-
-## แบรนด์
-
-- สี/โทเคนทั้งหมดมาจาก Brand Book v2.0 (`docs/brand/`) — ดู `src/index.css` (บล็อก `:root`)
-- กติกาหลัก: ลาเวนเดอร์ `#7C6CFF` เป็นสีแบรนด์, ห้ามแดงสด, ตัวอักษรบนพื้นลาเวนเดอร์ใช้ `#0F1117`, ไม่มีอะไรกะพริบ, ทุกคำตอบ AI ต้องบอกว่าดูจากอะไร + เหตุผล 3 ข้อ
 
 ---
 
 ## Deploy
 
+### 1) Google AI Studio / Cloud Run (Node / Bun)
 ```bash
-npm ci
+bun install --frozen-lockfile   # หรือ npm ci
 npm run build
 NODE_ENV=production PORT=8080 npm start
 ```
 
-ไม่ต้องใช้ Dockerfile — Express เสิร์ฟ `dist/` เอง (SPA fallback ยกเว้น path `/api/*` ที่ตอบ JSON 404)
+### 2) Cloudflare Workers / Cloudflare Pages
+โปรเจกต์รองรับทั้ง **Cloudflare Workers (Static Assets)** และ **Cloudflare Pages + Functions**:
+- **Workers (แนะนำ)**: ใช้ `wrangler.jsonc` (`npx wrangler deploy` หลังจาก `npm run build`)
+  - ตั้ง Secret ฝั่งเซิร์ฟเวอร์ผ่าน `npx wrangler secret put GEMINI_API_KEY` (หรือ Dashboard > Variables & Secrets)
+- **Pages**:
+  - Build command: `npm run build`
+  - Build output directory: `dist`
+  - ไฟล์ `functions/api/[[path]].ts` จะรองรับทุก route `/api/*` (`/api/health`, `/api/yahoo/*`, `/api/gemini/*`, `/api/backtest/candles`) อัตโนมัติ
+  - ตั้ง Environment Variable `GEMINI_API_KEY` ใน Cloudflare Pages Settings (ไม่บังคับ หากผู้ใช้กรอกคีย์ในแอปเอง)
+

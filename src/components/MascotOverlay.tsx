@@ -15,7 +15,7 @@ import { useMascotFeed } from '../mascot/feed';
 import { useMascotAutoPilot } from '../mascot/observer';
 import { canReachServer, fetchMascotLine } from '../services/mascotAiService';
 import { sendMascotCommand } from '../services/mascotActionService';
-import { describeMascotAction, dispatchMascotAction } from '../mascot/actions';
+import { describeMascotAction, dispatchMascotAction, dispatchMascotActions } from '../mascot/actions';
 import { useMascotAnnouncements } from '../mascot/announce';
 import type { CryptoCoin, TradingSignal } from '../types';
 import type { EndingResult, EndingType, Ohlcv, PoseId } from '../mascot/types';
@@ -135,6 +135,7 @@ export const MascotOverlay: React.FC<MascotOverlayProps> = ({
   const useThb = useThbProp ?? feed.useThb;
   const usdThbRate = usdThbRateProp ?? feed.usdThbRate ?? 36.45;
   const geminiApiKey = geminiApiKeyProp ?? feed.apiKey;
+  const windowContext = feed.windowContext;
 
   // The mascot runs its own detector; the dashboard only publishes data.
   useMascotAutoPilot(!disableAutoPilot);
@@ -166,8 +167,8 @@ export const MascotOverlay: React.FC<MascotOverlayProps> = ({
   const isEngineOff = state === 'KILL_SWITCH_ACTIVE';
 
   /* --------------------------------------- live market context kept in a ref */
-  const ctxRef = useRef({ cryptoList, signals, useThb, usdThbRate, geminiApiKey });
-  ctxRef.current = { cryptoList, signals, useThb, usdThbRate, geminiApiKey };
+  const ctxRef = useRef({ cryptoList, signals, useThb, usdThbRate, geminiApiKey, windowContext });
+  ctxRef.current = { cryptoList, signals, useThb, usdThbRate, geminiApiKey, windowContext };
   const stateRef = useRef(state);
   stateRef.current = state;
 
@@ -246,7 +247,7 @@ export const MascotOverlay: React.FC<MascotOverlayProps> = ({
 
   useEffect(() => {
     setAiLine(null);
-  }, [state]);
+  }, [state, windowContext.activeSurface]);
 
   useEffect(() => {
     let cancelled = false;
@@ -257,7 +258,7 @@ export const MascotOverlay: React.FC<MascotOverlayProps> = ({
     return () => {
       cancelled = true;
     };
-  }, [state, requestLine]);
+  }, [state, windowContext.activeSurface, requestLine]);
 
   /* ---------------------------------------- typed commands ("สั่งงานได้") */
   const submitCommand = useCallback(
@@ -273,10 +274,21 @@ export const MascotOverlay: React.FC<MascotOverlayProps> = ({
           setAiLine('ขอโทษครับ ตอนนี้ผมต่อเซิร์ฟเวอร์ไม่ได้ ลองอีกครั้งนะ');
           return;
         }
-        const handled = dispatchMascotAction(result.action);
+        const actionsToRun = result.actions?.length
+          ? result.actions
+          : result.action
+            ? [result.action]
+            : [];
+        const handledCount =
+          actionsToRun.length > 1
+            ? dispatchMascotActions(actionsToRun)
+            : dispatchMascotAction(actionsToRun[0] ?? null)
+              ? 1
+              : 0;
+        const handled = handledCount > 0;
         setAiLine(
           result.reply ||
-            (result.action && handled ? describeMascotAction(result.action) : 'รับทราบครับ')
+            (actionsToRun[0] && handled ? describeMascotAction(actionsToRun[0]) : 'รับทราบครับ')
         );
         if (handled) setCommand('');
       } finally {
@@ -570,7 +582,7 @@ export const MascotOverlay: React.FC<MascotOverlayProps> = ({
   if (settings.quietMode) {
     return (
       <div
-        className="fixed z-40 pointer-events-none select-none"
+        className="fixed z-[55] pointer-events-none select-none"
         style={positionStyle}
         data-testid="mascot-overlay"
         {...rootAttrs}
@@ -601,7 +613,7 @@ export const MascotOverlay: React.FC<MascotOverlayProps> = ({
   return (
     <div
       ref={rootRef}
-      className="fixed z-40 pointer-events-none select-none"
+      className="fixed z-[55] pointer-events-none select-none"
       style={positionStyle}
       data-testid="mascot-overlay"
       {...rootAttrs}
@@ -654,6 +666,15 @@ export const MascotOverlay: React.FC<MascotOverlayProps> = ({
                 <ChevronDown className="w-3.5 h-3.5" aria-hidden="true" />
               </button>
             </div>
+            {windowContext?.windowTitleTh && (
+              <div
+                data-testid="mascot-window-focus"
+                className="mt-1 text-[9px] font-mono text-[#A7A4B8] truncate"
+                title={windowContext.focusHint}
+              >
+                📍 {windowContext.windowTitleTh}
+              </div>
+            )}
             <p className="mt-1 text-[11px] leading-relaxed text-[#ECEAF4] break-words">
               {bubbleText}
             </p>

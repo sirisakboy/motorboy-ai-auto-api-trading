@@ -53,12 +53,12 @@ afterEach(() => {
 });
 
 describe('MascotOverlay — never blocks the UI', () => {
-  it('is a fixed, click-through layer (pointer-events-none on the wrapper)', () => {
+  it('is a fixed, click-through layer above all modals (pointer-events-none on the wrapper)', () => {
     render(<MascotOverlay />);
     const layer = screen.getByTestId('mascot-overlay');
     expect(layer.className).toContain('fixed');
     expect(layer.className).toContain('pointer-events-none');
-    expect(layer.className).toContain('z-40'); // below every modal (z-50)
+    expect(layer.className).toContain('z-[55]'); // above every modal (z-50)
   });
 
   it('renders the transparent character as a draggable, accessible control', () => {
@@ -79,6 +79,22 @@ describe('MascotOverlay — never blocks the UI', () => {
     const status = screen.getByRole('status');
     expect(status.getAttribute('aria-live')).toBe('polite');
     expect(status.textContent).toContain(DEFAULT_MESSAGE);
+  });
+
+  it('displays active window awareness when windowContext changes', () => {
+    publishMascotFeed({
+      windowContext: {
+        activeSurface: 'ATS_BACKTEST_MODAL',
+        windowTitleTh: 'ห้องทดสอบกลยุทธ์ย้อนหลัง (Backtest Lab)',
+        activeTabLabel: 'Backtest',
+        selectedAsset: 'BTC',
+        openWindows: ['BacktestLab'],
+        focusHint: 'โฟกัส Win Rate และ Max Drawdown',
+      },
+    });
+    render(<MascotOverlay />);
+    fireEvent.click(screen.getByRole('button', { name: /น้องมอเตอร์บอย/ }));
+    expect(screen.getByTestId('mascot-window-focus').textContent).toContain('Backtest Lab');
   });
 
   it('can be dismissed for the session', () => {

@@ -1,4 +1,5 @@
 import type { CryptoCoin, TradingSignal } from '../types';
+import type { MascotWindowContext } from '../mascot/feed';
 import type { MascotState } from './mascotService';
 
 /**
@@ -17,10 +18,14 @@ export const MASCOT_AI_COOLDOWN_MS = 30_000;
 /** After a failure, wait longer before trying again (30s → 60s → 120s, capped). */
 export const MASCOT_AI_MAX_BACKOFF_MS = 120_000;
 
+/** Wait 5 minutes after HTTP 429 / QUOTA to protect free-tier daily quota. */
+export const MASCOT_QUOTA_COOLDOWN_MS = 5 * 60_000;
+
 let lastRequestAt = 0;
 let consecutiveFailures = 0;
 let inFlight: Promise<string | null> | null = null;
 const blockedKeyTokens = new Set<string>();
+const quotaCooldownUntilByKey = new Map<string, number>();
 
 /**
  * `AbortSignal.timeout` is not in every browser this app supports (Safari < 16,
@@ -47,6 +52,7 @@ export interface MascotAiContext {
   signals?: TradingSignal[];
   useThb?: boolean;
   usdThbRate?: number;
+  windowContext?: MascotWindowContext;
 }
 
 /** Compact, cheap prompt payload — max ~400 chars so the route stays fast. */
@@ -87,6 +93,10 @@ function isKeyRejectedPayload(status: number | undefined, data: any): boolean {
   );
 }
 
+function isQuotaExceededPayload(status: number | undefined, data: any): boolean {
+  return status === 429 || data?.kind === 'QUOTA' || data?.error === 'quota_exceeded';
+}
+
 /**
  * Ask the server (which owns the Gemini key) for one in-character line.
  * Returns `null` on any failure — callers fall back to the canned message.
@@ -100,6 +110,7 @@ export async function fetchMascotLine(options: FetchMascotLineOptions): Promise<
   if (!options.force && blockedKeyTokens.has(keyToken)) return null;
 
   const now = Date.now();
+  if (!options.force && (quotaCooldownUntilByKey.get(keyToken) || 0) > now) return null;
   if (!options.force && now - lastRequestAt < currentCooldownMs()) return null;
 
   lastRequestAt = now;
@@ -112,6 +123,7 @@ export async function fetchMascotLine(options: FetchMascotLineOptions): Promise<
         body: JSON.stringify({
           state: options.state,
           marketBrief: buildMascotMarketBrief(options),
+          windowContext: options.windowContext,
           apiKey: keyToken || undefined,
         }),
         signal: options.signal ?? timeoutSignal(),
@@ -121,7 +133,9 @@ export async function fetchMascotLine(options: FetchMascotLineOptions): Promise<
 
       if (!res.ok) {
         consecutiveFailures = Math.min(consecutiveFailures + 1, 4);
-        if (isKeyRejectedPayload(res.status, data)) {
+        if (isQuotaExceededPayload(res.status, data)) {
+          quotaCooldownUntilByKey.set(keyToken, Date.now() + MASCOT_QUOTA_COOLDOWN_MS);
+        } else if (isKeyRejectedPayload(res.status, data)) {
           blockedKeyTokens.add(keyToken);
         }
         return null;
@@ -134,6 +148,7 @@ export async function fetchMascotLine(options: FetchMascotLineOptions): Promise<
       }
       consecutiveFailures = 0;
       blockedKeyTokens.delete(keyToken);
+      quotaCooldownUntilByKey.delete(keyToken);
       return line;
     } catch {
       consecutiveFailures = Math.min(consecutiveFailures + 1, 4);
@@ -157,4 +172,5 @@ export function resetMascotAiCooldown(): void {
   consecutiveFailures = 0;
   inFlight = null;
   blockedKeyTokens.clear();
+  quotaCooldownUntilByKey.clear();
 }

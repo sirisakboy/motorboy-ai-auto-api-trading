@@ -24,13 +24,20 @@ import {
   readPendingSyncQueue,
   saveLocallyAndSyncToDrive,
 } from './googleDriveArchive';
+import { persistAndSyncDailySnapshotCsvs } from './dailyCsvExporter';
 import {
   type BacktestAnomalyArchiveRecord,
   buildAnomalyWindowsCsv,
   detectRealChartAnomalyWindows,
-  fetchRealHistoricalDailyCandles,
   inferAssetClass,
 } from './backtestAnomalyRecorder';
+import {
+  type DailyRotationOutcome,
+  getHistoricalCandlesInternalFirst,
+  listCachedAssetSummaries,
+  readHistoricalRotationState,
+  rotateOneAsset1000DayHistory,
+} from './historicalCandleCache';
 
 const CRYPTO_ASSETS = [
   { symbol: 'BTC', name: 'Bitcoin', binanceSymbol: 'BTCUSDT', coingeckoId: 'bitcoin' },
@@ -407,7 +414,9 @@ export interface DailyArchiveRunOutcome {
   newsCount: number;
   localFilePath: string;
   driveUpload?: DriveUploadResult;
+  csvDriveUploads?: DriveUploadResult[];
   matrixDriveUpload?: DriveUploadResult;
+  historicalRotation?: DailyRotationOutcome;
 }
 
 export async function runDailyArchive(options: {
@@ -422,6 +431,11 @@ export async function runDailyArchive(options: {
     const { dailyDir, sensitivityMatrixFile } = getArchivePaths();
     const dailyFileName = `daily-${dateKey}.json`;
     const dailyFilePath = path.join(dailyDir, dailyFileName);
+
+    // Ensure strictly 1 asset/day 1000-day chart rotation even if daily snapshot already ran
+    const rotationOutcome = await rotateOneAsset1000DayHistory(dateKey, {
+      force: options.force,
+    }).catch(() => undefined);
 
     // Strictly once per day unless force=true
     if (!options.force) {
@@ -444,6 +458,7 @@ export async function runDailyArchive(options: {
           assetCount: existing.assetCount ?? 0,
           newsCount: existing.newsCount ?? 0,
           localFilePath: dailyFilePath,
+          historicalRotation: rotationOutcome,
         };
       } catch {
         // does not exist yet — proceed
@@ -486,6 +501,11 @@ export async function runDailyArchive(options: {
       bearerToken: options.bearerToken,
     });
 
+    const csvDriveUploads = await persistAndSyncDailySnapshotCsvs({
+      snapshot: dailyPayload,
+      bearerToken: options.bearerToken,
+    }).catch(() => [] as DriveUploadResult[]);
+
     const matrixDriveUpload = await saveLocallyAndSyncToDrive({
       localPath: sensitivityMatrixFile,
       fileName: 'asset-sensitivity-matrix.json',
@@ -510,7 +530,9 @@ export async function runDailyArchive(options: {
       newsCount: classifiedNews.length,
       localFilePath: dailyFilePath,
       driveUpload,
+      csvDriveUploads,
       matrixDriveUpload,
+      historicalRotation: rotationOutcome,
     };
   })();
 
@@ -540,9 +562,10 @@ export async function recordBacktestArchive(input: RecordBacktestInput): Promise
 }> {
   await ensureArchiveDirectories();
   const assetClass = inferAssetClass(input.assetSymbol);
-  const { candles, source } = await fetchRealHistoricalDailyCandles(
+  const { candles, source } = await getHistoricalCandlesInternalFirst(
     input.assetSymbol,
-    input.periodDays
+    input.periodDays,
+    getBangkokDateKey()
   );
 
   const anomalyWindows = detectRealChartAnomalyWindows(candles, input.assetSymbol, assetClass);
@@ -632,6 +655,8 @@ export async function getArchiveOverviewStatus() {
   await readArchiveState();
   const pending = await readPendingSyncQueue();
   const matrix = await readSensitivityMatrix();
+  const rotationState = await readHistoricalRotationState();
+  const cachedHistories = await listCachedAssetSummaries();
 
   let dailyFiles: string[] = [];
   let backtestFiles: string[] = [];
@@ -660,6 +685,13 @@ export async function getArchiveOverviewStatus() {
     recordedDates: matrix.recordedDates,
     pendingDriveSyncCount: pending.length,
     driveAuth: getDriveAuthStatus(),
+    historicalCache: {
+      cachedAssetCount: cachedHistories.length,
+      cycleLength: rotationState.cycleLength,
+      lastRotationDateKey: rotationState.lastRotationDateKey,
+      lastRotatedAsset: rotationState.lastRotatedAsset,
+      nextAssetIndex: rotationState.nextAssetIndex,
+    },
   };
 }
 

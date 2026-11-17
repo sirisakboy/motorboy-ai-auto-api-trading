@@ -17,6 +17,45 @@ import type { CryptoCoin, TradingSignal } from '../types';
  * Props still win when supplied, so existing call sites keep working and tests
  * can pin an exact snapshot.
  */
+export type MascotWindowSurface =
+  | 'DASHBOARD_CRYPTO'
+  | 'DASHBOARD_FOREX'
+  | 'DASHBOARD_THAI_STOCK'
+  | 'DASHBOARD_FOREIGN_STOCK'
+  | 'DASHBOARD_INDICES'
+  | 'ATS_MATRIX_MODAL'
+  | 'ATS_BACKTEST_MODAL'
+  | 'CHAT_MODAL'
+  | 'NEWS_MODAL'
+  | 'WATCHLIST_MODAL'
+  | 'HISTORY_MODAL'
+  | 'SETTINGS_MODAL'
+  | 'RISK_CALC_MODAL'
+  | 'DRAWDOWN_MODAL'
+  | 'GMAIL_MODAL'
+  | 'CALENDAR_MODAL'
+  | 'SIGNAL_DETAIL_MODAL'
+  | 'FOREX_DETAIL_MODAL'
+  | 'STOCK_DETAIL_MODAL';
+
+export interface MascotWindowContext {
+  activeSurface: MascotWindowSurface;
+  windowTitleTh: string;
+  activeTabLabel: string;
+  selectedAsset: string;
+  openWindows: string[];
+  focusHint: string;
+}
+
+export const DEFAULT_WINDOW_CONTEXT: MascotWindowContext = {
+  activeSurface: 'DASHBOARD_CRYPTO',
+  windowTitleTh: 'หน้าหลัก · ตลาดคริปโต',
+  activeTabLabel: 'คริปโต',
+  selectedAsset: 'bitcoin',
+  openWindows: [],
+  focusHint: 'ภาพรวมราคา สัญญาณเทรด และแนวโน้มตลาดหลัก',
+};
+
 export interface MascotFeedState {
   cryptoList: CryptoCoin[];
   signals: TradingSignal[];
@@ -28,6 +67,12 @@ export interface MascotFeedState {
   drawdownBreaches: number;
   /** Worst drawdown across the portfolio, in percent. */
   worstDrawdownPct: number;
+  /** Active screen/modal and focus guidance so the mascot knows where the user is. */
+  windowContext: MascotWindowContext;
+  /** Active sub-tab inside AtsMatrixDashboard so mascot knows LIVE_MATRIX vs BACKTEST. */
+  atsActiveTab: 'LIVE_MATRIX' | 'BACKTEST';
+  /** Optional programmatic tab switch requested inside AtsMatrixDashboard. */
+  atsRequestedTab: 'LIVE_MATRIX' | 'BACKTEST' | null;
   /** Timestamp of the last publish — useful for "stale feed" reasoning. */
   updatedAt: number;
 }
@@ -40,6 +85,9 @@ export const DEFAULT_MASCOT_FEED: MascotFeedState = {
   apiKey: '',
   drawdownBreaches: 0,
   worstDrawdownPct: 0,
+  windowContext: { ...DEFAULT_WINDOW_CONTEXT },
+  atsActiveTab: 'LIVE_MATRIX',
+  atsRequestedTab: null,
   updatedAt: 0,
 };
 
@@ -50,7 +98,12 @@ export function publishMascotFeed(patch: Partial<MascotFeedState>): void {
   useMascotFeed.setState({ ...patch, updatedAt: Date.now() });
 }
 
+export function requestAtsDashboardTab(tab: 'LIVE_MATRIX' | 'BACKTEST' | null): void {
+  useMascotFeed.setState({ atsRequestedTab: tab, updatedAt: Date.now() });
+}
+
 /** Test helper / sign-out reset. */
 export function resetMascotFeed(): void {
-  useMascotFeed.setState({ ...DEFAULT_MASCOT_FEED });
+  useMascotFeed.setState({ ...DEFAULT_MASCOT_FEED, windowContext: { ...DEFAULT_WINDOW_CONTEXT } });
 }
+

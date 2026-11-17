@@ -143,9 +143,58 @@ describe('describeMascotAction', () => {
 
 describe('MASCOT_ACTION_CATALOG', () => {
   it('documents every verb and nothing about order placement', () => {
-    for (const verb of ['change_asset', 'filter_stocks', 'open_news', 'open_chat']) {
+    for (const verb of ['change_asset', 'filter_stocks', 'open_news', 'open_chat', 'open_window', 'inspect_asset', 'toggle_currency']) {
       expect(MASCOT_ACTION_CATALOG).toContain(verb);
     }
     expect(MASCOT_ACTION_CATALOG.toLowerCase()).not.toContain('order');
+  });
+});
+
+describe('extended dynamic sandbox capabilities', () => {
+  it('validates open_window, close_window, inspect_asset, set_price_alert, toggle_currency, and rejects invalid targets', async () => {
+    const { MASCOT_SANDBOX_CAPABILITIES, parseMascotActions, dispatchMascotActions } = await import(
+      '../mascot/actions'
+    );
+    expect(MASCOT_SANDBOX_CAPABILITIES.length).toBeGreaterThanOrEqual(15);
+
+    expect(parseMascotAction({ name: 'open_window', args: { window: 'backtest' } })).toEqual({
+      name: 'open_window',
+      window: 'backtest',
+    });
+    expect(parseMascotAction({ name: 'open_window', args: { window: 'invalid_modal' } })).toBeNull();
+    expect(parseMascotAction({ name: 'close_window', args: { window: 'all' } })).toEqual({
+      name: 'close_window',
+      window: 'all',
+    });
+    expect(parseMascotAction({ name: 'inspect_asset', args: { symbol: 'nvda', market: 'us' } })).toEqual({
+      name: 'inspect_asset',
+      symbol: 'NVDA',
+      market: 'us',
+    });
+    expect(parseMascotAction({ name: 'set_price_alert', args: { symbol: 'btc', targetPrice: 95000 } })).toEqual({
+      name: 'set_price_alert',
+      symbol: 'BTC',
+      targetPrice: 95000,
+    });
+    expect(parseMascotAction({ name: 'set_price_alert', args: { symbol: 'btc', targetPrice: -10 } })).toBeNull();
+    expect(parseMascotAction({ name: 'toggle_currency', args: { currency: 'THB' } })).toEqual({
+      name: 'toggle_currency',
+      currency: 'THB',
+    });
+
+    const parsedMulti = parseMascotActions([
+      { name: 'switch_market_tab', args: { market: 'th' } },
+      { name: 'place_order', args: { symbol: 'PTT' } }, // dropped
+      { name: 'inspect_asset', args: { symbol: 'PTT', market: 'th' } },
+    ]);
+    expect(parsedMulti).toHaveLength(2);
+
+    const called: string[] = [];
+    registerMascotActionHandlers({
+      switch_market_tab: (a) => called.push(a.name),
+      inspect_asset: (a) => called.push(a.name),
+    });
+    expect(dispatchMascotActions(parsedMulti)).toBe(2);
+    expect(called).toEqual(['switch_market_tab', 'inspect_asset']);
   });
 });

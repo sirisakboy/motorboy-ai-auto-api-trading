@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { CryptoCoin } from '../types';
 import { BacktestingDashboard } from './BacktestingDashboard';
+import { publishMascotFeed, requestAtsDashboardTab, useMascotFeed } from '../mascot/feed';
 import {
   computeAtsMatrixAnalysis,
   getBtcFromCryptoList,
@@ -56,7 +57,21 @@ export const AtsMatrixDashboard: React.FC<AtsMatrixDashboardProps> = ({
   const [copied, setCopied] = useState(false);
   const [sentToChat, setSentToChat] = useState(false);
   const [torusRotation, setTorusRotation] = useState(0);
-  const [activeTab, setActiveTab] = useState<'LIVE_MATRIX' | 'BACKTEST'>('LIVE_MATRIX');
+  const requestedTab = useMascotFeed((s) => s.atsRequestedTab);
+  const [activeTab, setActiveTab] = useState<'LIVE_MATRIX' | 'BACKTEST'>(
+    () => requestedTab ?? 'LIVE_MATRIX'
+  );
+
+  useEffect(() => {
+    if (requestedTab) {
+      setActiveTab(requestedTab);
+      requestAtsDashboardTab(null);
+    }
+  }, [requestedTab]);
+
+  useEffect(() => {
+    publishMascotFeed({ atsActiveTab: activeTab });
+  }, [activeTab]);
 
   // Sync when cryptoList updates
   useEffect(() => {

@@ -28,6 +28,7 @@ import {
   runBacktestWithProgress,
 } from '../services/backtestService';
 import { CryptoCoin } from '../types';
+import { DailyCsvExportPanel } from './DailyCsvExportPanel';
 
 interface BacktestingDashboardProps {
   cryptoList?: CryptoCoin[];
@@ -698,6 +699,9 @@ export const BacktestingDashboard: React.FC<BacktestingDashboardProps> = ({
           </div>
         </div>
       )}
+
+      {/* DAILY PRICE & NEWS CSV EXPORT FOR GOOGLE DRIVE PORTABILITY */}
+      <DailyCsvExportPanel defaultAsset={selectedAssetSymbol} />
     </div>
   );
 };

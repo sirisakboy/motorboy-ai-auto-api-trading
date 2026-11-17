@@ -1,0 +1,19 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "motorboy-ai-th",
+  "main": "src/cloudflare/worker.ts",
+  "compatibility_date": "2025-12-01",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
+  "vars": {
+    "GEMINI_MODEL": "gemini-3.1-flash-lite",
+    "GEMINI_ENABLE_GROUNDING": "true"
+  },
+  "observability": {
+    "enabled": true
+  }
+}

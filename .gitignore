@@ -30,6 +30,10 @@ google_drive/
 .env
 .env.local
 .env.*.local
+.dev.vars
+
+# Cloudflare Wrangler build/state
+.wrangler/
 
 # Python (motorboy_production / motorboy_lab)
 __pycache__/

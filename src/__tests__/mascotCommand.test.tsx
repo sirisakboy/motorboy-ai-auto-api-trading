@@ -134,4 +134,51 @@ describe('MascotOverlay — typed commands', () => {
     await waitFor(() => expect(screen.getByText('ทำได้แค่นavigate ครับ')).toBeTruthy());
     expect(handler).not.toHaveBeenCalled();
   });
+
+  it('sends live windowContext + capability declarations and executes multi-actions dynamically', async () => {
+    const { publishMascotFeed } = await import('../mascot/feed');
+    publishMascotFeed({
+      windowContext: {
+        activeSurface: 'NEWS_MODAL',
+        windowTitleTh: 'ศูนย์ข่าวตลาด & วิเคราะห์ผลกระทบ',
+        activeTabLabel: 'ข่าว',
+        selectedAsset: 'bitcoin',
+        openWindows: ['NewsModal'],
+        focusHint: 'โฟกัสข่าวระดับ High Impact',
+      },
+    });
+
+    const spy = stubCommandRoute({
+      reply: 'เปลี่ยนเป็นบาทและเปิดหน้า Backtest ให้ครับ',
+      action: { name: 'toggle_currency', args: { currency: 'THB' } },
+      actions: [
+        { name: 'toggle_currency', args: { currency: 'THB' } },
+        { name: 'open_window', args: { window: 'backtest' } },
+      ],
+    });
+    const currencyHandler = vi.fn();
+    const windowHandler = vi.fn();
+    const { registerMascotActionHandlers } = await import('../mascot/actions');
+    registerMascotActionHandlers({
+      toggle_currency: currencyHandler,
+      open_window: windowHandler,
+    });
+
+    render(overlay());
+    typeAndSend('ช่วยสลับเงินเป็นบาทแล้วพาไปหน้าทดสอบกลยุทธ์หน่อย');
+
+    await waitFor(() =>
+      expect(screen.getByText('เปลี่ยนเป็นบาทและเปิดหน้า Backtest ให้ครับ')).toBeTruthy()
+    );
+    expect(currencyHandler).toHaveBeenCalledWith({ name: 'toggle_currency', currency: 'THB' });
+    expect(windowHandler).toHaveBeenCalledWith({ name: 'open_window', window: 'backtest' });
+
+    const commandCall = spy.mock.calls.find(([input]) =>
+      String(input).includes('/api/gemini/mascot-action')
+    );
+    const sentBody = JSON.parse((commandCall![1] as RequestInit).body as string);
+    expect(sentBody.windowContext.activeSurface).toBe('NEWS_MODAL');
+    expect(Array.isArray(sentBody.capabilities)).toBe(true);
+    expect(sentBody.capabilities.length).toBeGreaterThanOrEqual(15);
+  });
 });

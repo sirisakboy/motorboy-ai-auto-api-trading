@@ -2,7 +2,11 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { Search, Sparkles, X, Star, History, Radio } from 'lucide-react';
 import { signOut, signInWithPopup, GoogleAuthProvider, User } from 'firebase/auth';
 import { auth, db, googleProvider } from './firebase';
-import { setCachedAccessToken } from './services/gmailService';
+import { getCachedAccessToken, setCachedAccessToken } from './services/gmailService';
+import {
+  downloadDailyCsvExport,
+  exportDailyCsvToDriveFolder,
+} from './services/dailyCsvExportService';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { AtsMatrixDashboard } from './components/AtsMatrixDashboard';
 import { isAtsMatrixTrigger } from './services/atsMatrixService';
@@ -75,9 +79,16 @@ import {
 } from './services/peakTracker';
 import { MascotOverlay } from './components/MascotOverlay';
 import { useMascotStore } from './services/mascotService';
-import { publishMascotFeed } from './mascot/feed';
+import {
+  publishMascotFeed,
+  requestAtsDashboardTab,
+  useMascotFeed,
+  type MascotWindowContext,
+  type MascotWindowSurface,
+} from './mascot/feed';
 import { registerMascotActionHandlers, type MascotMarket } from './mascot/actions';
 import { announceMascot } from './mascot/announce';
+import { syncMarketArchivesToFirestore } from './services/firestoreArchiveSync';
 import {
   buildDrawdownAssets,
   computePortfolioDrawdownSummary,
@@ -256,6 +267,18 @@ export const App: React.FC = () => {
       }
     );
     return () => unsubscribe();
+  }, [authReady, user?.uid]);
+
+  // Background Cloud Firestore sync for 1,000-day historical archives & anomaly records
+  useEffect(() => {
+    if (!authReady || !user || user.uid === 'guest') return;
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) return;
+    void syncMarketArchivesToFirestore(user.uid);
+    const timer = setInterval(() => {
+      if (document.hidden) return;
+      void syncMarketArchivesToFirestore(user.uid);
+    }, 15 * 60 * 1000);
+    return () => clearInterval(timer);
   }, [authReady, user?.uid]);
 
   // AI ตั้งจุดพีคอัตโนมัติแบบเรียลไทม์ — ทุกครั้งที่ฟีดราคาใหม่เข้ามา
@@ -678,7 +701,7 @@ export const App: React.FC = () => {
     const interval = setInterval(() => {
       if (document.hidden) return;
       void runHeadlineCategorization();
-    }, 180000); // Categorize headlines every 3 mins
+    }, 600000); // Categorize headlines every 10 mins (free-tier friendly)
     return () => {
       isMounted = false;
       clearInterval(interval);
@@ -706,6 +729,132 @@ export const App: React.FC = () => {
     [forexRates]
   );
 
+  const atsActiveTab = useMascotFeed((s) => s.atsActiveTab);
+
+  // Build real-time window & focus awareness context for Mascot AI across EVERY screen/modal
+  const mascotWindowContext: MascotWindowContext = useMemo(() => {
+    const openWindows: string[] = [];
+    if (selectedSignal) openWindows.push(`SignalDetail:${selectedSignal.symbol}`);
+    if (selectedForex) openWindows.push(`ForexDetail:${selectedForex.pair}`);
+    if (selectedThaiStock) openWindows.push(`ThaiStockDetail:${selectedThaiStock.symbol}`);
+    if (selectedForeignStock) openWindows.push(`ForeignStockDetail:${selectedForeignStock.symbol}`);
+    if (showAtsMatrixModal) openWindows.push(atsActiveTab === 'BACKTEST' ? 'BacktestLab' : 'AtsMatrix');
+    if (showChat) openWindows.push('ChatModal');
+    if (showNewsModal) openWindows.push('NewsModal');
+    if (showWatchlistModal) openWindows.push('WatchlistModal');
+    if (showHistoryModal) openWindows.push('HistoryModal');
+    if (showRiskCalc) openWindows.push('RiskCalculator');
+    if (showDrawdownModal) openWindows.push('DrawdownMonitor');
+    if (showSettings) openWindows.push('Settings');
+    if (showGmail) openWindows.push('GmailModal');
+    if (showCalendar) openWindows.push('CalendarModal');
+
+    const tabLabels = ['คริปโต', 'ฟอเร็กซ์', 'หุ้นไทย SET', 'หุ้นต่างประเทศ US', 'ดัชนีตลาดโลก'];
+    const activeTabLabel = tabLabels[selectedTab] || 'คริปโต';
+
+    let activeSurface: MascotWindowSurface = 'DASHBOARD_CRYPTO';
+    let windowTitleTh = `หน้าหลัก · ${activeTabLabel}`;
+    let focusHint = 'ติดตามแนวโน้มราคา จุดรับ-ต้าน และสัญญาณเทรดหลัก';
+
+    if (selectedSignal) {
+      activeSurface = 'SIGNAL_DETAIL_MODAL';
+      windowTitleTh = `รายละเอียดสัญญาณ · ${selectedSignal.symbol}`;
+      focusHint = `โฟกัส Risk/Reward แผนเข้าเทรด จุด Stop Loss และ Take Profit ของ ${selectedSignal.symbol}`;
+    } else if (selectedForex) {
+      activeSurface = 'FOREX_DETAIL_MODAL';
+      windowTitleTh = `รายละเอียดฟอเร็กซ์ · ${selectedForex.pair}`;
+      focusHint = `โฟกัสอัตราดอกเบี้ย ข่าวเศรษฐกิจมหภาค และความผันผวนของคู่เงิน ${selectedForex.pair}`;
+    } else if (selectedThaiStock || selectedForeignStock) {
+      const sym = selectedThaiStock?.symbol || selectedForeignStock?.symbol || '';
+      activeSurface = 'STOCK_DETAIL_MODAL';
+      windowTitleTh = `วิเคราะห์หุ้นรายตัว · ${sym}`;
+      focusHint = `โฟกัสพื้นฐาน งบดุล ปัจจัยเร่ง และจังหวะแนวรับ-แนวต้านของ ${sym}`;
+    } else if (showAtsMatrixModal || isAtsMatrixMode) {
+      if (atsActiveTab === 'BACKTEST') {
+        activeSurface = 'ATS_BACKTEST_MODAL';
+        windowTitleTh = 'ห้องทดสอบกลยุทธ์ย้อนหลัง (Backtest Lab)';
+        focusHint = 'โฟกัส Win Rate, Sharpe Ratio, Max Drawdown และผลตอบแทนเทียบ Buy & Hold จากคลังข้อมูลย้อนหลัง 1,000 วัน';
+      } else {
+        activeSurface = 'ATS_MATRIX_MODAL';
+        windowTitleTh = 'ATS Matrix & Niulai4 Cockpit';
+        focusHint = 'โฟกัสสัญญาณ Order Flow ความเร็วสูง ความหนาแน่น Order Book และความผันผวนระยะสั้น';
+      }
+    } else if (showDrawdownModal) {
+      activeSurface = 'DRAWDOWN_MODAL';
+      windowTitleTh = 'ตรวจจับและคุมความเสี่ยง Drawdown';
+      focusHint = 'โฟกัสการรักษาเงินต้น การตัดขาดทุนตามเกณฑ์ และระยะห่างจากจุดพีคสูงสุด';
+    } else if (showRiskCalc) {
+      activeSurface = 'RISK_CALC_MODAL';
+      windowTitleTh = 'คำนวณความเสี่ยงและขนาด Position';
+      focusHint = 'โฟกัสสัดส่วนความเสี่ยงต่อไม้ (% Risk/Trade), ระยะ Stop Loss และความคุ้มค่า Risk/Reward';
+    } else if (showNewsModal) {
+      activeSurface = 'NEWS_MODAL';
+      windowTitleTh = 'ศูนย์ข่าวตลาด & วิเคราะห์ผลกระทบ';
+      focusHint = 'โฟกัสข่าวระดับ High Impact และความอ่อนไหวของสินทรัพย์แต่ละประเภทต่อข่าวสำคัญ';
+    } else if (showChat) {
+      activeSurface = 'CHAT_MODAL';
+      windowTitleTh = 'ห้องสนทนา AI Deep Analyze';
+      focusHint = 'โฟกัสการวิเคราะห์เชิงลึก ข่าวสด และกลยุทธ์หลายกรอบเวลา';
+    } else if (showWatchlistModal) {
+      activeSurface = 'WATCHLIST_MODAL';
+      windowTitleTh = 'รายการโปรด (Watchlist)';
+      focusHint = 'โฟกัสสินทรัพย์ที่ผู้ใช้ติดตามเป็นพิเศษและการแจ้งเตือนราคา';
+    } else if (showHistoryModal) {
+      activeSurface = 'HISTORY_MODAL';
+      windowTitleTh = 'ประวัติการวิเคราะห์ & สัญญาณที่บันทึก';
+      focusHint = 'โฟกัสการทบทวนผลลัพธ์ย้อนหลังและบทเรียนจากแผนเดิม';
+    } else if (showSettings) {
+      activeSurface = 'SETTINGS_MODAL';
+      windowTitleTh = 'ตั้งค่าระบบและจิตวิทยาการเทรด';
+      focusHint = 'โฟกัสค่าความเสี่ยงรายวัน การแจ้งเตือนราคา สกุลเงิน และการตั้งค่า API';
+    } else if (showGmail) {
+      activeSurface = 'GMAIL_MODAL';
+      windowTitleTh = 'แจ้งเตือนทางอีเมล (Gmail Alerts)';
+      focusHint = 'โฟกัสการส่งสรุปสัญญาณและการตรวจสอบแจ้งเตือนทางอีเมล';
+    } else if (showCalendar) {
+      activeSurface = 'CALENDAR_MODAL';
+      windowTitleTh = 'ปฏิทินเศรษฐกิจและนัดหมายเทรด';
+      focusHint = 'โฟกัสเหตุการณ์เศรษฐกิจสำคัญที่กำลังจะประกาศ';
+    } else {
+      const surfaceByTab: MascotWindowSurface[] = [
+        'DASHBOARD_CRYPTO',
+        'DASHBOARD_FOREX',
+        'DASHBOARD_THAI_STOCK',
+        'DASHBOARD_FOREIGN_STOCK',
+        'DASHBOARD_INDICES',
+      ];
+      activeSurface = surfaceByTab[selectedTab] || 'DASHBOARD_CRYPTO';
+    }
+
+    return {
+      activeSurface,
+      windowTitleTh,
+      activeTabLabel,
+      selectedAsset: selectedChartAsset,
+      openWindows,
+      focusHint,
+    };
+  }, [
+    selectedTab,
+    selectedChartAsset,
+    atsActiveTab,
+    isAtsMatrixMode,
+    showAtsMatrixModal,
+    showChat,
+    showNewsModal,
+    showWatchlistModal,
+    showHistoryModal,
+    showSettings,
+    showRiskCalc,
+    showDrawdownModal,
+    showGmail,
+    showCalendar,
+    selectedSignal,
+    selectedForex,
+    selectedThaiStock,
+    selectedForeignStock,
+  ]);
+
   // Mascot: the dashboard only publishes what it knows; the mascot decides what
   // to do about it (see mascot/feed.ts + mascot/observer.ts).
   useEffect(() => {
@@ -717,6 +866,7 @@ export const App: React.FC = () => {
       apiKey: geminiApiKey,
       drawdownBreaches: criticalOrExtremeAssets.length,
       worstDrawdownPct: portfolioDrawdownSummary.worstDrawdownPct,
+      windowContext: mascotWindowContext,
     });
   }, [
     cryptoList,
@@ -726,6 +876,7 @@ export const App: React.FC = () => {
     geminiApiKey,
     criticalOrExtremeAssets.length,
     portfolioDrawdownSummary.worstDrawdownPct,
+    mascotWindowContext,
   ]);
 
 
@@ -735,9 +886,26 @@ export const App: React.FC = () => {
     setShowChat(true);
   }, []);
 
-  // The mascot may navigate, filter and open panels — it may never trade.
-  // Handlers live here because this component owns tabs, search and modals;
-  // the mascot only ever publishes a feed and asks for a verb.
+  // Live action refs so dynamically registered Mascot capabilities never hit stale closures
+  const actionDataRef = useRef({
+    signals,
+    forexSignals,
+    forexRates,
+    thaiStocks,
+    foreignStocks,
+    stockIndices,
+    cryptoList,
+    useThb,
+    notificationsEnabled,
+    isAtsMatrixMode,
+    handleToggleWatchlist: (_sym: string) => {},
+    handleSetAlert: (_sym: string, _price: number) => {},
+    handleToggleCurrency: (_val: boolean) => {},
+    handleToggleNotifications: () => {},
+    handleRefreshAllApis: () => Promise.resolve(),
+  });
+
+  // The mascot may navigate, filter, switch panels and invoke any safe sandbox feature dynamically — never trade.
   useEffect(() => {
     const tabForMarket = (market?: MascotMarket): number | null => {
       switch (market) {
@@ -756,12 +924,165 @@ export const App: React.FC = () => {
       }
     };
 
+    const resolveChartSelection = (rawSymbol: string, marketHint?: MascotMarket) => {
+      const q = rawSymbol.trim().toUpperCase();
+      const data = actionDataRef.current;
+
+      const coin = data.cryptoList.find(
+        (c) => c.symbol.toUpperCase() === q || c.id.toUpperCase() === q || c.binanceSymbol.toUpperCase() === `${q}USDT`
+      );
+      if (coin && (!marketHint || marketHint === 'crypto')) {
+        setSelectedTab(0);
+        setSelectedChartAsset(coin.id);
+        return true;
+      }
+
+      const fx = data.forexRates.find(
+        (f) => f.pair.toUpperCase() === q || f.pair.replace('/', '').toUpperCase() === q
+      );
+      if (fx && (!marketHint || marketHint === 'forex')) {
+        setSelectedTab(1);
+        setSelectedChartAsset(fx.pair);
+        return true;
+      }
+
+      const th = data.thaiStocks.find((s) => s.symbol.toUpperCase() === q);
+      if (th && (!marketHint || marketHint === 'th')) {
+        setSelectedTab(2);
+        setSelectedChartAsset(th.symbol);
+        return true;
+      }
+
+      const us = data.foreignStocks.find((s) => s.symbol.toUpperCase() === q);
+      if (us && (!marketHint || marketHint === 'us')) {
+        setSelectedTab(3);
+        setSelectedChartAsset(us.symbol);
+        return true;
+      }
+
+      const idx = data.stockIndices.find(
+        (s) => s.symbol.toUpperCase() === q || s.name.toUpperCase().includes(q)
+      );
+      if (idx && (!marketHint || marketHint === 'index')) {
+        setSelectedTab(4);
+        setSelectedChartAsset(idx.symbol);
+        return true;
+      }
+
+      const tab = tabForMarket(marketHint);
+      if (tab !== null) setSelectedTab(tab);
+      setSelectedChartAsset(rawSymbol.trim());
+      return true;
+    };
+
+    const openDetailForSymbol = (rawSymbol: string, marketHint?: MascotMarket) => {
+      const q = rawSymbol.trim().toUpperCase();
+      const data = actionDataRef.current;
+
+      const sig = data.signals.find(
+        (s) => s.symbol.toUpperCase() === q || s.base.toUpperCase() === q
+      );
+      if (sig && (!marketHint || marketHint === 'crypto')) {
+        setSelectedTab(0);
+        setSelectedSignal(sig);
+        return;
+      }
+
+      const fx = data.forexRates.find(
+        (f) => f.pair.toUpperCase() === q || f.pair.replace('/', '').toUpperCase() === q
+      );
+      if (fx && (!marketHint || marketHint === 'forex')) {
+        setSelectedTab(1);
+        setSelectedForex(fx);
+        return;
+      }
+
+      const th = data.thaiStocks.find((s) => s.symbol.toUpperCase() === q);
+      if (th && (!marketHint || marketHint === 'th')) {
+        setSelectedTab(2);
+        setSelectedThaiStock(th);
+        return;
+      }
+
+      const us = data.foreignStocks.find((s) => s.symbol.toUpperCase() === q);
+      if (us && (!marketHint || marketHint === 'us')) {
+        setSelectedTab(3);
+        setSelectedForeignStock(us);
+        return;
+      }
+
+      // Fallback: filter to the symbol
+      const tab = tabForMarket(marketHint);
+      if (tab !== null) setSelectedTab(tab);
+      setSearchQuery(rawSymbol.trim());
+    };
+
+    const closeSpecificOrAll = (target?: string) => {
+      if (!target || target === 'all') {
+        setShowNewsModal(false);
+        setShowWatchlistModal(false);
+        setShowHistoryModal(false);
+        setShowAtsMatrixModal(false);
+        setShowSettings(false);
+        setShowGmail(false);
+        setShowCalendar(false);
+        setShowChat(false);
+        setShowRiskCalc(false);
+        setShowDrawdownModal(false);
+        setSelectedSignal(null);
+        setSelectedForex(null);
+        setSelectedThaiStock(null);
+        setSelectedForeignStock(null);
+        return;
+      }
+      switch (target) {
+        case 'news':
+          setShowNewsModal(false);
+          break;
+        case 'chat':
+          setShowChat(false);
+          break;
+        case 'watchlist':
+          setShowWatchlistModal(false);
+          break;
+        case 'history':
+          setShowHistoryModal(false);
+          break;
+        case 'settings':
+          setShowSettings(false);
+          break;
+        case 'risk_calc':
+          setShowRiskCalc(false);
+          break;
+        case 'drawdown':
+          setShowDrawdownModal(false);
+          break;
+        case 'ats_matrix':
+        case 'backtest':
+          setShowAtsMatrixModal(false);
+          break;
+        case 'gmail':
+          setShowGmail(false);
+          break;
+        case 'calendar':
+          setShowCalendar(false);
+          break;
+        case 'detail':
+          setSelectedSignal(null);
+          setSelectedForex(null);
+          setSelectedThaiStock(null);
+          setSelectedForeignStock(null);
+          break;
+      }
+    };
+
     return registerMascotActionHandlers({
       change_asset: (action) => {
         if (action.name !== 'change_asset') return;
         const tab = tabForMarket(action.market);
         if (tab !== null) setSelectedTab(tab);
         setSearchQuery(action.symbol);
+        resolveChartSelection(action.symbol, action.market);
       },
       filter_stocks: (action) => {
         if (action.name !== 'filter_stocks') return;
@@ -773,6 +1094,134 @@ export const App: React.FC = () => {
       open_chat: (action) => {
         if (action.name !== 'open_chat') return;
         openChat(action.question);
+      },
+      open_window: (action) => {
+        if (action.name !== 'open_window') return;
+        switch (action.window) {
+          case 'news':
+            setShowNewsModal(true);
+            break;
+          case 'chat':
+            openChat();
+            break;
+          case 'watchlist':
+            setShowWatchlistModal(true);
+            break;
+          case 'history':
+            setShowHistoryModal(true);
+            break;
+          case 'settings':
+            setShowSettings(true);
+            break;
+          case 'risk_calc':
+            setShowRiskCalc(true);
+            break;
+          case 'drawdown':
+            setShowDrawdownModal(true);
+            break;
+          case 'ats_matrix':
+            requestAtsDashboardTab('LIVE_MATRIX');
+            setShowAtsMatrixModal(true);
+            break;
+          case 'backtest':
+            requestAtsDashboardTab('BACKTEST');
+            setShowAtsMatrixModal(true);
+            break;
+          case 'gmail':
+            setShowGmail(true);
+            break;
+          case 'calendar':
+            setShowCalendar(true);
+            break;
+        }
+      },
+      close_window: (action) => {
+        if (action.name !== 'close_window') return;
+        closeSpecificOrAll(action.window);
+      },
+      switch_market_tab: (action) => {
+        if (action.name !== 'switch_market_tab') return;
+        const tab = tabForMarket(action.market);
+        if (tab !== null) setSelectedTab(tab);
+      },
+      select_chart_asset: (action) => {
+        if (action.name !== 'select_chart_asset') return;
+        resolveChartSelection(action.symbol, action.market);
+      },
+      inspect_asset: (action) => {
+        if (action.name !== 'inspect_asset') return;
+        openDetailForSymbol(action.symbol, action.market);
+      },
+      toggle_currency: (action) => {
+        if (action.name !== 'toggle_currency') return;
+        const targetThb =
+          action.currency === 'THB'
+            ? true
+            : action.currency === 'USD'
+              ? false
+              : !actionDataRef.current.useThb;
+        actionDataRef.current.handleToggleCurrency(targetThb);
+      },
+      toggle_notifications: (action) => {
+        if (action.name !== 'toggle_notifications') return;
+        if (
+          typeof action.enabled === 'boolean' &&
+          action.enabled === actionDataRef.current.notificationsEnabled
+        ) {
+          return;
+        }
+        actionDataRef.current.handleToggleNotifications();
+      },
+      toggle_watchlist: (action) => {
+        if (action.name !== 'toggle_watchlist') return;
+        actionDataRef.current.handleToggleWatchlist(action.symbol);
+      },
+      set_price_alert: (action) => {
+        if (action.name !== 'set_price_alert') return;
+        actionDataRef.current.handleSetAlert(action.symbol, action.targetPrice);
+      },
+      refresh_market_data: () => {
+        void actionDataRef.current.handleRefreshAllApis();
+      },
+      toggle_ats_inline: (action) => {
+        if (action.name !== 'toggle_ats_inline') return;
+        setIsAtsMatrixMode((prev) =>
+          typeof action.enabled === 'boolean' ? action.enabled : !prev
+        );
+      },
+      clear_filters: () => {
+        setSearchQuery('');
+      },
+      sync_drive_archive: () => {
+        const token = getCachedAccessToken();
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+        if (token) headers.Authorization = `Bearer ${token}`;
+        void fetch('/api/archive/daily/run', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ force: false }),
+        })
+          .then(() =>
+            fetch('/api/archive/drive/sync', {
+              method: 'POST',
+              headers,
+            })
+          )
+          .catch(() => {});
+      },
+      export_daily_csv: (action) => {
+        if (action.name !== 'export_daily_csv') return;
+        if (action.destination === 'drive') {
+          void exportDailyCsvToDriveFolder({
+            dateKey: action.dateKey,
+            dataset: action.dataset || 'all',
+          }).catch(() => {});
+          return;
+        }
+        void downloadDailyCsvExport({
+          dateKey: action.dateKey,
+          dataset: action.dataset || 'combined',
+        }).catch(() => {});
       },
     });
   }, [openChat]);
@@ -968,6 +1417,24 @@ export const App: React.FC = () => {
     saveUserSettings(targetUid, { notificationsEnabled: nextVal }).catch((err) =>
       console.error('Failed to sync notifications setting:', err)
     );
+  };
+
+  actionDataRef.current = {
+    signals,
+    forexSignals,
+    forexRates,
+    thaiStocks,
+    foreignStocks,
+    stockIndices,
+    cryptoList,
+    useThb,
+    notificationsEnabled,
+    isAtsMatrixMode,
+    handleToggleWatchlist,
+    handleSetAlert,
+    handleToggleCurrency,
+    handleToggleNotifications,
+    handleRefreshAllApis,
   };
 
   const handleSavePsychologySettings = async (settings: TradingPsychologySettings) => {

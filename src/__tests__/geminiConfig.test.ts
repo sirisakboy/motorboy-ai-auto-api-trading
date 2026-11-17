@@ -81,7 +81,7 @@ describe('geminiConfig — model resolution', () => {
       ...GEMINI_MODEL_FALLBACKS,
     ]);
     // primary ที่ซ้ำกับ fallback ต้องไม่ถูกเรียกซ้ำ
-    expect(buildModelChain('gemini-2.5-flash')).toEqual(['gemini-2.5-flash', 'gemini-3.6-flash']);
+    expect(buildModelChain('gemini-4-hydrogen')).toEqual(['gemini-4-hydrogen']);
     // primary ว่าง → เหลือแต่ fallback (ยังมีโมเดลให้ทำงาน)
     expect(buildModelChain('  ')).toEqual([...GEMINI_MODEL_FALLBACKS]);
   });
@@ -120,8 +120,10 @@ describe('geminiConfig — error classification', () => {
     expect(info.detail).toContain('internal-host'); // kept for logs only
   });
 
-  it('only retries a different model for model-not-found', () => {
+  it('retries a different model for model-not-found or transient server errors', () => {
     expect(shouldTryFallbackModel(classifyGeminiError({ status: 404 }))).toBe(true);
+    expect(shouldTryFallbackModel(classifyGeminiError({ status: 503 }))).toBe(true);
+    expect(shouldTryFallbackModel(classifyGeminiError({ status: 500 }))).toBe(true);
     expect(shouldTryFallbackModel(classifyGeminiError({ status: 400 }))).toBe(false);
     expect(shouldTryFallbackModel(classifyGeminiError({ status: 429 }))).toBe(false);
   });
