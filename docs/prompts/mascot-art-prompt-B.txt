@@ -1,0 +1,57 @@
+PROMPT B — GENERATE THE CHARACTER ARTWORK (image models)
+================================================================
+
+Works with Midjourney, DALL·E, Imagen, Flux, Stable Diffusion.
+Use B1 for a single hero render, B2 for a consistent multi-pose set.
+
+--------------------------------------------------------------------------
+B1 — SINGLE HERO RENDER
+--------------------------------------------------------------------------
+Full-body 3D stylized character mascot, friendly young man, short spiky black
+hair, light stubble, confident warm smile, arms crossed.
+Outfit: black leather bomber jacket with dark-red zipper trim and a small red
+"M" logo on the chest, black t-shirt, black cargo pants, black lace-up boots,
+black wristwatch.
+Pixar-like soft shading, clean studio lighting, high detail on the leather
+texture.
+Transparent background (PNG alpha), centered, full body from head to boots,
+front view, neutral stance, no shadow under the feet, no text, no watermark,
+no props.
+Style reference: modern app mascot / 3D character key art, 4k.
+
+--------------------------------------------------------------------------
+B2 — CONSISTENT 6-POSE SET
+--------------------------------------------------------------------------
+Same character, same outfit, same lighting, 6 separate full-body renders on a
+transparent background:
+1) idle, smiling, arms crossed
+2) pointing forward as if explaining
+3) thumbs up with a confident grin
+4) thinking, hand on chin
+5) surprised / warning expression, hands raised
+6) tired, shoulders dropped
+
+Keep proportions, palette and camera identical across all six. Front view, no
+text, no watermark, transparent PNG, full body head to boots.
+
+--------------------------------------------------------------------------
+OPTIONAL — UI EXPRESSION HEADSHOTS
+--------------------------------------------------------------------------
+Same character, head-and-shoulders bust, expressive face only, 6 emotions
+(neutral, happy, thinking, surprised, concerned, tired), identical lighting and
+framing, transparent PNG, no text. Use these as status-dot avatars or toast
+icons at 32-64px.
+
+--------------------------------------------------------------------------
+IF THE MODEL CANNOT DO ALPHA
+--------------------------------------------------------------------------
+Ask for a flat, evenly lit solid background (solid #00FF00 or solid white),
+no cast shadow, no gradient, and cut the background out afterwards. Never let
+the render include a floor shadow — it breaks the floating overlay look.
+
+--------------------------------------------------------------------------
+NEGATIVE PROMPT (append for SD / Flux style tools)
+--------------------------------------------------------------------------
+text, watermark, logo overlays other than the chest mark, extra limbs,
+extra fingers, deformed hands, harsh rim light, busy background, floor shadow,
+low resolution, blurry, cropped feet, photorealistic skin pores, neon outline
