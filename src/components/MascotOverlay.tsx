@@ -9,6 +9,12 @@ import {
   TrendingUp,
   TrendingDown,
   Activity,
+  Shield,
+  Globe,
+  BarChart3,
+  Newspaper,
+  Dices,
+  ArrowUpRight,
 } from 'lucide-react';
 import { useMascotStore, type MascotState } from '../services/mascotService';
 import { useMascotFeed } from '../mascot/feed';
@@ -18,6 +24,13 @@ import { sendMascotCommand } from '../services/mascotActionService';
 import { describeMascotAction, dispatchMascotAction, dispatchMascotActions } from '../mascot/actions';
 import { useMascotAnnouncements } from '../mascot/announce';
 import type { CryptoCoin, TradingSignal } from '../types';
+import {
+  buildMascotSuggestions,
+  loadRecentSuggestionIds,
+  recordSuggestionUse,
+  type MascotSuggestion,
+  type SuggestionIcon,
+} from '../mascot/suggestions';
 import type { EndingResult, EndingType, Ohlcv, PoseId } from '../mascot/types';
 import { FACE_ID, MASCOT_FACE_ATTR, MASCOT_ROOT_ATTR, countMountedFaces } from '../mascot/core';
 import { resolveMascot } from '../mascot/adapter';
@@ -113,8 +126,20 @@ export interface MascotOverlayProps {
   /** Disable the candle feed (tests / offline demo). */
   disableEndingsFeed?: boolean;
   /** Open the full AI chat — the mascot is the door to it. */
-  onOpenChat?: () => void;
+  /** Opens the full chat; the pending question is passed along (never auto-sent). */
+  onOpenChat?: (question?: string) => void;
 }
+
+/** Small, cheap glyph per suggestion family — never the only signal (text always wins). */
+const SUGGESTION_ICON: Record<SuggestionIcon, React.ReactNode> = {
+  sparkles: <Sparkles className="w-2.5 h-2.5" aria-hidden="true" />,
+  trend: <TrendingUp className="w-2.5 h-2.5" aria-hidden="true" />,
+  shield: <Shield className="w-2.5 h-2.5" aria-hidden="true" />,
+  globe: <Globe className="w-2.5 h-2.5" aria-hidden="true" />,
+  chart: <BarChart3 className="w-2.5 h-2.5" aria-hidden="true" />,
+  news: <Newspaper className="w-2.5 h-2.5" aria-hidden="true" />,
+  dice: <Dices className="w-2.5 h-2.5" aria-hidden="true" />,
+};
 
 export const MascotOverlay: React.FC<MascotOverlayProps> = ({
   cryptoList: cryptoListProp,
@@ -152,6 +177,15 @@ export const MascotOverlay: React.FC<MascotOverlayProps> = ({
   const [isLoadingLine, setIsLoadingLine] = useState(false);
   const [command, setCommand] = useState('');
   const [isSending, setIsSending] = useState(false);
+  // Suggestions are generated, not fixed: `suggestionSeed` reshuffles them and
+  // `recentIds` demotes whatever the user just tapped.
+  const [suggestionSeed, setSuggestionSeed] = useState(0);
+  // Last question asked in the bubble — carried into the chat window so the user
+  // never has to retype it when the inline answer is not enough.
+  const [pendingQuestion, setPendingQuestion] = useState<string | null>(null);
+  const [recentSuggestionIds, setRecentSuggestionIds] = useState<string[]>(() =>
+    loadRecentSuggestionIds()
+  );
   const announcement = useMascotAnnouncements((store) => store.current);
   const [ending, setEnding] = useState<EndingResult | null>(null);
   const [candles, setCandles] = useState<Ohlcv[] | null>(null);
@@ -261,17 +295,27 @@ export const MascotOverlay: React.FC<MascotOverlayProps> = ({
   }, [state, windowContext.activeSurface, requestLine]);
 
   /* ---------------------------------------- typed commands ("สั่งงานได้") */
-  const submitCommand = useCallback(
-    async (event: React.FormEvent) => {
-      event.preventDefault();
-      const text = command.trim();
+  /**
+   * ONE send path for both free text and suggestion chips.
+   *
+   * There is deliberately no command whitelist here: anything the user types is
+   * forwarded as-is, and a chip is nothing more than pre-typed text. That is the
+   * freedom contract — the mascot suggests, the user decides.
+   */
+  const sendText = useCallback(
+    async (raw: string) => {
+      const text = raw.trim();
       if (!text || isSending) return;
+      setCommand(text);
+      setPendingQuestion(text);
 
       setIsSending(true);
       try {
         const result = await sendMascotCommand({ text, ...ctxRef.current });
         if (!result) {
-          setAiLine('ขอโทษครับ ตอนนี้ผมต่อเซิร์ฟเวอร์ไม่ได้ ลองอีกครั้งนะ');
+          // Offline: hand the question to the chat instead of dropping it.
+          setAiLine('ตอนนี้ผมต่อเซิร์ฟเวอร์ไม่ได้ — เปิดแชทแล้วถามต่อได้เลยครับ');
+          setExpanded(true);
           return;
         }
         const actionsToRun = result.actions?.length
@@ -290,13 +334,35 @@ export const MascotOverlay: React.FC<MascotOverlayProps> = ({
           result.reply ||
             (actionsToRun[0] && handled ? describeMascotAction(actionsToRun[0]) : 'รับทราบครับ')
         );
-        if (handled) setCommand('');
+        setCommand('');
       } finally {
         setIsSending(false);
       }
     },
-    [command, isSending]
+    [isSending]
   );
+
+  const submitCommand = useCallback(
+    (event: React.FormEvent) => {
+      event.preventDefault();
+      void sendText(command);
+    },
+    [command, sendText]
+  );
+
+  /** Tapping a chip = fill the box with that question and run it right away. */
+  const runSuggestion = useCallback(
+    (suggestion: MascotSuggestion) => {
+      setRecentSuggestionIds(recordSuggestionUse(suggestion.id));
+      void sendText(suggestion.prompt);
+    },
+    [sendText]
+  );
+
+  /** "สุ่มใหม่" — prove the list is generated, not fixed. */
+  const shuffleSuggestions = useCallback(() => {
+    setSuggestionSeed((value) => value + 1);
+  }, []);
 
   /* ------------------------------- context events ("น้องทักเอง") */
   // One line, one time: the bubble opens, says it, and goes back to live data.
@@ -380,6 +446,41 @@ export const MascotOverlay: React.FC<MascotOverlayProps> = ({
           ? palette.signal
           : palette.signal
     : palette.signal;
+
+  /**
+   * Contextual shortcuts for the window the user is actually looking at.
+   * Regenerated when the window, the numbers, the rotation seed or the recent
+   * taps change — never a static list.
+   */
+  const suggestions = useMemo<MascotSuggestion[]>(
+    () =>
+      buildMascotSuggestions({
+        windowContext,
+        cryptoList,
+        signals,
+        forexRates: feed.forexRates,
+        thaiStocks: feed.thaiStocks,
+        foreignStocks: feed.foreignStocks,
+        watchlist: feed.watchlist,
+        drawdownBreaches: feed.drawdownBreaches,
+        worstDrawdownPct: feed.worstDrawdownPct,
+        recentIds: recentSuggestionIds,
+        seed: suggestionSeed,
+      }),
+    [
+      windowContext,
+      cryptoList,
+      signals,
+      feed.forexRates,
+      feed.thaiStocks,
+      feed.foreignStocks,
+      feed.watchlist,
+      feed.drawdownBreaches,
+      feed.worstDrawdownPct,
+      recentSuggestionIds,
+      suggestionSeed,
+    ]
+  );
 
   const updateSettings = (patch: Partial<MascotSettings>) => setSettings(saveMascotSettings(patch));
 
@@ -679,6 +780,52 @@ export const MascotOverlay: React.FC<MascotOverlayProps> = ({
               {bubbleText}
             </p>
 
+            {/* Contextual shortcuts — generated from this window + live numbers.
+                Tapping one only prepares the question; the box stays free-form. */}
+            {suggestions.length > 0 && (
+              <div className="mt-2" data-testid="mascot-suggestions">
+                <div className="mb-1 flex items-center justify-between gap-1">
+                  <span className="text-[9px] font-mono uppercase tracking-wider text-[#8B88A0]">
+                    ทางลัดของหน้านี้
+                  </span>
+                  <button
+                    type="button"
+                    onClick={shuffleSuggestions}
+                    aria-label="สุ่มทางลัดชุดใหม่"
+                    title="สุ่มใหม่ — ไม่มีชุดคำสั่งตายตัว"
+                    className="inline-flex items-center gap-0.5 text-[9px] font-bold text-[#8B88A0] hover:text-[#ECEAF4] transition-colors"
+                    data-testid="mascot-suggestions-shuffle"
+                  >
+                    <Dices className="w-2.5 h-2.5" aria-hidden="true" />
+                    สุ่มใหม่
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {suggestions.map((suggestion) => (
+                    <button
+                      key={suggestion.id}
+                      type="button"
+                      onClick={() => runSuggestion(suggestion)}
+                      disabled={isSending}
+                      title={suggestion.prompt}
+                      data-testid={`mascot-suggestion-${suggestion.id}`}
+                      data-origin={suggestion.origin}
+                      className="inline-flex items-center gap-1 rounded-full border px-2 py-[3px] text-[10px] font-semibold text-[#ECEAF4] hover:bg-white/5 disabled:opacity-40 transition-colors"
+                      style={{
+                        borderColor:
+                          suggestion.origin === 'RISK' ? `${palette.bear}66` : `${palette.border}`,
+                        color: suggestion.origin === 'EXPLORE' ? palette.signal : undefined,
+                      }}
+                    >
+                      {SUGGESTION_ICON[suggestion.icon]}
+                      <span className="max-w-[150px] truncate">{suggestion.label}</span>
+                      <ArrowUpRight className="w-2.5 h-2.5 opacity-60" aria-hidden="true" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {ending && endingLabel && (
               <div
                 className="mt-2 rounded-xl border px-2 py-1.5"
@@ -739,7 +886,8 @@ export const MascotOverlay: React.FC<MascotOverlayProps> = ({
                 value={command}
                 onChange={(event) => setCommand(event.target.value)}
                 maxLength={200}
-                placeholder="บอกผมมา… เช่น ดู BTC"
+                placeholder="ถามอะไรก็ได้…"
+                title="พิมพ์อะไรก็ได้ ไม่จำกัดรูปแบบคำสั่ง"
                 aria-label="สั่งงานน้องมอเตอร์บอย"
                 className="min-w-0 flex-1 rounded-md border bg-[#141725] px-2 py-1 text-[10px] text-[#ECEAF4] placeholder:text-[#8B88A0] focus:outline-none focus:ring-1"
                 style={{ borderColor: palette.border, ['--tw-ring-color' as string]: palette.primary }}
@@ -776,10 +924,16 @@ export const MascotOverlay: React.FC<MascotOverlayProps> = ({
                 {onOpenChat && (
                   <button
                     type="button"
-                    onClick={onOpenChat}
+                    onClick={() => onOpenChat(pendingQuestion ?? undefined)}
+                    title={
+                      pendingQuestion
+                        ? 'เปิดแชทต่อจากคำถามนี้ (ยังแก้ข้อความได้)'
+                        : 'เปิดห้องแชทกับ AI'
+                    }
                     className="text-[10px] font-bold text-[#A89FFF] hover:text-[#ECEAF4] transition-colors"
+                    data-testid="mascot-open-chat"
                   >
-                    คุยกับผม
+                    {pendingQuestion ? 'คุยต่อในแชท' : 'คุยกับผม'}
                   </button>
                 )}
                 <button

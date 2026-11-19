@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { CryptoCoin, TradingSignal } from '../types';
+import type { CryptoCoin, ForexPair, ForeignStock, ThaiStock, TradingSignal } from '../types';
 
 /**
  * MASCOT FEED — the mascot's own copy of "what the app knows".
@@ -65,6 +65,12 @@ export interface MascotFeedState {
   drawdownBreaches: number;
   /** Worst drawdown across the portfolio, in percent. */
   worstDrawdownPct: number;
+  /** Other market feeds the mascot may quote in its contextual shortcuts. */
+  forexRates: ForexPair[];
+  thaiStocks: ThaiStock[];
+  foreignStocks: ForeignStock[];
+  /** Symbols the user is watching (used for "สรุป watchlist" shortcuts). */
+  watchlist: string[];
   /** Active screen/modal and focus guidance so the mascot knows where the user is. */
   windowContext: MascotWindowContext;
   /** Active sub-tab inside AtsMatrixDashboard so mascot knows LIVE_MATRIX vs BACKTEST. */
@@ -83,6 +89,10 @@ export const DEFAULT_MASCOT_FEED: MascotFeedState = {
   apiKey: '',
   drawdownBreaches: 0,
   worstDrawdownPct: 0,
+  forexRates: [],
+  thaiStocks: [],
+  foreignStocks: [],
+  watchlist: [],
   windowContext: { ...DEFAULT_WINDOW_CONTEXT },
   atsActiveTab: 'LIVE_MATRIX',
   atsRequestedTab: null,
