@@ -777,6 +777,10 @@ export const App: React.FC = () => {
       apiKey: geminiApiKey,
       drawdownBreaches: criticalOrExtremeAssets.length,
       worstDrawdownPct: portfolioDrawdownSummary.worstDrawdownPct,
+      forexRates,
+      thaiStocks,
+      foreignStocks,
+      watchlist: Array.from(watchlist),
       windowContext: mascotWindowContext,
     });
   }, [
@@ -787,6 +791,10 @@ export const App: React.FC = () => {
     geminiApiKey,
     criticalOrExtremeAssets.length,
     portfolioDrawdownSummary.worstDrawdownPct,
+    forexRates,
+    thaiStocks,
+    foreignStocks,
+    watchlist,
     mascotWindowContext,
   ]);
 
@@ -1439,7 +1447,7 @@ export const App: React.FC = () => {
           setNotificationsEnabled(!notificationsEnabled)
         }
         onOpenSettings={() => setShowSettings(true)}
-        onOpenChat={() => openChat()}
+        onOpenChat={openChat}
         onOpenRiskCalc={() => setShowRiskCalc(true)}
         onOpenDrawdown={() => setShowDrawdownModal(true)}
         onOpenAtsMatrix={() => setShowAtsMatrixModal(true)}
@@ -2266,7 +2274,7 @@ export const App: React.FC = () => {
       {/* Floating AI mascot — pointer-events-none wrapper, never blocks the UI */}
       {/* No data props: the mascot subscribes to the published feed, so it can
           be mounted on any surface and still see live market context. */}
-      <MascotOverlay onOpenChat={() => openChat()} />
+      <MascotOverlay onOpenChat={openChat} />
     </>
   );
 };
