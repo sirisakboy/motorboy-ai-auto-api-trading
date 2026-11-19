@@ -1,0 +1,18 @@
+PROMPT C — SHORT VERSION (single paragraph, UI only)
+================================================================
+
+Build an AI mascot overlay (React + TS + Tailwind, UI only, no logic):
+a transparent PNG character floats bottom-right (190px tall, 220px while
+talking, 88px when minimized), drifting 5px up and down over 7s, draggable with
+the position remembered, arrow keys nudge it, focus ring and a descriptive
+aria-label; clicking it opens a 232px (264px on sm) translucent backdrop-blur
+speech bubble with a tail that flips to the opposite side when the mascot is
+dragged into the left third of the viewport; the bubble holds a 10px uppercase
+name row with an icon, an 11px message, one full-width primary button, an input
+plus send button, and a 10px bottom row with "Speak" / mute / "Hide"; support
+the states idle / talking / busy / minimized / quiet (a tiny black pill reading
+"AI · quiet") / hidden / critical (warning border plus a pulsing status dot);
+disable all animation under prefers-reduced-motion; allow exactly one mascot on
+screen; fonts never below 10px; colour never carries meaning on its own.
+
+PLACEHOLDERS TO REPLACE: {{PROJECT_NAME}}, {{MASCOT_NAME}}, {{BRAND}}.

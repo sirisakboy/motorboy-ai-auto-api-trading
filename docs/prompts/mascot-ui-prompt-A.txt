@@ -1,0 +1,107 @@
+PROMPT A — BUILD THE AI MASCOT OVERLAY COMPONENT (UI ONLY)
+================================================================
+
+Copy everything inside the dashed block below into your AI coding assistant.
+Replace the {{PLACEHOLDERS}} first.
+
+--------------------------------------------------------------------------
+Build an "AI Mascot Overlay" UI component for the web app {{PROJECT_NAME}}
+using React + TypeScript + Tailwind CSS. Character name: {{MASCOT_NAME}}.
+
+SCOPE — UI / PRESENTATION ONLY
+- Do NOT write analysis, decision-making, business rules, or any API calls.
+- The component receives its state from the outside (props or an external store:
+  state, message, accent, isBusy) and only renders it.
+- Never invent numbers or copy. Render exactly what you are given.
+- Ship one demo/mock file that feeds fake state so every state can be reviewed
+  without a backend.
+
+FILES TO PRODUCE (keep them separate)
+1. MascotOverlay.tsx   — the floating overlay
+2. MascotBubble.tsx    — the speech bubble
+3. mascot.types.ts     — types for state/props
+4. mascot.demo.tsx     — a page showing every state
+5. mascot.css (or tailwind config) — colour tokens and motion timings
+
+POSITION AND SIZE (matches the source design system exactly)
+- The overlay is position: fixed, z-index 40; the wrapper is pointer-events: none,
+  only the interactive children opt back in with pointer-events: auto.
+- Default anchor: bottom-right, 12px + env(safe-area-inset-bottom/right).
+- Character height: 190px idle · 220px when talking/alerted · 88px minimized.
+- The character is a transparent PNG with no frame and no card behind it; it
+  floats above the page with a soft drop-shadow: 0 10px 22px rgba(0,0,0,0.55).
+- Speech bubble: 232px wide (264px on sm and up), 20px radius, translucent
+  surface + backdrop-blur, 12px padding, shadow 0 10px 30px rgba(0,0,0,0.45),
+  and a 10px square tail rotated 45 degrees touching the bottom edge.
+- The bubble sits on the LEFT of the character by default. If the user drags the
+  mascot into the left third of the viewport (x < 320px), flip the bubble to the
+  other side automatically (flex-row-reverse) so it never runs off screen.
+
+STATES TO RENDER (visual only)
+- idle: character gently floats, no bubble.
+- talking / alert: bubble open; accent colour shifts with severity
+  (normal / warning / critical).
+- busy: spinner replaces the status dot (or sits inside the action button).
+- minimized: character shrinks to 88px and the bubble collapses.
+- quiet: the mascot is replaced by a single small pill button, roughly auto
+  width, bg-black/70 + backdrop-blur, 10px mono text reading "AI · quiet";
+  clicking it restores the character.
+- hidden: render nothing (return null).
+- critical: bubble border turns to the warning colour and the status dot pulses.
+
+SPEECH BUBBLE CONTENT (top to bottom)
+1. Header row: {{MASCOT_NAME}} in 10px uppercase tracking-wide + a small icon +
+   a collapse (chevron) button.
+2. Message text, 11px, relaxed line-height, primary text colour, wraps without
+   overflowing.
+3. Optional compact stat card: 12px radius, numbers in 10px tabular mono.
+4. One full-width primary button, ~30px tall, 10px bold text.
+5. Input + send: input uses the sunken surface, 8px radius, 10px text; the send
+   button is disabled while the field is empty.
+6. Bottom row: "Speak" (spinner while loading) · mute/quiet toggle (speaker icon
+   on/off) · "Hide". All 10px bold, faint colour, hover to primary text colour.
+
+CHARACTER INTERACTION
+- Drag to move with pointer events (touch-action: none), cursor grab/grabbing.
+- Clamp the position inside the viewport (8px margin) after every drag.
+- Persist the position in localStorage and restore it on load.
+- Clicking the character toggles the bubble.
+- Keyboard: focuses with Tab (2px focus ring, 2px offset), Enter/Space opens the
+  bubble, arrow keys move the character 16px (48px with Shift held).
+- aria-label: "{{MASCOT_NAME}} — <state>. Drag to move, click to open message box".
+- The bubble uses role="status" and aria-live="polite".
+
+MOTION (subtle, never attention-stealing)
+- Float: translateY 0 → -5px → 0 over 7s, infinite,
+  easing cubic-bezier(0.22, 0.8, 0.3, 1).
+- Bubble open/close: opacity transition, 300ms.
+- Colour/state change: 400ms ease.
+- Disable every animation under prefers-reduced-motion: reduce.
+- No bounce, no jitter, no continuous spin.
+
+COLOUR TOKENS (use the tokens, do not scatter raw hex)
+App background #0F1117 · card #1C1F2E · sunken #141725 · border rgba(255,255,255,0.07)
+Primary text #ECEAF4 · secondary #A7A4B8 · faint #8B88A0
+Brand/AI {{BRAND}} (#7C6CFF) · secondary accent #A89FFF · info #4CC9F0
+Positive/success #7EE0B5 · warning #FFB86B · danger #F4A6A6 (never plain red)
+Radius: card 20px · button 14px · chip 999px · input 12px
+
+RULES
+- Exactly ONE mascot may exist on screen (console.warn if a second one mounts).
+- It must never block important content: it is draggable and can be hidden.
+- Colour alone must never carry meaning — pair it with text or an icon.
+- Minimum font size 10px; primary text contrast at least 7:1.
+- Mobile-safe: the bubble may not exceed the viewport
+  (max-w-[calc(100vw-24px)]).
+
+DELIVERABLE
+Runnable code plus a demo page that switches through every state
+(idle / talking / busy / minimized / quiet / hidden / critical), and a short
+note explaining what each file does.
+--------------------------------------------------------------------------
+
+NOTES
+- Keep the component framework-agnostic in spirit: if the target app is not
+  React, keep the same DOM structure, class names and measurements and port them.
+- Anything that looks like "what the mascot says or decides" arrives through
+  props. This prompt deliberately excludes it.
