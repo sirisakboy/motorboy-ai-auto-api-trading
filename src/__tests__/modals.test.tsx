@@ -2,33 +2,11 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 
-import { CalendarModal } from '../components/CalendarModal';
 import { StockDetailModal } from '../components/StockDetailModal';
 import { RiskCalculatorModal } from '../components/RiskCalculatorModal';
 import { SettingsDialog } from '../components/SettingsDialog';
 import { NewsDetailModal } from '../components/NewsDetailModal';
 import { SignalDetailModal } from '../components/SignalDetailModal';
-
-// Firebase initialises an Auth instance on import; in happy-dom/jsdom that
-// logs an "operation-not-supported-in-this-environment" warning. The modals
-// never touch auth during these renders, so stub the module out.
-vi.mock('firebase/auth', () => ({
-  signInWithPopup: vi.fn(),
-  signOut: vi.fn(),
-  onAuthStateChanged: vi.fn(),
-  GoogleAuthProvider: { credentialFromResult: vi.fn() },
-  getAuth: vi.fn(() => ({ currentUser: null })),
-}));
-
-vi.mock('../firebase', () => ({
-  auth: { currentUser: null },
-  db: {},
-  googleProvider: { setCustomParameters: vi.fn(), addScope: vi.fn() },
-  workspaceGoogleProvider: { setCustomParameters: vi.fn(), addScope: vi.fn() },
-  GMAIL_SCOPES: [],
-  CALENDAR_SCOPES: [],
-  CHAT_SCOPES: [],
-}));
 
 afterEach(() => {
   cleanup();
@@ -36,30 +14,17 @@ afterEach(() => {
 });
 
 /**
- * These are render + accessibility smoke tests. They exist because every modal
- * used to be a bare <div className="fixed inset-0">: no role, no aria-modal,
- * no Escape handling and no scroll lock. They also catch JSX breakage in the
- * 900-line modal components, which `tsc` alone cannot fully protect.
+ * These are render + accessibility smoke tests. They catch dialog role,
+ * aria-modal, Escape handling, scroll lock, and JSX issues.
  */
 
 const noop = () => {};
 
 describe('modal accessibility contract', () => {
-  it('CalendarModal exposes a labelled dialog, locks scroll and closes on Escape', () => {
-    const onClose = vi.fn();
-    render(<CalendarModal isOpen onClose={onClose} userEmail="trader@example.com" />);
-
-    const dialog = screen.getByRole('dialog');
-    expect(dialog.getAttribute('aria-modal')).toBe('true');
-    expect(dialog.getAttribute('aria-label')).toBe('ปฏิทินกิจกรรม Google Calendar');
-    expect(document.body.style.overflow).toBe('hidden');
-
-    fireEvent.keyDown(document, { key: 'Escape' });
-    expect(onClose).toHaveBeenCalledTimes(1);
-  });
-
   it('restores background scroll when the dialog unmounts', () => {
-    const { unmount } = render(<CalendarModal isOpen onClose={noop} />);
+    const { unmount } = render(
+      <RiskCalculatorModal isOpen onClose={noop} useThb={false} signals={[]} geminiApiKey="" />
+    );
     expect(document.body.style.overflow).toBe('hidden');
     unmount();
     expect(document.body.style.overflow).toBe('');

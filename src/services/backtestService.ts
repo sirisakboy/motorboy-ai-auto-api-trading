@@ -1,4 +1,3 @@
-import { getCachedAccessToken } from './gmailService';
 
 export type StrategyId =
   | 'RSI_CROSSOVER'
@@ -752,9 +751,7 @@ export async function runBacktestWithProgress(
     typeof fetch === 'function' &&
     !(globalThis as { __vitest_worker__?: unknown }).__vitest_worker__
   ) {
-    const token = getCachedAccessToken();
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    if (token) headers.Authorization = `Bearer ${token}`;
 
     void fetch('/api/archive/backtest', {
       method: 'POST',

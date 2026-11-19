@@ -64,14 +64,12 @@ export const HistoryList: React.FC<HistoryListProps> = ({
               </h2>
               <span className="bg-[#7EE0B5]/15 border border-[#7EE0B5]/30 text-[#7EE0B5] text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center space-x-1">
                 <CheckCircle2 className="w-3 h-3 inline" />
-                <span>ซิงค์กับ Google Firestore</span>
+                <span>บันทึกในเครื่อง (localStorage)</span>
               </span>
             </div>
             <p className="text-[#A7A4B8] text-xs mt-0.5">
-              บันทึกบนคลาวด์อัตโนมัติสำหรับบัญชี{' '}
-              <span className="text-[#A89FFF] font-semibold">
-                {userEmail || 'Google User'}
-              </span>
+              บันทึกประวัติการวิเคราะห์และสัญญาณไว้ในเบราว์เซอร์ของคุณ
+              {userEmail ? ` (${userEmail})` : ''}
             </p>
           </div>
         </div>

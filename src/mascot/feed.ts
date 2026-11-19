@@ -32,8 +32,6 @@ export type MascotWindowSurface =
   | 'SETTINGS_MODAL'
   | 'RISK_CALC_MODAL'
   | 'DRAWDOWN_MODAL'
-  | 'GMAIL_MODAL'
-  | 'CALENDAR_MODAL'
   | 'SIGNAL_DETAIL_MODAL'
   | 'FOREX_DETAIL_MODAL'
   | 'STOCK_DETAIL_MODAL';

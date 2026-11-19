@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 
 import {
@@ -13,25 +13,6 @@ import { CryptoCard } from '../components/CryptoCard';
 import { SystemHealthPanel } from '../components/SystemHealthPanel';
 import { SignalDetailModal } from '../components/SignalDetailModal';
 import type { TradingSignal, ApiStatusState } from '../types';
-
-// Firebase Auth พ่น warning ใน jsdom — component ชุดนี้ไม่ได้ใช้ auth เลย
-vi.mock('firebase/auth', () => ({
-  signInWithPopup: vi.fn(),
-  signOut: vi.fn(),
-  onAuthStateChanged: vi.fn(),
-  GoogleAuthProvider: { credentialFromResult: vi.fn() },
-  getAuth: vi.fn(() => ({ currentUser: null })),
-}));
-
-vi.mock('../firebase', () => ({
-  auth: { currentUser: null },
-  db: {},
-  googleProvider: { setCustomParameters: vi.fn(), addScope: vi.fn() },
-  workspaceGoogleProvider: { setCustomParameters: vi.fn(), addScope: vi.fn() },
-  GMAIL_SCOPES: [],
-  CALENDAR_SCOPES: [],
-  CHAT_SCOPES: [],
-}));
 
 afterEach(() => {
   cleanup();

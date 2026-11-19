@@ -2,17 +2,12 @@ import React, { useEffect, useState } from 'react';
 import {
   Check,
   Download,
-  ExternalLink,
-  FolderUp,
   RefreshCw,
 } from 'lucide-react';
 import {
   type DailyCsvDataset,
-  type DailyDriveExportResponse,
-  type DailyDriveExportScope,
   type DailySnapshotDateItem,
   downloadDailyCsvExport,
-  exportDailyCsvToDriveFolder,
   fetchArchivedDailyDates,
   triggerDailySnapshotNow,
 } from '../services/dailyCsvExportService';
@@ -38,12 +33,11 @@ const QUICK_ASSET_OPTIONS = [
   'GOLD',
 ];
 
-function getDrivePreviewPath(scope: DailyDriveExportScope, customSubpath: string): string {
-  const folderMap: Record<DailyDriveExportScope, string> = {
+function getArchivePreviewPath(dataset: DailyCsvDataset, customSubpath: string): string {
+  const folderMap: Record<DailyCsvDataset, string> = {
     combined: 'MotorBoy-AI-TH-Archive/daily-csv/combined-backtest',
     prices: 'MotorBoy-AI-TH-Archive/daily-csv/prices',
     news: 'MotorBoy-AI-TH-Archive/daily-csv/news',
-    all: 'MotorBoy-AI-TH-Archive/daily-csv/{combined-backtest, prices, news}',
   };
   const cleanSub = customSubpath
     .split('/')
@@ -51,7 +45,7 @@ function getDrivePreviewPath(scope: DailyDriveExportScope, customSubpath: string
     .filter(Boolean)
     .slice(0, 3)
     .join('/');
-  return cleanSub ? `${folderMap[scope]} (${cleanSub})` : folderMap[scope];
+  return cleanSub ? `${folderMap[dataset]} (${cleanSub})` : folderMap[dataset];
 }
 
 export const DailyCsvExportPanel: React.FC<DailyCsvExportPanelProps> = ({
@@ -64,7 +58,6 @@ export const DailyCsvExportPanel: React.FC<DailyCsvExportPanelProps> = ({
   const [loadingDates, setLoadingDates] = useState<boolean>(true);
   const [selectedDateKey, setSelectedDateKey] = useState<string>('ALL');
   const [selectedDataset, setSelectedDataset] = useState<DailyCsvDataset>('combined');
-  const [driveScope, setDriveScope] = useState<DailyDriveExportScope>('all');
   const [selectedAsset, setSelectedAsset] = useState<string>(
     QUICK_ASSET_OPTIONS.includes(normalizedDefault) ? normalizedDefault : 'ALL'
   );
@@ -72,12 +65,9 @@ export const DailyCsvExportPanel: React.FC<DailyCsvExportPanelProps> = ({
 
   const [isDownloading, setIsDownloading] = useState<boolean>(false);
   const [isSnapshotting, setIsSnapshotting] = useState<boolean>(false);
-  const [confirmDriveExport, setConfirmDriveExport] = useState<boolean>(false);
-  const [isUploadingDrive, setIsUploadingDrive] = useState<boolean>(false);
 
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [driveResult, setDriveResult] = useState<DailyDriveExportResponse | null>(null);
 
   const loadDates = async () => {
     setLoadingDates(true);
@@ -131,30 +121,6 @@ export const DailyCsvExportPanel: React.FC<DailyCsvExportPanelProps> = ({
     }
   };
 
-  const handleExportToDrive = async () => {
-    setConfirmDriveExport(false);
-    setIsUploadingDrive(true);
-    setErrorMessage(null);
-    setStatusMessage(null);
-    setDriveResult(null);
-    try {
-      const res = await exportDailyCsvToDriveFolder({
-        dateKey: selectedDateKey,
-        dataset: driveScope,
-        asset: selectedAsset,
-        customSubpath,
-      });
-      setDriveResult(res);
-      setStatusMessage(
-        `ส่งออก ${res.uploadedCount}/${res.files.length} ไฟล์ CSV เข้า Google Drive สำเร็จ`
-      );
-    } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : 'ส่งออกเข้า Google Drive ไม่สำเร็จ');
-    } finally {
-      setIsUploadingDrive(false);
-    }
-  };
-
   const totalAssetsLatest = dates[0]?.assetCount ?? 0;
   const totalNewsLatest = dates[0]?.newsCount ?? 0;
 
@@ -166,7 +132,7 @@ export const DailyCsvExportPanel: React.FC<DailyCsvExportPanelProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/[0.07]">
         <div className="space-y-1">
           <h4 className="text-sm font-semibold text-white">
-            Export Daily Price &amp; News CSV (Backtest &amp; Google Drive Portability)
+            Export Daily Price &amp; News CSV (Backtest Portability)
           </h4>
           <p className="text-xs text-[#A7A4B8] font-mono tabular-nums">
             {loadingDates
@@ -261,11 +227,11 @@ export const DailyCsvExportPanel: React.FC<DailyCsvExportPanelProps> = ({
             </div>
 
             <div className="space-y-1">
-              <label htmlFor="csv-drive-subfolder" className="block text-[11px] text-[#A7A4B8]">
-                โฟลเดอร์ย่อยบน Drive (ไม่บังคับ)
+              <label htmlFor="csv-archive-subfolder" className="block text-[11px] text-[#A7A4B8]">
+                โฟลเดอร์ย่อย (ไม่บังคับ)
               </label>
               <input
-                id="csv-drive-subfolder"
+                id="csv-archive-subfolder"
                 type="text"
                 value={customSubpath}
                 onChange={(e) => setCustomSubpath(e.target.value)}
@@ -277,68 +243,20 @@ export const DailyCsvExportPanel: React.FC<DailyCsvExportPanelProps> = ({
           </div>
 
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pt-2 border-t border-white/[0.07]">
-            <div className="text-xs text-[#A7A4B8] font-mono space-y-1">
-              <div>
-                Google Drive Folder: <span className="text-[#ECEAF4]">{getDrivePreviewPath(driveScope, customSubpath)}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <label htmlFor="drive-export-scope" className="text-[#8B88A0]">
-                  ไฟล์ที่จะส่งเข้า Drive:
-                </label>
-                <select
-                  id="drive-export-scope"
-                  value={driveScope}
-                  onChange={(e) => setDriveScope(e.target.value as DailyDriveExportScope)}
-                  className="bg-[#0F1117] border border-white/[0.08] rounded-md px-2 py-1 text-[11px] text-white outline-none"
-                >
-                  <option value="all">ครบทั้ง 3 ไฟล์ (Combined + Prices + News)</option>
-                  <option value="combined">เฉพาะ Combined Backtest CSV</option>
-                  <option value="prices">เฉพาะ Daily Prices CSV</option>
-                  <option value="news">เฉพาะ Daily News CSV</option>
-                </select>
-              </div>
+            <div className="text-xs text-[#A7A4B8] font-mono">
+              Archive Path: <span className="text-[#ECEAF4]">{getArchivePreviewPath(selectedDataset, customSubpath)}</span>
             </div>
 
             <div className="flex flex-wrap items-center gap-2 shrink-0">
               <button
                 type="button"
                 onClick={handleDownloadCsv}
-                disabled={isDownloading || isUploadingDrive}
-                className="px-4 py-2 rounded-lg bg-[#222640] hover:bg-[#2C3152] border border-white/[0.08] text-xs font-medium text-white flex items-center gap-1.5 transition-colors whitespace-nowrap shrink-0 cursor-pointer disabled:opacity-50"
+                disabled={isDownloading}
+                className="px-4 py-2 rounded-lg bg-[#7C6CFF] hover:bg-[#6E5DFF] text-xs font-semibold text-white flex items-center gap-1.5 transition-colors whitespace-nowrap shrink-0 cursor-pointer disabled:opacity-50"
               >
                 <Download className="w-3.5 h-3.5 text-[#7EE0B5]" />
                 <span>{isDownloading ? 'กำลังสร้าง CSV...' : 'ดาวน์โหลด CSV'}</span>
               </button>
-
-              {!confirmDriveExport ? (
-                <button
-                  type="button"
-                  onClick={() => setConfirmDriveExport(true)}
-                  disabled={isUploadingDrive || isDownloading}
-                  className="px-4 py-2 rounded-lg bg-[#7C6CFF] hover:bg-[#6E5DFF] text-xs font-semibold text-white flex items-center gap-1.5 transition-colors whitespace-nowrap shrink-0 cursor-pointer disabled:opacity-50"
-                >
-                  <FolderUp className="w-3.5 h-3.5" />
-                  <span>{isUploadingDrive ? 'กำลังส่งเข้า Drive...' : 'ส่งออกเข้า Google Drive'}</span>
-                </button>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={handleExportToDrive}
-                    className="px-3.5 py-2 rounded-lg bg-[#7EE0B5] hover:brightness-95 text-xs font-semibold text-[#0F1117] flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
-                  >
-                    <Check className="w-3.5 h-3.5" />
-                    <span>ยืนยันส่งออกเข้า Drive</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setConfirmDriveExport(false)}
-                    className="px-3 py-2 rounded-lg bg-[#222640] hover:bg-[#2C3152] text-xs text-[#A7A4B8] whitespace-nowrap shrink-0 cursor-pointer"
-                  >
-                    ยกเลิก
-                  </button>
-                </div>
-              )}
             </div>
           </div>
         </>
@@ -354,37 +272,6 @@ export const DailyCsvExportPanel: React.FC<DailyCsvExportPanelProps> = ({
       {errorMessage && (
         <div className="text-xs font-mono text-[#F4A6A6] pt-1">
           ข้อผิดพลาด: {errorMessage}
-        </div>
-      )}
-
-      {driveResult && driveResult.files.length > 0 && (
-        <div className="pt-2 border-t border-white/[0.07] space-y-1.5 text-xs font-mono">
-          {driveResult.files.map((file) => (
-            <div
-              key={file.fileName}
-              className="flex flex-wrap items-center justify-between gap-2 text-[#ECEAF4]"
-            >
-              <div className="truncate">
-                <span>{file.fileName}</span>
-                <span className="text-[#8B88A0]"> · {file.rowCount.toLocaleString()} แถว · {file.driveFolderPath}</span>
-              </div>
-              {file.upload.webViewLink ? (
-                <a
-                  href={file.upload.webViewLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[#4CC9F0] hover:underline flex items-center gap-1 whitespace-nowrap shrink-0"
-                >
-                  <span>เปิดใน Drive</span>
-                  <ExternalLink className="w-3 h-3" />
-                </a>
-              ) : (
-                <span className="text-[#A7A4B8] whitespace-nowrap shrink-0">
-                  {file.upload.uploaded ? 'อัปโหลดแล้ว' : file.upload.reason || 'รอดำเนินการ'}
-                </span>
-              )}
-            </div>
-          ))}
         </div>
       )}
     </section>

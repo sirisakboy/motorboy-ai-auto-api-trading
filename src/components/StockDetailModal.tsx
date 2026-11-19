@@ -189,13 +189,13 @@ export const StockDetailModal: React.FC<StockDetailModalProps> = ({
               </div>
               <div className="pt-2 border-t border-[#222640] flex justify-end">
                 <a
-                  href={`https://www.google.com/finance/quote/${symbol}:${isThaiStock ? 'SET' : 'NASDAQ'}`}
+                  href={`https://finance.yahoo.com/quote/${symbol}${isThaiStock ? '.BK' : ''}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="px-3 py-1.5 rounded-lg bg-[#222640] hover:bg-[#383E4E] text-[#A89FFF] text-xs font-semibold flex items-center gap-1.5 transition-colors"
                 >
                   <Globe className="w-3.5 h-3.5" />
-                  <span>ดูข้อมูลเชิงลึกบน Google Finance</span>
+                  <span>ดูข้อมูลเชิงลึกบน Yahoo Finance</span>
                 </a>
               </div>
             </div>

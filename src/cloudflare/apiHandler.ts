@@ -26,10 +26,6 @@ import { categorizeHeadlinesHeuristic } from '../services/headlineCategorization
 
 export interface CloudflareEnv {
   GEMINI_API_KEY?: string;
-  VITE_GEMINI_API_KEY?: string;
-  GEMINI_MODEL?: string;
-  GEMINI_ENABLE_GROUNDING?: string;
-  ARCHIVE_ORIGIN_URL?: string;
   ASSETS?: {
     fetch: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
   };
@@ -61,15 +57,7 @@ function keyTag(key: string): string {
   return `${trimmed.slice(0, 6)}:${trimmed.length}:${trimmed.slice(-4)}`;
 }
 
-function isGroundingEnabled(env: CloudflareEnv): boolean {
-  const flag = typeof env.GEMINI_ENABLE_GROUNDING === 'string'
-    ? env.GEMINI_ENABLE_GROUNDING.trim().toLowerCase()
-    : '';
-  return !(flag === 'false' || flag === '0' || flag === 'off' || flag === 'no');
-}
-
-function shouldAttemptGroundingEdge(key: string, env: CloudflareEnv): boolean {
-  if (!isGroundingEnabled(env)) return false;
+function shouldAttemptGroundingEdge(key: string): boolean {
   const tag = keyTag(key);
   const blockedUntil = groundingCooldownByKeyTag.get(tag) || 0;
   if (blockedUntil > Date.now()) return false;
@@ -201,7 +189,6 @@ async function runWithUserOrServerKeyEdge<T>(
 ): Promise<T> {
   const envMap: Record<string, string | undefined> = {
     GEMINI_API_KEY: env.GEMINI_API_KEY,
-    VITE_GEMINI_API_KEY: env.VITE_GEMINI_API_KEY,
   };
   const primary = resolveGeminiKey(userKey, envMap);
   if (primary.source === 'none') {
@@ -229,10 +216,9 @@ async function generateWithGroundingFallbackEdge(
   apiKey: string,
   chain: readonly string[],
   contents: string,
-  generationConfig?: Record<string, unknown>,
-  env: CloudflareEnv = {}
+  generationConfig?: Record<string, unknown>
 ): Promise<GeminiRestResult> {
-  if (!shouldAttemptGroundingEdge(apiKey, env)) {
+  if (!shouldAttemptGroundingEdge(apiKey)) {
     return await callGeminiGenerateContent(apiKey, chain, { contents, generationConfig });
   }
 
@@ -292,7 +278,6 @@ function extractJsonFromText<T = Record<string, unknown>>(text: string): T | nul
 function sendKeyProblemEdge(userKey?: string, env: CloudflareEnv = {}): Response {
   const resolved = resolveGeminiKey(userKey, {
     GEMINI_API_KEY: env.GEMINI_API_KEY,
-    VITE_GEMINI_API_KEY: env.VITE_GEMINI_API_KEY,
   });
   const empty = !userKey || !String(userKey).trim();
   return jsonResponse(
@@ -542,11 +527,10 @@ export async function handleCloudflareApiRequest(
     return handleYahooEdge(`${pathname.slice('/api/yahoo'.length)}${search}`);
   }
 
-  const primaryModel = resolveGeminiModel({ GEMINI_MODEL: env.GEMINI_MODEL });
+  const primaryModel = resolveGeminiModel();
   const modelChain = buildModelChain(primaryModel);
   const envKeys = {
     GEMINI_API_KEY: env.GEMINI_API_KEY,
-    VITE_GEMINI_API_KEY: env.VITE_GEMINI_API_KEY,
   };
 
   if (pathname === '/api/gemini/config' && request.method === 'GET') {
@@ -555,7 +539,7 @@ export async function handleCloudflareApiRequest(
       model: primaryModel,
       fallbackModels: modelChain.slice(1),
       serverKeyConfigured: serverKey.source === 'server',
-      groundingEnabled: isGroundingEnabled(env),
+      groundingEnabled: true,
       runtime: 'cloudflare',
     });
   }
@@ -580,7 +564,7 @@ export async function handleCloudflareApiRequest(
 
     const prompt = 'ตอบสั้นๆ 1 บรรทัดภาษาไทย: ยืนยันสถานะการเชื่อมต่อ AI สำหรับระบบวิเคราะห์ตลาด';
     try {
-      let searchGrounded = shouldAttemptGroundingEdge(resolved.key, env);
+      let searchGrounded = shouldAttemptGroundingEdge(resolved.key);
       let result: GeminiRestResult;
       if (searchGrounded) {
         try {
@@ -662,7 +646,7 @@ ${signal ? `- สัญญาณเทคนิค: ${signal.type} (ความ
 
     try {
       const res = await runWithUserOrServerKeyEdge(apiKey, env, (k) =>
-        generateWithGroundingFallbackEdge(k, modelChain, prompt, undefined, env)
+        generateWithGroundingFallbackEdge(k, modelChain, prompt, undefined)
       );
       const parsed = extractJsonFromText<any>(res.text || '{}') || {};
       const score = Math.min(100, Math.max(0, Number(parsed.score) || 50));
@@ -712,7 +696,7 @@ ${signal ? `- สัญญาณเทคนิค: ${signal.type} (ความ
 
     try {
       const res = await runWithUserOrServerKeyEdge(apiKey, env, (k) =>
-        generateWithGroundingFallbackEdge(k, modelChain, prompt, undefined, env)
+        generateWithGroundingFallbackEdge(k, modelChain, prompt, undefined)
       );
       const parsed = extractJsonFromText<any>(res.text || '{}') || {};
       const sScore = Math.min(100, Math.max(0, Number(parsed.sentimentScore) || (isUp ? 68 : 38)));
@@ -768,7 +752,7 @@ ${signal ? `- สัญญาณเทคนิค: ${signal.type} (ความ
 
     try {
       const res = await runWithUserOrServerKeyEdge(apiKey, env, (k) =>
-        generateWithGroundingFallbackEdge(k, modelChain, prompt, undefined, env)
+        generateWithGroundingFallbackEdge(k, modelChain, prompt, undefined)
       );
       const parsed = extractJsonFromText<any>(res.text || '{}') || {};
       return jsonResponse({
@@ -814,7 +798,7 @@ ${signal ? `- สัญญาณเทคนิค: ${signal.type} (ความ
 
     try {
       const res = await runWithUserOrServerKeyEdge(apiKey, env, (k) =>
-        generateWithGroundingFallbackEdge(k, modelChain, prompt, undefined, env)
+        generateWithGroundingFallbackEdge(k, modelChain, prompt, undefined)
       );
       const parsed = extractJsonFromText<any>(res.text || '{}') || {};
       const rec = String(parsed.recommendation || '').toUpperCase();
@@ -854,7 +838,7 @@ ${signal ? `- สัญญาณเทคนิค: ${signal.type} (ความ
 
     try {
       const res = await runWithUserOrServerKeyEdge(apiKey, env, (k) =>
-        generateWithGroundingFallbackEdge(k, modelChain, prompt, undefined, env)
+        generateWithGroundingFallbackEdge(k, modelChain, prompt, undefined)
       );
       const parsed = extractJsonFromText<any>(res.text || '{}') || {};
       return jsonResponse({
@@ -883,7 +867,7 @@ ${signal ? `- สัญญาณเทคนิค: ${signal.type} (ความ
     const prompt = `วิเคราะห์โครงการ CAPEX: ${article.title} บริษัท ${details?.company || 'N/A'} ตอบภาษาไทย JSON`;
     try {
       const res = await runWithUserOrServerKeyEdge(apiKey, env, (k) =>
-        generateWithGroundingFallbackEdge(k, modelChain, prompt, undefined, env)
+        generateWithGroundingFallbackEdge(k, modelChain, prompt, undefined)
       );
       const parsed = extractJsonFromText<any>(res.text || '{}') || {};
       return jsonResponse({
@@ -992,7 +976,7 @@ ${signal ? `- สัญญาณเทคนิค: ${signal.type} (ความ
 
     try {
       const res = await runWithUserOrServerKeyEdge(geminiApiKey, env, (k) =>
-        generateWithGroundingFallbackEdge(k, modelChain, prompt, undefined, env)
+        generateWithGroundingFallbackEdge(k, modelChain, prompt, undefined)
       );
       if (!res.text) return jsonResponse({ error: 'Empty response from Gemini' }, 500);
       return jsonResponse({ reply: res.text, source: 'GEMINI_AI' });
@@ -1144,7 +1128,7 @@ ${signal ? `- สัญญาณเทคนิค: ${signal.type} (ความ
           };
 
           const bodyStream = await runWithUserOrServerKeyEdge(userKey, env, async (k) => {
-            if (!shouldAttemptGroundingEdge(k, env)) {
+            if (!shouldAttemptGroundingEdge(k)) {
               return openStream(k, false);
             }
             try {
@@ -1210,17 +1194,6 @@ ${signal ? `- สัญญาณเทคนิค: ${signal.type} (ความ
     });
   }
 
-  // Optional proxy to an origin backend for stateful disk archives if configured
-  if (typeof env.ARCHIVE_ORIGIN_URL === 'string' && env.ARCHIVE_ORIGIN_URL.trim().startsWith('http')) {
-    const origin = env.ARCHIVE_ORIGIN_URL.trim().replace(/\/$/, '');
-    const upstreamUrl = `${origin}${pathname}${search}`;
-    return fetch(upstreamUrl, {
-      method: request.method,
-      headers: request.headers,
-      body: request.method === 'GET' || request.method === 'HEAD' ? undefined : request.body,
-    });
-  }
-
   // Stateless Cloudflare Edge handlers for backtest candles & archive overview
   if (pathname === '/api/backtest/candles' && request.method === 'GET') {
     const symbol = url.searchParams.get('symbol')?.trim().slice(0, 32) || '';
@@ -1237,7 +1210,6 @@ ${signal ? `- สัญญาณเทคนิค: ${signal.type} (ความ
       dailySnapshotCount: 0,
       backtestArchiveCount: 0,
       trackedAssetsInMatrix: 0,
-      pendingDriveSyncCount: 0,
       historicalCache: { cachedAssetCount: 0, cycleLength: 30 },
     });
   }

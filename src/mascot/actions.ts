@@ -23,9 +23,7 @@ export type MascotWindowId =
   | 'risk_calc'
   | 'drawdown'
   | 'ats_matrix'
-  | 'backtest'
-  | 'gmail'
-  | 'calendar';
+  | 'backtest';
 
 export const MASCOT_WINDOW_IDS: MascotWindowId[] = [
   'news',
@@ -37,8 +35,6 @@ export const MASCOT_WINDOW_IDS: MascotWindowId[] = [
   'drawdown',
   'ats_matrix',
   'backtest',
-  'gmail',
-  'calendar',
 ];
 
 export interface ChangeAssetAction {
@@ -124,14 +120,14 @@ export interface ClearFiltersAction {
   name: 'clear_filters';
 }
 
-export interface SyncDriveArchiveAction {
-  name: 'sync_drive_archive';
+export interface SyncLocalArchiveAction {
+  name: 'sync_local_archive';
 }
 
 export interface ExportDailyCsvAction {
   name: 'export_daily_csv';
   dataset?: 'combined' | 'prices' | 'news';
-  destination?: 'download' | 'drive';
+  destination?: 'download';
   dateKey?: string;
 }
 
@@ -152,7 +148,7 @@ export type MascotAction =
   | RefreshMarketDataAction
   | ToggleAtsInlineAction
   | ClearFiltersAction
-  | SyncDriveArchiveAction
+  | SyncLocalArchiveAction
   | ExportDailyCsvAction;
 
 export type MascotActionName = MascotAction['name'];
@@ -227,7 +223,7 @@ export const MASCOT_SANDBOX_CAPABILITIES: MascotCapabilitySpec[] = [
   {
     name: 'open_window',
     description:
-      'Open any major feature modal/window inside the app sandbox (news, chat, watchlist, history, settings, risk_calc, drawdown, ats_matrix, backtest, gmail, calendar).',
+      'Open any major feature modal/window inside the app sandbox (news, chat, watchlist, history, settings, risk_calc, drawdown, ats_matrix, backtest).',
     parameters: {
       type: 'OBJECT',
       properties: {
@@ -360,8 +356,8 @@ export const MASCOT_SANDBOX_CAPABILITIES: MascotCapabilitySpec[] = [
     },
   },
   {
-    name: 'sync_drive_archive',
-    description: 'Trigger a background market/news snapshot and Google Drive archive sync if connected.',
+    name: 'sync_local_archive',
+    description: 'Trigger a background market and news daily snapshot into the local archive.',
     parameters: {
       type: 'OBJECT',
       properties: {},
@@ -370,7 +366,7 @@ export const MASCOT_SANDBOX_CAPABILITIES: MascotCapabilitySpec[] = [
   {
     name: 'export_daily_csv',
     description:
-      'Export daily collected price and news snapshots to structured backtest CSV (download locally or upload into structured Google Drive folders).',
+      'Export daily collected price and news snapshots to structured backtest CSV and download locally.',
     parameters: {
       type: 'OBJECT',
       properties: {
@@ -381,8 +377,8 @@ export const MASCOT_SANDBOX_CAPABILITIES: MascotCapabilitySpec[] = [
         },
         destination: {
           type: 'STRING',
-          description: 'Export target: download as browser CSV file or upload to Google Drive folder.',
-          enum: ['download', 'drive'],
+          description: 'Export target: download as browser CSV file.',
+          enum: ['download'],
         },
         dateKey: {
           type: 'STRING',
@@ -402,7 +398,7 @@ export const MASCOT_ACTION_CATALOG = `- change_asset { symbol, market?: crypto|f
 - filter_stocks { query, market? } — กรองรายการด้วยคำค้น
 - open_news { topic? } — เปิดหน้าข่าว
 - open_chat { question? } — เปิดแชทเต็มเพื่อถามต่อ
-- open_window { window } — เปิดหน้าต่างฟีเจอร์ภายในแอป (news, chat, watchlist, history, settings, risk_calc, drawdown, ats_matrix, backtest, gmail, calendar)
+- open_window { window } — เปิดหน้าต่างฟีเจอร์ภายในแอป (news, chat, watchlist, history, settings, risk_calc, drawdown, ats_matrix, backtest)
 - close_window { window? } — ปิดหน้าต่างที่เปิดอยู่
 - switch_market_tab { market } — สลับหมวดหมู่ตลาดบนหน้าหลัก
 - select_chart_asset { symbol, market? } — เปลี่ยนกราฟหลักเป็นสินทรัพย์ที่ระบุ
@@ -414,8 +410,8 @@ export const MASCOT_ACTION_CATALOG = `- change_asset { symbol, market?: crypto|f
 - refresh_market_data {} — รีเฟรชฟีดราคาและข่าวล่าสุดทั้งหมด
 - toggle_ats_inline { enabled? } — เปิดหรือปิดโหมด ATS Matrix บนหน้าหลัก
 - clear_filters {} — ล้างคำค้นหาทั้งหมด
-- sync_drive_archive {} — บันทึกและซิงก์ข้อมูลตลาดเข้าคลังหลังบ้าน
-- export_daily_csv { dataset?: combined|prices|news, destination?: download|drive, dateKey? } — ส่งออกข้อมูลราคาและข่าวรายวันเป็นไฟล์ CSV สำหรับ Backtest หรือเข้าโฟลเดอร์ Google Drive`;
+- sync_local_archive {} — บันทึกข้อมูลตลาดเข้าคลังหลังบ้านในเครื่อง
+- export_daily_csv { dataset?: combined|prices|news, destination?: download, dateKey? } — ส่งออกข้อมูลราคาและข่าวรายวันเป็นไฟล์ CSV สำหรับ Backtest`;
 
 function asString(value: unknown, max: number): string | null {
   if (typeof value !== 'string') return null;
@@ -539,12 +535,11 @@ export function parseMascotAction(raw: unknown): MascotAction | null {
       };
     case 'clear_filters':
       return { name: 'clear_filters' };
-    case 'sync_drive_archive':
-      return { name: 'sync_drive_archive' };
+    case 'sync_local_archive':
+      return { name: 'sync_local_archive' };
     case 'export_daily_csv': {
       const ds =
         args.dataset === 'prices' || args.dataset === 'news' ? args.dataset : 'combined';
-      const dest = args.destination === 'drive' ? 'drive' : 'download';
       const rawDate =
         typeof args.dateKey === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(args.dateKey.trim())
           ? args.dateKey.trim()
@@ -552,7 +547,7 @@ export function parseMascotAction(raw: unknown): MascotAction | null {
       return {
         name: 'export_daily_csv',
         dataset: ds,
-        destination: dest,
+        destination: 'download',
         ...(rawDate ? { dateKey: rawDate } : {}),
       };
     }
@@ -653,12 +648,10 @@ export function describeMascotAction(action: MascotAction): string {
       return 'สลับแผง ATS Matrix บนหน้าหลักแล้วครับ';
     case 'clear_filters':
       return 'ล้างตัวกรองค้นหาให้แล้วครับ';
-    case 'sync_drive_archive':
-      return 'บันทึกและซิงก์ข้อมูลเข้าคลังหลังบ้านแล้วครับ';
+    case 'sync_local_archive':
+      return 'บันทึกข้อมูลเข้าคลังหลังบ้านแล้วครับ';
     case 'export_daily_csv':
-      return action.destination === 'drive'
-        ? 'กำลังส่งออกไฟล์ CSV รายวันเข้าโฟลเดอร์ Google Drive ครับ'
-        : 'กำลังส่งออกและดาวน์โหลดไฟล์ CSV ข้อมูลราคาและข่าวรายวันครับ';
+      return 'กำลังส่งออกและดาวน์โหลดไฟล์ CSV ข้อมูลราคาและข่าวรายวันครับ';
     default:
       return 'เรียบร้อยครับ';
   }

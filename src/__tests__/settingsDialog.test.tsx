@@ -4,24 +4,6 @@ import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/re
 
 import { SettingsDialog } from '../components/SettingsDialog';
 
-vi.mock('firebase/auth', () => ({
-  signInWithPopup: vi.fn(),
-  signOut: vi.fn(),
-  onAuthStateChanged: vi.fn(),
-  GoogleAuthProvider: { credentialFromResult: vi.fn() },
-  getAuth: vi.fn(() => ({ currentUser: null })),
-}));
-
-vi.mock('../firebase', () => ({
-  auth: { currentUser: null },
-  db: {},
-  googleProvider: { setCustomParameters: vi.fn(), addScope: vi.fn() },
-  workspaceGoogleProvider: { setCustomParameters: vi.fn(), addScope: vi.fn() },
-  GMAIL_SCOPES: [],
-  CALENDAR_SCOPES: [],
-  CHAT_SCOPES: [],
-}));
-
 // ไม่ยิงเน็ตจริงในเทสต์
 vi.mock('../services/geminiService', () => ({
   testGeminiApiKeyWithSearch: vi.fn(async () => ({ success: true, text: 'ok', searchGrounded: true })),
@@ -57,7 +39,7 @@ function renderDialog(over: Partial<React.ComponentProps<typeof SettingsDialog>>
 
 /** เปิดโซน API Key ซึ่งพับไว้เป็นค่าเริ่มต้น */
 function openKeySection() {
-  fireEvent.click(screen.getByRole('button', { name: /ส่วนจัดการ Google Gemini API Key/ }));
+  fireEvent.click(screen.getByRole('button', { name: /ส่วนจัดการ Gemini API Key/ }));
 }
 
 beforeEach(() => {
@@ -106,7 +88,7 @@ describe('SettingsDialog — API key configuration', () => {
     fireEvent.change(input, { target: { value: 'my-custom-key-12345' } });
 
     expect(screen.getByTestId('gemini-key-hint').textContent).toMatch(/พร้อมบันทึก/);
-    const saveButton = screen.getByRole('button', { name: /บันทึกและซิงค์คีย์/ });
+    const saveButton = screen.getByRole('button', { name: /บันทึกคีย์ในเครื่อง/ });
     expect((saveButton as HTMLButtonElement).disabled).toBe(false);
 
     fireEvent.click(saveButton);
@@ -117,7 +99,7 @@ describe('SettingsDialog — API key configuration', () => {
     const { onSaveApiKey } = renderDialog();
     openKeySection();
 
-    const saveButton = screen.getByRole('button', { name: /บันทึกและซิงค์คีย์/ });
+    const saveButton = screen.getByRole('button', { name: /บันทึกคีย์ในเครื่อง/ });
     expect((saveButton as HTMLButtonElement).disabled).toBe(true);
     fireEvent.click(saveButton);
     expect(onSaveApiKey).not.toHaveBeenCalled();
@@ -132,7 +114,7 @@ describe('SettingsDialog — API key configuration', () => {
     fireEvent.change(input, { target: { value: `  ${CLASSIC_KEY}  ` } });
     expect(screen.getByTestId('gemini-key-hint').textContent).toMatch(/พร้อมบันทึก/);
 
-    fireEvent.click(screen.getByRole('button', { name: /บันทึกและซิงค์คีย์/ }));
+    fireEvent.click(screen.getByRole('button', { name: /บันทึกคีย์ในเครื่อง/ }));
     await waitFor(() => expect(onSaveApiKey).toHaveBeenCalledWith(CLASSIC_KEY));
   });
 

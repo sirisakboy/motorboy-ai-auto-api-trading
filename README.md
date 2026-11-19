@@ -28,40 +28,40 @@ npm run dev          # http://localhost:3000  (Express + Vite middleware)
 
 ## Environment
 
-คัดลอก `.env.example` → `.env` แล้วใส่คีย์ (ไฟล์ `.env` ถูก ignore แล้ว ห้าม commit):
+คัดลอก `.env.example` → `.env` แล้วใส่เฉพาะคีย์ Gemini (ไฟล์ `.env` ถูก ignore แล้ว ห้าม commit):
 
 ```bash
 cp .env.example .env
-# GEMINI_API_KEY=...        # ใช้ฝั่งเซิร์ฟเวอร์ (สตรีมแชท, วิเคราะห์ตลาด)
-# GEMINI_MODEL=...          # เปลี่ยนโมเดลได้โดยไม่ต้องแก้โค้ด (ดีฟอลต์ gemini-3.8-flash)
-# VITE_GEMINI_API_KEY=...   # ฝังลง client — ใช้เฉพาะตอนพัฒนาเท่านั้น (ห้ามใช้บน production)
+# GEMINI_API_KEY=...        # ใช้ฝั่งเซิร์ฟเวอร์ (ตัวแปร ENV เดียวที่ระบบรองรับ)
 ```
 
 ผู้ใช้ยังใส่คีย์ของตัวเองผ่านหน้า **ตั้งค่า** ได้ (เก็บใน localStorage ของเครื่องนั้น
 ไม่ส่งขึ้นคลาวด์) — ดูสถานะจริงได้ที่ `GET /api/gemini/config`
 
-**การเลือกโมเดล:** ระบบอ่าน `GEMINI_MODEL` (ถ้าไม่ตั้งจะใช้ `gemini-3.1-flash-lite`)
-และมี fallback chain `gemini-4-hydrogen` เมื่อโมเดลหลักไม่พร้อมใช้งาน
-(แก้ที่ `src/server/geminiConfig.ts`)
+**โมเดลเริ่มต้น:** `gemini-3.1-flash-lite` พร้อม fallback chain `gemini-4-hydrogen`
+(ตั้งค่าใน `src/server/geminiConfig.ts` โดยไม่พึ่ง `.env` เพิ่มเติม)
 
 ---
 
-## Deploy
+## Deploy (Cloudflare Workers / Cloudflare Pages / Node)
 
-### 1) Google AI Studio / Cloud Run (Node / Bun)
-```bash
-bun install --frozen-lockfile   # หรือ npm ci
-npm run build
-NODE_ENV=production PORT=8080 npm start
-```
+โปรเจกต์ถอดบริการ Google อื่น ๆ (Firebase, Google Drive, Gmail, Calendar, Google Fonts) ออกทั้งหมดแล้ว เหลือเฉพาะ Gemini API ผ่าน `GEMINI_API_KEY` เท่านั้น:
 
-### 2) Cloudflare Workers / Cloudflare Pages
-โปรเจกต์รองรับทั้ง **Cloudflare Workers (Static Assets)** และ **Cloudflare Pages + Functions**:
-- **Workers (แนะนำ)**: ใช้ `wrangler.jsonc` (`npx wrangler deploy` หลังจาก `npm run build`)
-  - ตั้ง Secret ฝั่งเซิร์ฟเวอร์ผ่าน `npx wrangler secret put GEMINI_API_KEY` (หรือ Dashboard > Variables & Secrets)
-- **Pages**:
+- **Cloudflare Workers (แนะนำ)**:
+  ```bash
+  npm run build
+  npx wrangler secret put GEMINI_API_KEY   # ตั้งค่า secret เดียวบน Cloudflare
+  npx wrangler deploy
+  ```
+- **Cloudflare Pages**:
   - Build command: `npm run build`
   - Build output directory: `dist`
-  - ไฟล์ `functions/api/[[path]].ts` จะรองรับทุก route `/api/*` (`/api/health`, `/api/yahoo/*`, `/api/gemini/*`, `/api/backtest/candles`) อัตโนมัติ
-  - ตั้ง Environment Variable `GEMINI_API_KEY` ใน Cloudflare Pages Settings (ไม่บังคับ หากผู้ใช้กรอกคีย์ในแอปเอง)
+  - ไฟล์ `functions/api/[[path]].ts` จะรองรับ `/api/*` (`/api/health`, `/api/yahoo/*`, `/api/gemini/*`, `/api/backtest/candles`) อัตโนมัติ
+  - ตั้ง Secret `GEMINI_API_KEY` ใน Cloudflare Pages Settings (ไม่บังคับ หากผู้ใช้กรอกคีย์ในแอปเอง)
+- **Node / Express**:
+  ```bash
+  bun install --frozen-lockfile
+  npm run build
+  npm start
+  ```
 

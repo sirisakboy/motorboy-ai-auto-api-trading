@@ -138,29 +138,29 @@ export async function fetchStockIndices(prev: StockIndex[] = STOCK_SYMBOLS): Pro
 }
 
 const THAI_STOCKS_RAW: ThaiStock[] = [
-  { symbol: 'AOT', name: 'ท่าอากาศยานไทย', nameEn: 'Airports of Thailand', sector: 'ท่องเที่ยว & การบิน', price: 62.50, change: 1.25, volume: 18500000, marketCap: '875,000', pe: 32.5, dividendYield: 1.8, googleFinanceUrl: 'https://www.google.com/finance/quote/AOT:SET' },
-  { symbol: 'CPALL', name: 'ซีพีออลล์', nameEn: 'CP All', sector: 'ค้าปลีก', price: 58.75, change: 0.85, volume: 12300000, marketCap: '421,000', pe: 24.8, dividendYield: 2.1, googleFinanceUrl: 'https://www.google.com/finance/quote/CPALL:SET' },
-  { symbol: 'SCC', name: 'เอสซีจี', nameEn: 'Siam Cement', sector: 'วัสดุก่อสร้าง', price: 285.00, change: -0.52, volume: 3200000, marketCap: '405,000', pe: 15.2, dividendYield: 3.8, googleFinanceUrl: 'https://www.google.com/finance/quote/SCC:SET' },
-  { symbol: 'PTT', name: 'ปตท.', nameEn: 'PTT PCL', sector: 'พลังงาน', price: 34.25, change: 2.10, volume: 28700000, marketCap: '480,000', pe: 8.5, dividendYield: 5.2, googleFinanceUrl: 'https://www.google.com/finance/quote/PTT:SET' },
-  { symbol: 'DELTA', name: 'เดลต้า', nameEn: 'Delta Electronics', sector: 'อิเล็กทรอนิกส์', price: 128.50, change: 3.45, volume: 8900000, marketCap: '295,000', pe: 42.1, dividendYield: 0.8, googleFinanceUrl: 'https://www.google.com/finance/quote/DELTA:SET' },
-  { symbol: 'KBANK', name: 'กสิกรไทย', nameEn: 'Kasikornbank', sector: 'ธนาคาร', price: 142.00, change: 0.71, volume: 9800000, marketCap: '338,000', pe: 10.2, dividendYield: 4.5, googleFinanceUrl: 'https://www.google.com/finance/quote/KBANK:SET' },
-  { symbol: 'BH', name: 'บำรุงราษฎร์', nameEn: 'Bangkok Dusit Medical', sector: 'สาธารณสุข', price: 245.00, change: 1.65, volume: 5600000, marketCap: '315,000', pe: 28.3, dividendYield: 1.5, googleFinanceUrl: 'https://www.google.com/finance/quote/BH:SET' },
-  { symbol: 'ADVANC', name: 'แอดวานซ์', nameEn: 'Advanced Info Service', sector: 'สื่อสาร', price: 365.00, change: 0.55, volume: 4200000, marketCap: '335,000', pe: 22.1, dividendYield: 2.8, googleFinanceUrl: 'https://www.google.com/finance/quote/ADVANC:SET' },
-  { symbol: 'GULF', name: 'กัลฟ์', nameEn: 'Gulf Energy', sector: 'พลังงานไฟฟ้า', price: 48.50, change: 1.90, volume: 15200000, marketCap: '290,000', pe: 18.5, dividendYield: 2.2, googleFinanceUrl: 'https://www.google.com/finance/quote/GULF:SET' },
-  { symbol: 'TRUE', name: 'ทรู', nameEn: 'True Corporation', sector: 'สื่อสาร', price: 11.80, change: -0.84, volume: 32100000, marketCap: '168,000', pe: 45.2, dividendYield: 0.5, googleFinanceUrl: 'https://www.google.com/finance/quote/TRUE:SET' },
+  { symbol: 'AOT', name: 'ท่าอากาศยานไทย', nameEn: 'Airports of Thailand', sector: 'ท่องเที่ยว & การบิน', price: 62.50, change: 1.25, volume: 18500000, marketCap: '875,000', pe: 32.5, dividendYield: 1.8, yahooFinanceUrl: 'https://finance.yahoo.com/quote/AOT.BK' },
+  { symbol: 'CPALL', name: 'ซีพีออลล์', nameEn: 'CP All', sector: 'ค้าปลีก', price: 58.75, change: 0.85, volume: 12300000, marketCap: '421,000', pe: 24.8, dividendYield: 2.1, yahooFinanceUrl: 'https://finance.yahoo.com/quote/CPALL.BK' },
+  { symbol: 'SCC', name: 'เอสซีจี', nameEn: 'Siam Cement', sector: 'วัสดุก่อสร้าง', price: 285.00, change: -0.52, volume: 3200000, marketCap: '405,000', pe: 15.2, dividendYield: 3.8, yahooFinanceUrl: 'https://finance.yahoo.com/quote/SCC.BK' },
+  { symbol: 'PTT', name: 'ปตท.', nameEn: 'PTT PCL', sector: 'พลังงาน', price: 34.25, change: 2.10, volume: 28700000, marketCap: '480,000', pe: 8.5, dividendYield: 5.2, yahooFinanceUrl: 'https://finance.yahoo.com/quote/PTT.BK' },
+  { symbol: 'DELTA', name: 'เดลต้า', nameEn: 'Delta Electronics', sector: 'อิเล็กทรอนิกส์', price: 128.50, change: 3.45, volume: 8900000, marketCap: '295,000', pe: 42.1, dividendYield: 0.8, yahooFinanceUrl: 'https://finance.yahoo.com/quote/DELTA.BK' },
+  { symbol: 'KBANK', name: 'กสิกรไทย', nameEn: 'Kasikornbank', sector: 'ธนาคาร', price: 142.00, change: 0.71, volume: 9800000, marketCap: '338,000', pe: 10.2, dividendYield: 4.5, yahooFinanceUrl: 'https://finance.yahoo.com/quote/KBANK.BK' },
+  { symbol: 'BH', name: 'บำรุงราษฎร์', nameEn: 'Bangkok Dusit Medical', sector: 'สาธารณสุข', price: 245.00, change: 1.65, volume: 5600000, marketCap: '315,000', pe: 28.3, dividendYield: 1.5, yahooFinanceUrl: 'https://finance.yahoo.com/quote/BH.BK' },
+  { symbol: 'ADVANC', name: 'แอดวานซ์', nameEn: 'Advanced Info Service', sector: 'สื่อสาร', price: 365.00, change: 0.55, volume: 4200000, marketCap: '335,000', pe: 22.1, dividendYield: 2.8, yahooFinanceUrl: 'https://finance.yahoo.com/quote/ADVANC.BK' },
+  { symbol: 'GULF', name: 'กัลฟ์', nameEn: 'Gulf Energy', sector: 'พลังงานไฟฟ้า', price: 48.50, change: 1.90, volume: 15200000, marketCap: '290,000', pe: 18.5, dividendYield: 2.2, yahooFinanceUrl: 'https://finance.yahoo.com/quote/GULF.BK' },
+  { symbol: 'TRUE', name: 'ทรู', nameEn: 'True Corporation', sector: 'สื่อสาร', price: 11.80, change: -0.84, volume: 32100000, marketCap: '168,000', pe: 45.2, dividendYield: 0.5, yahooFinanceUrl: 'https://finance.yahoo.com/quote/TRUE.BK' },
 ];
 
 export const THAI_STOCKS: ThaiStock[] = stampSeedSnapshot(THAI_STOCKS_RAW);
 
 const FOREIGN_STOCKS_RAW: ForeignStock[] = [
-  { symbol: 'AAPL', name: 'Apple Inc.', sector: 'Technology', price: 234.80, change: 1.52, volume: 52300000, marketCap: '3.62T', pe: 32.5, high52w: 244.50, low52w: 164.08, googleFinanceUrl: 'https://www.google.com/finance/quote/AAPL:NASDAQ' },
-  { symbol: 'NVDA', name: 'NVIDIA Corp', sector: 'Semiconductor', price: 142.65, change: 4.28, volume: 89200000, marketCap: '3.48T', pe: 62.8, high52w: 153.13, low52w: 75.61, googleFinanceUrl: 'https://www.google.com/finance/quote/NVDA:NASDAQ' },
-  { symbol: 'TSLA', name: 'Tesla Inc.', sector: 'EV & Clean Energy', price: 412.50, change: -2.15, volume: 78500000, marketCap: '1.32T', pe: 115.2, high52w: 488.54, low52w: 138.80, googleFinanceUrl: 'https://www.google.com/finance/quote/TSLA:NASDAQ' },
-  { symbol: 'GOOGL', name: 'Alphabet Inc.', sector: 'Technology', price: 192.30, change: 0.98, volume: 28100000, marketCap: '2.38T', pe: 24.8, high52w: 207.71, low52w: 147.22, googleFinanceUrl: 'https://www.google.com/finance/quote/GOOGL:NASDAQ' },
-  { symbol: 'MSFT', name: 'Microsoft Corp', sector: 'Technology', price: 512.40, change: 1.22, volume: 22400000, marketCap: '3.81T', pe: 35.2, high52w: 527.35, low52w: 385.58, googleFinanceUrl: 'https://www.google.com/finance/quote/MSFT:NASDAQ' },
-  { symbol: 'META', name: 'Meta Platforms', sector: 'Technology', price: 762.80, change: 2.45, volume: 18900000, marketCap: '1.93T', pe: 28.5, high52w: 780.20, low52w: 426.37, googleFinanceUrl: 'https://www.google.com/finance/quote/META:NASDAQ' },
-  { symbol: 'AMZN', name: 'Amazon.com', sector: 'E-Commerce & Cloud', price: 228.50, change: 1.05, volume: 35600000, marketCap: '2.41T', pe: 42.1, high52w: 242.52, low52w: 161.02, googleFinanceUrl: 'https://www.google.com/finance/quote/AMZN:NASDAQ' },
-  { symbol: 'AVGO', name: 'Broadcom Inc.', sector: 'Semiconductor', price: 198.75, change: 3.18, volume: 31200000, marketCap: '932B', pe: 45.8, high52w: 251.88, low52w: 128.00, googleFinanceUrl: 'https://www.google.com/finance/quote/AVGO:NASDAQ' },
+  { symbol: 'AAPL', name: 'Apple Inc.', sector: 'Technology', price: 234.80, change: 1.52, volume: 52300000, marketCap: '3.62T', pe: 32.5, high52w: 244.50, low52w: 164.08, yahooFinanceUrl: 'https://finance.yahoo.com/quote/AAPL' },
+  { symbol: 'NVDA', name: 'NVIDIA Corp', sector: 'Semiconductor', price: 142.65, change: 4.28, volume: 89200000, marketCap: '3.48T', pe: 62.8, high52w: 153.13, low52w: 75.61, yahooFinanceUrl: 'https://finance.yahoo.com/quote/NVDA' },
+  { symbol: 'TSLA', name: 'Tesla Inc.', sector: 'EV & Clean Energy', price: 412.50, change: -2.15, volume: 78500000, marketCap: '1.32T', pe: 115.2, high52w: 488.54, low52w: 138.80, yahooFinanceUrl: 'https://finance.yahoo.com/quote/TSLA' },
+  { symbol: 'GOOGL', name: 'Alphabet Inc.', sector: 'Technology', price: 192.30, change: 0.98, volume: 28100000, marketCap: '2.38T', pe: 24.8, high52w: 207.71, low52w: 147.22, yahooFinanceUrl: 'https://finance.yahoo.com/quote/GOOGL' },
+  { symbol: 'MSFT', name: 'Microsoft Corp', sector: 'Technology', price: 512.40, change: 1.22, volume: 22400000, marketCap: '3.81T', pe: 35.2, high52w: 527.35, low52w: 385.58, yahooFinanceUrl: 'https://finance.yahoo.com/quote/MSFT' },
+  { symbol: 'META', name: 'Meta Platforms', sector: 'Technology', price: 762.80, change: 2.45, volume: 18900000, marketCap: '1.93T', pe: 28.5, high52w: 780.20, low52w: 426.37, yahooFinanceUrl: 'https://finance.yahoo.com/quote/META' },
+  { symbol: 'AMZN', name: 'Amazon.com', sector: 'E-Commerce & Cloud', price: 228.50, change: 1.05, volume: 35600000, marketCap: '2.41T', pe: 42.1, high52w: 242.52, low52w: 161.02, yahooFinanceUrl: 'https://finance.yahoo.com/quote/AMZN' },
+  { symbol: 'AVGO', name: 'Broadcom Inc.', sector: 'Semiconductor', price: 198.75, change: 3.18, volume: 31200000, marketCap: '932B', pe: 45.8, high52w: 251.88, low52w: 128.00, yahooFinanceUrl: 'https://finance.yahoo.com/quote/AVGO' },
 ];
 
 export const FOREIGN_STOCKS: ForeignStock[] = stampSeedSnapshot(FOREIGN_STOCKS_RAW);

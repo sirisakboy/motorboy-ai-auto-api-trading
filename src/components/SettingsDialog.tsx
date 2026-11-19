@@ -13,7 +13,7 @@ import {
   Search,
   Globe,
   ExternalLink,
-  Mail,
+  HardDrive,
   ChevronDown,
   ChevronUp,
   HelpCircle,
@@ -257,28 +257,24 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2.5">
               <div className="w-8 h-8 rounded-xl bg-[#4CC9F0]/10 border border-[#4CC9F0]/30 flex items-center justify-center text-[#4CC9F0]">
-                <Mail className="w-4 h-4" />
+                <HardDrive className="w-4 h-4" />
               </div>
               <div>
                 <div className="flex items-center space-x-1.5">
-                  <span className="text-[10px] text-[#A7A4B8] uppercase font-bold tracking-wider">บัญชี Google</span>
+                  <span className="text-[10px] text-[#A7A4B8] uppercase font-bold tracking-wider">โหมดจัดเก็บข้อมูล</span>
                   <span className="w-1.5 h-1.5 rounded-full bg-[#7EE0B5]" />
                 </div>
                 <p className="text-xs text-white font-semibold">
-                  {userEmail || 'โหมดในเครื่อง (ยังไม่ลงชื่อเข้าใช้)'}
+                  โหมดในเครื่อง (localStorage)
                 </p>
               </div>
             </div>
             <div
-              className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center space-x-1 ${
-                userEmail
-                  ? 'bg-[#7EE0B5]/15 border border-[#7EE0B5]/30 text-[#7EE0B5]'
-                  : 'bg-[#A89FFF]/15 border border-[#A89FFF]/30 text-[#A89FFF]'
-              }`}
+              className="text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center space-x-1 bg-[#A89FFF]/15 border border-[#A89FFF]/30 text-[#A89FFF]"
               data-testid="settings-account-mode"
             >
               <CheckCircle2 className="w-3 h-3" />
-              <span>{userEmail ? 'ลงชื่อเข้าใช้แล้ว' : 'เก็บในเครื่อง'}</span>
+              <span>เก็บในเครื่อง</span>
             </div>
           </div>
 
@@ -286,7 +282,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
             <div className="flex items-center space-x-2 text-[#A7A4B8]">
               <Globe className="w-3.5 h-3.5 text-[#4CC9F0]" />
               <span className="text-[11px] text-[#ECEAF4]">
-                Google Search Grounding:{' '}
+                Search Grounding:{' '}
                 <span className="text-[#4CC9F0] font-medium">
                   {storedKeyIsValid ? 'พร้อมใช้เมื่อคีย์รองรับ' : 'ต้องมี API Key ที่ใช้งานได้ก่อน'}
                 </span>
@@ -298,7 +294,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
           </div>
         </div>
 
-        {/* Google Gemini API Key Section - Collapsible */}
+        {/* Gemini API Key Section - Collapsible */}
         <div className="rounded-2xl bg-[#0F1117]/60 border border-white/[0.07] overflow-hidden transition-all">
           <button
             type="button"
@@ -312,10 +308,10 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
               <div>
                 <div className="flex items-center space-x-2">
                   <span className="text-xs font-bold text-white">
-                    ส่วนจัดการ Google Gemini API Key
+                    ส่วนจัดการ Gemini API Key
                   </span>
                   <span className="text-[10px] text-[#A7A4B8] bg-[#222640] px-1.5 py-0.5 rounded">
-                    Google AI Studio
+                    AI Studio
                   </span>
                 </div>
                 <p className="text-[11px] text-[#A7A4B8]">
@@ -343,20 +339,20 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-2">
                 <label className="text-xs font-bold text-white flex items-center space-x-1.5 shrink-0">
                   <Key className="w-4 h-4 text-[#A89FFF]" />
-                  <span>Google Gemini API Key</span>
+                  <span>Gemini API Key</span>
                 </label>
                 <div className="flex items-center space-x-2 shrink-0">
                   <button
                     type="button"
                     onClick={() => setIsHelpModalOpen(true)}
                     className="text-[11px] text-[#4CC9F0] hover:text-[#7EE0B5] flex items-center space-x-1 font-medium transition-colors cursor-pointer group"
-                    title="ดูวิธีรับ API Key จาก Google AI Studio"
+                    title="ดูวิธีรับ Gemini API Key"
                   >
                     <HelpCircle className="w-3.5 h-3.5 text-[#4CC9F0] group-hover:scale-110 transition-transform" />
                     <span className="underline decoration-[#4CC9F0]/50 underline-offset-2">วิธีรับ API Key</span>
                   </button>
                   <span className="text-[10px] text-[#A7A4B8] bg-[#222640] px-2 py-0.5 rounded-md font-medium">
-                    Google AI Studio
+                    AI Studio
                   </span>
                 </div>
               </div>
@@ -364,8 +360,8 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
               <p className="text-[11px] text-[#A7A4B8] leading-relaxed">
                 คีย์นี้ใช้เรียกโมเดล Gemini ผ่านเซิร์ฟเวอร์ของแอป (ไม่ฝังในบันเดิล)
                 และถูกเก็บไว้ใน <span className="text-[#ECEAF4]">localStorage ของเครื่องนี้เท่านั้น</span> —
-                รองรับคีย์<span className="text-[#ECEAF4]">ทุกประเภท</span>จาก Google AI Studio
-                (ไม่กำหนดรูปแบบหรือคำขึ้นต้น) หากคีย์ไม่ถูกต้อง ระบบจะรายงานผลจาก Google ให้ทราบตอนกด “ทดสอบ”
+                รองรับคีย์<span className="text-[#ECEAF4]">ทุกประเภท</span>
+                (ไม่กำหนดรูปแบบหรือคำขึ้นต้น) หากคีย์ไม่ถูกต้อง ระบบจะรายงานผลให้ทราบตอนกด “ทดสอบ”
               </p>
 
               <div className="space-y-1.5">
@@ -447,7 +443,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                 </div>
               </div>
 
-              {/* Quick link to Google AI Studio */}
+              {/* Quick link to AI Studio */}
               <div className="flex items-center justify-between px-1">
                 <span className="text-[10px] text-[#A7A4B8]">ต้องการ API Key เพิ่มเติม?</span>
                 <a
@@ -456,7 +452,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                   rel="noopener noreferrer"
                   className="text-[10px] text-[#7C6CFF] hover:text-[#7C6CFF]/80 flex items-center space-x-1 transition-colors"
                 >
-                  <span>รับ API Key ฟรีได้ที่ Google AI Studio</span>
+                  <span>รับ API Key ได้ที่ AI Studio</span>
                   <ExternalLink className="w-3 h-3" />
                 </a>
               </div>
@@ -473,12 +469,12 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                   {isSavingKey ? (
                     <>
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      <span>กำลังซิงค์...</span>
+                      <span>กำลังบันทึก...</span>
                     </>
                   ) : (
                     <>
                       <CheckCircle2 className="w-3.5 h-3.5" />
-                      <span>บันทึกและซิงค์คีย์</span>
+                      <span>บันทึกคีย์ในเครื่อง</span>
                     </>
                   )}
                 </button>
@@ -649,7 +645,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
         {/* Price Alert */}
         <div className="space-y-3">
           <h3 className="text-white text-xs font-bold">
-            🔔 ตั้งเป้าเตือนราคา (Price Alert - ซิงค์คลาวด์)
+            🔔 ตั้งเป้าเตือนราคา (Price Alert - ในเครื่อง)
           </h3>
 
           <form onSubmit={handleSaveAlert} className="space-y-2.5">
@@ -755,7 +751,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
           ref={helpDialogRef}
           role="dialog"
           aria-modal="true"
-          aria-label="วิธีขอ Google Gemini API Key"
+          aria-label="วิธีขอ Gemini API Key"
           className="fixed inset-0 z-60 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 overflow-y-auto"
           onClick={() => setIsHelpModalOpen(false)}
         >
@@ -771,10 +767,10 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                 </div>
                 <div>
                   <h3 className="text-white font-extrabold text-sm sm:text-base tracking-tight">
-                    วิธีรับ Google Gemini API Key ฟรี
+                    วิธีรับ Gemini API Key
                   </h3>
                   <p className="text-[11px] text-[#A7A4B8]">
-                    ขั้นตอนการขอคีย์จาก Google AI Studio ภายใน 1 นาที
+                    ขั้นตอนการขอคีย์จาก AI Studio ภายใน 1 นาที
                   </p>
                 </div>
               </div>
@@ -792,7 +788,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
             <div className="rounded-2xl overflow-hidden border border-white/10 bg-[#0F1117] shadow-lg group">
               <img
                 src={guideImg}
-                alt="คู่มือขั้นตอนการขอ Google Gemini API Key จาก Google AI Studio"
+                alt="คู่มือขั้นตอนการขอ Gemini API Key"
                 className="w-full h-auto object-cover transform group-hover:scale-[1.01] transition-transform duration-300"
               />
             </div>
@@ -804,9 +800,9 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                   1
                 </span>
                 <div>
-                  <p className="text-white font-semibold">เข้าสู่เว็บไซต์ Google AI Studio</p>
+                  <p className="text-white font-semibold">เข้าสู่เว็บไซต์ AI Studio</p>
                   <p className="text-[11px] text-[#A7A4B8] mt-0.5">
-                    ลงชื่อเข้าใช้ด้วยบัญชี Google ของคุณที่หน้าจัดการ API Keys
+                    เปิดหน้าจัดการ API Keys เพื่อสร้างคีย์สำหรับ Gemini
                   </p>
                 </div>
               </div>
@@ -818,7 +814,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                 <div>
                   <p className="text-white font-semibold">กดปุ่ม &quot;Get API key&quot; หรือ &quot;Create API Key&quot;</p>
                   <p className="text-[11px] text-[#A7A4B8] mt-0.5">
-                    เลือกว่าจะผูกกับโปรเจกต์ Google Cloud เดิมหรือสร้างโปรเจกต์ใหม่ได้ฟรี
+                    สร้างคีย์ใหม่เพื่อใช้กับตัวช่วยวิเคราะห์ของแอป
                   </p>
                 </div>
               </div>
@@ -844,7 +840,7 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
                 rel="noopener noreferrer"
                 className="w-full sm:flex-1 bg-[linear-gradient(135deg,#8E80FF,#4CC9F0)] hover:brightness-105 text-[#0F1117] font-bold text-xs py-2.5 rounded-xl transition-all flex items-center justify-center space-x-1.5 shadow-[0_6px_18px_rgba(124,108,255,0.28)] cursor-pointer"
               >
-                <span>เปิดหน้า Google AI Studio</span>
+                <span>เปิดหน้า AI Studio</span>
                 <ExternalLink className="w-3.5 h-3.5" />
               </a>
 

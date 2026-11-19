@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Bell, Settings, LogOut, User as UserIcon, Mail, Calendar as CalendarIcon, MessageSquare, Calculator, LayoutGrid, X, Radio, TrendingDown } from 'lucide-react';
+import { Bell, Settings, MessageSquare, Calculator, LayoutGrid, X, Radio, TrendingDown } from 'lucide-react';
 import { CryptoCoin } from '../types';
 import { TickerBar } from './TickerBar';
 
@@ -11,18 +11,13 @@ interface HeaderProps {
   isDark: boolean;
   notifEnabled: boolean;
   alertCount: number;
-  user?: { displayName?: string | null; photoURL?: string | null; email?: string | null } | null;
   onToggleCurrency: () => void;
   onToggleNotifications: () => void;
   onOpenSettings: () => void;
-  onOpenGmail?: () => void;
-  onOpenCalendar?: () => void;
   onOpenChat?: () => void;
   onOpenRiskCalc?: () => void;
   onOpenDrawdown?: () => void;
   onOpenAtsMatrix?: () => void;
-  onSignIn?: () => void;
-  onSignOut?: () => void;
   drawdownBreachCount?: number;
 }
 
@@ -34,21 +29,16 @@ export const Header: React.FC<HeaderProps> = ({
   isDark,
   notifEnabled,
   alertCount,
-  user,
   onToggleCurrency,
   onToggleNotifications,
   onOpenSettings,
-  onOpenGmail,
-  onOpenCalendar,
   onOpenChat,
   onOpenRiskCalc,
   onOpenDrawdown,
   onOpenAtsMatrix,
-  onSignIn,
-  onSignOut,
   drawdownBreachCount = 0,
 }) => {
-  // Tools dropdown — groups Gmail/Calendar/Chat/Risk so the bar fits 360px screens
+  // Tools dropdown — groups ATS/Chat/Drawdown/Risk so the bar fits 360px screens
   const [toolsOpen, setToolsOpen] = useState(false);
   const toolsRef = useRef<HTMLDivElement | null>(null);
 
@@ -87,22 +77,6 @@ export const Header: React.FC<HeaderProps> = ({
       accent: 'hover:border-[#7EE0B5]/60',
       badge: 'PRO',
       onOpen: onOpenAtsMatrix,
-    },
-    {
-      key: 'gmail',
-      label: 'Gmail Trading Hub',
-      desc: 'อ่าน/ส่งรายงานสัญญาณทางอีเมล',
-      icon: <Mail className="w-4 h-4 text-[#EA4335]" />,
-      accent: 'hover:border-[#EA4335]/60',
-      onOpen: onOpenGmail,
-    },
-    {
-      key: 'calendar',
-      label: 'ปฏิทินเทรด',
-      desc: 'กิจกรรม Google Calendar + สร้างนัด',
-      icon: <CalendarIcon className="w-4 h-4 text-[#4CC9F0]" />,
-      accent: 'hover:border-[#4CC9F0]/60',
-      onOpen: onOpenCalendar,
     },
     {
       key: 'chat',
@@ -211,7 +185,7 @@ export const Header: React.FC<HeaderProps> = ({
             )}
           </div>
 
-          {/* Tools dropdown (Gmail / Calendar / Chat / Risk) */}
+          {/* Tools dropdown (ATS / Chat / Drawdown / Risk) */}
           {tools.length > 0 && (
             <div ref={toolsRef} className="relative">
               <button
@@ -223,7 +197,7 @@ export const Header: React.FC<HeaderProps> = ({
                 )}`}
                 aria-label="เครื่องมือ"
                 aria-expanded={toolsOpen}
-                title="เครื่องมือ (Gmail / ปฏิทิน / แชท / คำนวณเสี่ยง)"
+                title="เครื่องมือ (ATS / แชท / Drawdown / คำนวณเสี่ยง)"
               >
                 {toolsOpen ? <X className="w-4 h-4" /> : <LayoutGrid className="w-4 h-4" />}
                 {drawdownBreachCount > 0 && (
@@ -287,57 +261,6 @@ export const Header: React.FC<HeaderProps> = ({
           >
             <Settings className="w-4 h-4" />
           </button>
-
-          {/* User Profile & Sign Out / Sign In */}
-          {user && user.email ? (
-            <div className="flex items-center gap-1 sm:gap-2 pl-1.5 ml-0.5 sm:pl-2.5 sm:ml-1 border-l border-white/[0.07]">
-              {user.photoURL ? (
-                <img
-                  src={user.photoURL}
-                  alt={user.displayName || 'User'}
-                  className="w-7 h-7 sm:w-8 sm:h-8 rounded-full border border-[#A89FFF]/50 object-cover"
-                  referrerPolicy="no-referrer"
-                />
-              ) : (
-                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#A89FFF]/20 border border-[#A89FFF]/40 flex items-center justify-center text-[#A89FFF]">
-                  <UserIcon className="w-4 h-4" />
-                </div>
-              )}
-              {onSignOut && (
-                <button
-                  type="button"
-                  onClick={onSignOut}
-                  className={`flex items-center w-8 h-8 sm:w-auto sm:h-9 justify-center sm:space-x-1.5 sm:px-2.5 rounded-lg sm:rounded-xl border text-xs font-semibold transition-colors ${
-                    isDark
-                      ? 'bg-[#141725] border-white/[0.07] text-[#A7A4B8] hover:text-white hover:border-[#FFB86B]/50 hover:bg-[#FFB86B]/10'
-                      : 'bg-white border-[#ECEAF4] text-[#8B88A0] hover:text-[#FFB86B] hover:border-[#FFB86B] hover:bg-[#FFB86B]'
-                  }`}
-                  title="Sign Out"
-                >
-                  <LogOut className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">ออก</span>
-                </button>
-              )}
-            </div>
-          ) : (
-            onSignIn && (
-              <div className="flex items-center pl-1.5 ml-0.5 sm:pl-2.5 sm:ml-1 border-l border-white/[0.07]">
-                <button
-                  type="button"
-                  onClick={onSignIn}
-                  className={`flex items-center h-8 sm:h-9 px-2 sm:px-3 rounded-lg sm:rounded-xl border text-xs font-semibold transition-colors gap-1.5 ${
-                    isDark
-                      ? 'bg-[#A89FFF]/15 border-[#A89FFF]/40 text-[#A89FFF] hover:bg-[#A89FFF]/25 hover:border-[#A89FFF]'
-                      : 'bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100'
-                  }`}
-                  title="Sign In with Google"
-                >
-                  <UserIcon className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">เข้าสู่ระบบ</span>
-                </button>
-              </div>
-            )
-          )}
         </div>
       </div>
 

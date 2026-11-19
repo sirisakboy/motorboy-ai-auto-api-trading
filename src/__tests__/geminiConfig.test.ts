@@ -64,15 +64,8 @@ describe('geminiKey — validation (no format policing)', () => {
 });
 
 describe('geminiConfig — model resolution', () => {
-  it('defaults to the documented model', () => {
-    expect(resolveGeminiModel({})).toBe(DEFAULT_GEMINI_MODEL);
-    expect(resolveGeminiModel({ GEMINI_MODEL: '   ' })).toBe(DEFAULT_GEMINI_MODEL);
-  });
-
-  it('honours GEMINI_MODEL from the environment and normalizes aliases', () => {
-    expect(resolveGeminiModel({ GEMINI_MODEL: ' gemini-3.6-flash ' })).toBe('gemini-3.6-flash');
-    expect(resolveGeminiModel({ GEMINI_MODEL: 'Gemini 3.1 Flash Lite' })).toBe('gemini-3.1-flash-lite');
-    expect(resolveGeminiModel({ GEMINI_MODEL: 'gemini 4 flash' })).toBe('gemini-4-hydrogen');
+  it('defaults to the documented model without custom env overrides', () => {
+    expect(resolveGeminiModel()).toBe(DEFAULT_GEMINI_MODEL);
   });
 
   it('builds a de-duplicated chain', () => {
@@ -176,12 +169,11 @@ describe('geminiConfig — key resolution order', () => {
     expect(resolved.key).toBe(CLASSIC_KEY);
   });
 
-  it('falls back to the server key only when the user key is empty', () => {
+  it('falls back to GEMINI_API_KEY only when the user key is empty', () => {
     const env = { GEMINI_API_KEY: CLASSIC_KEY };
     expect(resolveGeminiKey('', env).source).toBe('server');
     expect(resolveGeminiKey('   ', env).source).toBe('server');
-    expect(resolveGeminiKey('', { VITE_GEMINI_API_KEY: CLASSIC_KEY }).source).toBe('server');
-    // คีย์ที่ไม่รู้จักรูปแบบถือว่าใช้ได้ — ปล่อยให้ Google ตัดสิน
+    expect(resolveGeminiKey('', { VITE_GEMINI_API_KEY: CLASSIC_KEY }).source).toBe('none');
     expect(resolveGeminiKey('nope', env).source).toBe('user');
   });
 

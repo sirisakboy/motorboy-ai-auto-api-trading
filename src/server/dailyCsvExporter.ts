@@ -1,10 +1,9 @@
 /**
- * Daily Collected Price & News CSV Exporter (Backtest & Google Drive Folder Portable).
+ * Daily Collected Price & News CSV Exporter (Backtest Portable).
  *
  * Transforms daily recorded snapshots (`daily-YYYY-MM-DD.json`) into UTF-8 BOM
- * RFC-4180 CSV datasets structured specifically for Google Drive folder import
- * (`MotorBoy-AI-TH-Archive/daily-csv/{combined-backtest,prices,news}`) and
- * downstream backtesting pipelines (Python/Pandas, Google Colab, Google Sheets).
+ * RFC-4180 CSV datasets structured for local backtesting pipelines
+ * (`MotorBoy-AI-TH-Archive/daily-csv/{combined-backtest,prices,news}`).
  */
 
 import fs from 'node:fs/promises';
@@ -15,17 +14,13 @@ import type {
 } from './newsAssetCorrelator';
 import {
   type ArchiveSubfolder,
-  type DriveUploadResult,
   ensureArchiveDirectories,
+  getArchiveFolderDisplayPath,
   getArchivePaths,
-  getDriveFolderDisplayPath,
-  resolveDriveAccessToken,
-  saveLocallyAndSyncToDrive,
-  uploadFileToGoogleDrive,
+  saveArchiveFileLocally,
 } from './googleDriveArchive';
 
 export type DailyCsvDataset = 'combined' | 'prices' | 'news';
-export type DailyDriveExportScope = DailyCsvDataset | 'all';
 
 export interface DailyArchiveSnapshotPayload {
   schemaVersion: number;
@@ -49,7 +44,7 @@ export interface DailySnapshotDateSummary {
 export interface DailyCsvBuiltFile {
   dataset: DailyCsvDataset;
   subfolder: Extract<ArchiveSubfolder, 'daily-csv-combined' | 'daily-csv-prices' | 'daily-csv-news'>;
-  driveFolderPath: string;
+  archiveFolderPath: string;
   fileName: string;
   rowCount: number;
   dateKeys: string[];
@@ -141,7 +136,7 @@ function resolveDisplayFolder(
   subfolder: Extract<ArchiveSubfolder, 'daily-csv-combined' | 'daily-csv-prices' | 'daily-csv-news'>,
   customSubpath?: string
 ): string {
-  const basePath = getDriveFolderDisplayPath(subfolder);
+  const basePath = getArchiveFolderDisplayPath(subfolder);
   if (!customSubpath?.trim()) return basePath;
   const cleanSegments = customSubpath
     .split('/')
@@ -160,7 +155,7 @@ export function buildDailyPricesCsv(
   options: { asset?: string; customSubpath?: string } = {}
 ): { content: string; rowCount: number } {
   const assetFilter = normalizeSymbolFilter(options.asset);
-  const driveFolderPath = resolveDisplayFolder('daily-csv-prices', options.customSubpath);
+  const archiveFolderPath = resolveDisplayFolder('daily-csv-prices', options.customSubpath);
   const headers = [
     'dateKey',
     'timezone',
@@ -180,7 +175,7 @@ export function buildDailyPricesCsv(
     'topNewsSensitivityTier',
     'activeDriverCategories',
     'activeDriverHeadlineCount',
-    'driveFolderPath',
+    'archiveFolderPath',
   ];
 
   const rows: unknown[][] = [];
@@ -213,7 +208,7 @@ export function buildDailyPricesCsv(
         topType?.sensitivityTier ?? '',
         driverCats,
         driverHeadlines,
-        driveFolderPath,
+        archiveFolderPath,
       ]);
     }
   }
@@ -233,7 +228,7 @@ export function buildDailyNewsCsv(
   options: { asset?: string; customSubpath?: string } = {}
 ): { content: string; rowCount: number } {
   const assetFilter = normalizeSymbolFilter(options.asset);
-  const driveFolderPath = resolveDisplayFolder('daily-csv-news', options.customSubpath);
+  const archiveFolderPath = resolveDisplayFolder('daily-csv-news', options.customSubpath);
   const headers = [
     'dateKey',
     'timezone',
@@ -249,7 +244,7 @@ export function buildDailyNewsCsv(
     'matchedAssetCount',
     'title',
     'url',
-    'driveFolderPath',
+    'archiveFolderPath',
   ];
 
   const rows: unknown[][] = [];
@@ -275,7 +270,7 @@ export function buildDailyNewsCsv(
         matched.length,
         news.title,
         news.url || '',
-        driveFolderPath,
+        archiveFolderPath,
       ]);
     }
   }
@@ -296,7 +291,7 @@ export function buildDailyCombinedBacktestCsv(
   options: { asset?: string; customSubpath?: string } = {}
 ): { content: string; rowCount: number } {
   const assetFilter = normalizeSymbolFilter(options.asset);
-  const driveFolderPath = resolveDisplayFolder('daily-csv-combined', options.customSubpath);
+  const archiveFolderPath = resolveDisplayFolder('daily-csv-combined', options.customSubpath);
   const headers = [
     'dateKey',
     'recordedAt',
@@ -319,7 +314,7 @@ export function buildDailyCombinedBacktestCsv(
     'newsIntensityScore',
     'newsTitle',
     'newsUrl',
-    'driveFolderPath',
+    'archiveFolderPath',
   ];
 
   const rows: unknown[][] = [];
@@ -360,7 +355,7 @@ export function buildDailyCombinedBacktestCsv(
           '',
           '',
           '',
-          driveFolderPath,
+          archiveFolderPath,
         ]);
         continue;
       }
@@ -388,7 +383,7 @@ export function buildDailyCombinedBacktestCsv(
           headline.intensityScore,
           headline.title,
           headline.url || '',
-          driveFolderPath,
+          archiveFolderPath,
         ]);
       }
     }
@@ -409,14 +404,14 @@ export function buildCsvFileFromSnapshots(
   const assetFilter = normalizeSymbolFilter(options.asset);
   const dateSlug = buildDateSlug(dateKeys, assetFilter);
   const subfolder = getSubfolderForDataset(dataset);
-  const driveFolderPath = resolveDisplayFolder(subfolder, options.customSubpath);
+  const archiveFolderPath = resolveDisplayFolder(subfolder, options.customSubpath);
 
   if (dataset === 'prices') {
     const built = buildDailyPricesCsv(snapshots, options);
     return {
       dataset,
       subfolder,
-      driveFolderPath,
+      archiveFolderPath,
       fileName: `daily-${dateSlug}-prices.csv`,
       rowCount: built.rowCount,
       dateKeys,
@@ -429,7 +424,7 @@ export function buildCsvFileFromSnapshots(
     return {
       dataset,
       subfolder,
-      driveFolderPath,
+      archiveFolderPath,
       fileName: `daily-${dateSlug}-news.csv`,
       rowCount: built.rowCount,
       dateKeys,
@@ -441,7 +436,7 @@ export function buildCsvFileFromSnapshots(
   return {
     dataset: 'combined',
     subfolder,
-    driveFolderPath,
+    archiveFolderPath,
     fileName: `daily-${dateSlug}-backtest-combined.csv`,
     rowCount: built.rowCount,
     dateKeys,
@@ -530,143 +525,23 @@ export async function loadDailySnapshots(
 }
 
 /**
- * Generates and saves/queues daily CSV datasets alongside `daily-YYYY-MM-DD.json`
+ * Generates and saves daily CSV datasets locally alongside `daily-YYYY-MM-DD.json`
  * during the automated daily snapshot scheduler run.
  */
-export async function persistAndSyncDailySnapshotCsvs(params: {
-  snapshot: DailyArchiveSnapshotPayload;
-  bearerToken?: string | null;
-}): Promise<DriveUploadResult[]> {
+export async function persistDailySnapshotCsvs(
+  snapshot: DailyArchiveSnapshotPayload
+): Promise<string[]> {
   await ensureArchiveDirectories();
   const { dailyCsvDir } = getArchivePaths();
   const datasets: DailyCsvDataset[] = ['combined', 'prices', 'news'];
-  const uploads: DriveUploadResult[] = [];
+  const savedPaths: string[] = [];
 
   for (const dataset of datasets) {
-    const built = buildCsvFileFromSnapshots([params.snapshot], dataset);
+    const built = buildCsvFileFromSnapshots([snapshot], dataset);
     const localPath = path.join(dailyCsvDir, built.fileName);
-    const result = await saveLocallyAndSyncToDrive({
-      localPath,
-      fileName: built.fileName,
-      content: built.content,
-      mimeType: 'text/csv',
-      subfolder: built.subfolder,
-      bearerToken: params.bearerToken,
-    });
-    uploads.push(result);
+    await saveArchiveFileLocally({ localPath, content: built.content });
+    savedPaths.push(localPath);
   }
 
-  return uploads;
-}
-
-export interface DailyDriveCsvExportResult {
-  exportedAt: string;
-  snapshotCount: number;
-  dateKeys: string[];
-  authRequired: boolean;
-  uploadedCount: number;
-  files: Array<{
-    dataset: DailyCsvDataset;
-    fileName: string;
-    driveFolderPath: string;
-    rowCount: number;
-    localCsvPath: string;
-    upload: DriveUploadResult;
-  }>;
-}
-
-/**
- * Builds structured daily CSV files (combined, prices, news, or all) and uploads them
- * directly into organized Google Drive folders (`MotorBoy-AI-TH-Archive/daily-csv/...`).
- */
-export async function exportDailyCsvToGoogleDrive(
-  options: DailyCsvFilterOptions & {
-    dataset?: DailyDriveExportScope;
-    bearerToken?: string | null;
-  } = {}
-): Promise<DailyDriveCsvExportResult> {
-  const snapshots = await loadDailySnapshots({
-    dateKey: options.dateKey,
-    from: options.from,
-    to: options.to,
-  });
-
-  if (snapshots.length === 0) {
-    return {
-      exportedAt: new Date().toISOString(),
-      snapshotCount: 0,
-      dateKeys: [],
-      authRequired: false,
-      uploadedCount: 0,
-      files: [],
-    };
-  }
-
-  await ensureArchiveDirectories();
-  const { dailyCsvDir } = getArchivePaths();
-  const token = await resolveDriveAccessToken(options.bearerToken);
-
-  const scope: DailyDriveExportScope = options.dataset || 'all';
-  const targetDatasets: DailyCsvDataset[] =
-    scope === 'all' ? ['combined', 'prices', 'news'] : [scope];
-
-  const files: DailyDriveCsvExportResult['files'] = [];
-  let uploadedCount = 0;
-
-  for (const ds of targetDatasets) {
-    const built = buildCsvFileFromSnapshots(snapshots, ds, {
-      asset: options.asset,
-      customSubpath: options.customSubpath,
-    });
-    const localCsvPath = path.join(dailyCsvDir, built.fileName);
-    await fs.writeFile(localCsvPath, built.content, 'utf8');
-
-    let upload: DriveUploadResult;
-    if (!token) {
-      upload = {
-        uploaded: false,
-        fileName: built.fileName,
-        driveFolderPath: built.driveFolderPath,
-        reason: 'DRIVE_AUTH_REQUIRED',
-      };
-    } else {
-      try {
-        upload = await uploadFileToGoogleDrive({
-          token,
-          fileName: built.fileName,
-          content: built.content,
-          mimeType: 'text/csv',
-          subfolder: built.subfolder,
-          customSubpath: options.customSubpath,
-        });
-        if (upload.uploaded) uploadedCount += 1;
-      } catch (err: unknown) {
-        const reason = err instanceof Error ? err.message : 'DRIVE_UPLOAD_ERROR';
-        upload = {
-          uploaded: false,
-          fileName: built.fileName,
-          driveFolderPath: built.driveFolderPath,
-          reason,
-        };
-      }
-    }
-
-    files.push({
-      dataset: ds,
-      fileName: built.fileName,
-      driveFolderPath: upload.driveFolderPath || built.driveFolderPath,
-      rowCount: built.rowCount,
-      localCsvPath,
-      upload,
-    });
-  }
-
-  return {
-    exportedAt: new Date().toISOString(),
-    snapshotCount: snapshots.length,
-    dateKeys: snapshots.map((s) => s.dateKey),
-    authRequired: !token || files.some((f) => f.upload.reason === 'DRIVE_UNAUTHORIZED'),
-    uploadedCount,
-    files,
-  };
+  return savedPaths;
 }

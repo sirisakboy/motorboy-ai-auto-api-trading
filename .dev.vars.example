@@ -1,4 +1,2 @@
-# Cloudflare Workers / Pages local development secrets (copy to .dev.vars)
+# Cloudflare Workers / Pages secret (the only supported environment variable)
 GEMINI_API_KEY=
-GEMINI_MODEL=gemini-3.1-flash-lite
-GEMINI_ENABLE_GROUNDING=true

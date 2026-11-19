@@ -165,7 +165,7 @@ export const SignalDetailModal: React.FC<SignalDetailModalProps> = ({
         setSentiment((result as any).sentiment);
       }
 
-      // Automatically sync to user's history in Firestore
+      // Automatically save to user's local trading history
       if (onSaveToHistory) {
         await onSaveToHistory({
           type: 'AI_ANALYSIS',

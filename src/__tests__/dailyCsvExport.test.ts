@@ -8,11 +8,12 @@ import {
   buildDailyNewsCsv,
   buildDailyPricesCsv,
   escapeCsvCell,
-  exportDailyCsvToGoogleDrive,
   listAvailableDailySnapshots,
   loadDailySnapshots,
+  persistDailySnapshotCsvs,
   type DailyArchiveSnapshotPayload,
 } from '../server/dailyCsvExporter';
+import { setArchiveDataDirForTest } from '../server/googleDriveArchive';
 import { parseMascotAction } from '../mascot/actions';
 
 function makeSampleSnapshots(): DailyArchiveSnapshotPayload[] {
@@ -141,7 +142,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe('dailyCsvExporter — CSV formatting & Google Drive portability', () => {
+describe('dailyCsvExporter — CSV formatting & local archive portability', () => {
   it('escapes commas, quotes, formula prefixes while preserving negative numeric returns', () => {
     expect(escapeCsvCell(-2.985)).toBe('-2.985');
     expect(escapeCsvCell('-2.985')).toBe('-2.985');
@@ -176,16 +177,15 @@ describe('dailyCsvExporter — CSV formatting & Google Drive portability', () =>
       customSubpath: 'strategy-alpha',
     });
     expect(btcBuilt.fileName).toBe('daily-2026-11-13_to_2026-11-14-BTC_USDT-backtest-combined.csv');
-    expect(btcBuilt.driveFolderPath).toBe(
+    expect(btcBuilt.archiveFolderPath).toBe(
       'MotorBoy-AI-TH-Archive/daily-csv/combined-backtest/strategy-alpha'
     );
     expect(btcBuilt.rowCount).toBe(2);
   });
 
-  it('loads chronological daily snapshots from ARCHIVE_DATA_DIR and uploads structured CSVs to Google Drive', async () => {
+  it('loads chronological daily snapshots and persists local structured CSV files', async () => {
     const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'motorboy-csv-export-'));
-    const prevEnv = process.env.ARCHIVE_DATA_DIR;
-    process.env.ARCHIVE_DATA_DIR = tmpDir;
+    setArchiveDataDirForTest(tmpDir);
 
     try {
       const dailyDir = path.join(tmpDir, 'daily');
@@ -201,66 +201,21 @@ describe('dailyCsvExporter — CSV formatting & Google Drive portability', () =>
       const loaded = await loadDailySnapshots({ from: '2026-11-13', to: '2026-11-14' });
       expect(loaded.map((d) => d.dateKey)).toEqual(['2026-11-13', '2026-11-14']);
 
-      // Without bearer token, returns authRequired: true while still building local CSVs
-      const unauthRes = await exportDailyCsvToGoogleDrive({ dataset: 'all' });
-      expect(unauthRes.authRequired).toBe(true);
-      expect(unauthRes.uploadedCount).toBe(0);
-      expect(unauthRes.files).toHaveLength(3);
-
-      // Mock Google Drive API folder discovery & multipart CSV upload
-      const folderCreateCalls: string[] = [];
-      let uploadCount = 0;
-      const fetchMock = vi.fn(async (url: string | URL, init?: RequestInit) => {
-        const urlStr = String(url);
-        if (urlStr.startsWith('https://www.googleapis.com/drive/v3/files?q=')) {
-          return {
-            ok: true,
-            status: 200,
-            json: async () => ({ files: [] }),
-          };
-        }
-        if (urlStr.startsWith('https://www.googleapis.com/drive/v3/files?fields=id')) {
-          const parsedBody = JSON.parse(String(init?.body || '{}')) as { name?: string };
-          folderCreateCalls.push(parsedBody.name || '');
-          return {
-            ok: true,
-            status: 200,
-            json: async () => ({ id: `folder-${folderCreateCalls.length}` }),
-          };
-        }
-        if (urlStr.startsWith('https://www.googleapis.com/upload/drive/v3/files')) {
-          uploadCount += 1;
-          return {
-            ok: true,
-            status: 200,
-            json: async () => ({
-              id: `csv-file-${uploadCount}`,
-              webViewLink: `https://drive.google.com/file/d/csv-file-${uploadCount}/view`,
-              name: `uploaded-${uploadCount}.csv`,
-            }),
-          };
-        }
-        return { ok: false, status: 404, json: async () => ({}) };
-      });
-      vi.stubGlobal('fetch', fetchMock);
-
-      const driveRes = await exportDailyCsvToGoogleDrive({
-        dataset: 'all',
-        customSubpath: 'colab-backtest',
-        bearerToken: 'mock-oauth-token-1234567890',
-      });
-
-      expect(driveRes.authRequired).toBe(false);
-      expect(driveRes.uploadedCount).toBe(3);
-      expect(driveRes.files.map((f) => f.driveFolderPath)).toEqual([
-        'MotorBoy-AI-TH-Archive/daily-csv/combined-backtest/colab-backtest',
-        'MotorBoy-AI-TH-Archive/daily-csv/prices/colab-backtest',
-        'MotorBoy-AI-TH-Archive/daily-csv/news/colab-backtest',
+      const savedPaths = await persistDailySnapshotCsvs(snap2);
+      expect(savedPaths).toHaveLength(3);
+      expect(savedPaths.map((p) => path.basename(p))).toEqual([
+        'daily-2026-11-14-backtest-combined.csv',
+        'daily-2026-11-14-prices.csv',
+        'daily-2026-11-14-news.csv',
       ]);
-      expect(driveRes.files[0].upload.webViewLink).toContain('https://drive.google.com/file/d/');
+
+      for (const filePath of savedPaths) {
+        const content = await fs.readFile(filePath, 'utf8');
+        expect(content.startsWith('\uFEFF')).toBe(true);
+        expect(content).toContain('2026-11-14');
+      }
     } finally {
-      if (prevEnv === undefined) delete process.env.ARCHIVE_DATA_DIR;
-      else process.env.ARCHIVE_DATA_DIR = prevEnv;
+      setArchiveDataDirForTest(null);
       await fs.rm(tmpDir, { recursive: true, force: true });
     }
   });
@@ -274,7 +229,7 @@ describe('dailyCsvExporter — CSV formatting & Google Drive portability', () =>
     ).toEqual({
       name: 'export_daily_csv',
       dataset: 'prices',
-      destination: 'drive',
+      destination: 'download',
       dateKey: '2026-11-14',
     });
 

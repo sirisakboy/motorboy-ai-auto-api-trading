@@ -183,9 +183,12 @@ describe('historicalCandleCache — 1-asset/day rotation & 1,000-day internal-fi
       rotateOneAsset1000DayHistory,
     } = await import('../server/historicalCandleCache');
 
+    const {
+      setArchiveDataDirForTest,
+    } = await import('../server/googleDriveArchive');
+
     const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'motorboy-cache-test-'));
-    const prevEnv = process.env.ARCHIVE_DATA_DIR;
-    process.env.ARCHIVE_DATA_DIR = tmpDir;
+    setArchiveDataDirForTest(tmpDir);
 
     // Mock 1,000 daily candles from Binance API
     const mockKlines = Array.from({ length: 1000 }, (_, i) => {
@@ -225,8 +228,7 @@ describe('historicalCandleCache — 1-asset/day rotation & 1,000-day internal-fi
       expect(fetchMock).not.toHaveBeenCalled();
     } finally {
       vi.unstubAllGlobals();
-      if (prevEnv === undefined) delete process.env.ARCHIVE_DATA_DIR;
-      else process.env.ARCHIVE_DATA_DIR = prevEnv;
+      setArchiveDataDirForTest(null);
       await fs.rm(tmpDir, { recursive: true, force: true });
     }
   });

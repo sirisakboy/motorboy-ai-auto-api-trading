@@ -3,8 +3,8 @@
  *
  * Collects live multi-asset prices + live financial RSS news once per day
  * (Asia/Bangkok calendar day), correlates per-asset direction & volatility
- * sensitivity across news categories, archives daily & backtest anomaly logs
- * locally, and uploads them to Google Drive.
+ * sensitivity across news categories, and archives daily & backtest anomaly logs
+ * locally.
  */
 
 import fs from 'node:fs/promises';
@@ -17,14 +17,11 @@ import {
   createEmptySensitivityMatrix,
 } from './newsAssetCorrelator';
 import {
-  type DriveUploadResult,
   ensureArchiveDirectories,
   getArchivePaths,
-  getDriveAuthStatus,
-  readPendingSyncQueue,
-  saveLocallyAndSyncToDrive,
+  saveArchiveFileLocally,
 } from './googleDriveArchive';
-import { persistAndSyncDailySnapshotCsvs } from './dailyCsvExporter';
+import { persistDailySnapshotCsvs } from './dailyCsvExporter';
 import {
   type BacktestAnomalyArchiveRecord,
   buildAnomalyWindowsCsv,
@@ -95,7 +92,6 @@ export interface ArchiveRuntimeState {
   lastRecordedDateKey: string | null;
   lastRunStatus: 'IDLE' | 'SUCCESS' | 'SKIPPED_ALREADY_RECORDED' | 'ERROR';
   lastRunError?: string;
-  lastDriveUpload?: DriveUploadResult;
 }
 
 let runtimeState: ArchiveRuntimeState = {
@@ -413,15 +409,12 @@ export interface DailyArchiveRunOutcome {
   assetCount: number;
   newsCount: number;
   localFilePath: string;
-  driveUpload?: DriveUploadResult;
-  csvDriveUploads?: DriveUploadResult[];
-  matrixDriveUpload?: DriveUploadResult;
+  csvPaths?: string[];
   historicalRotation?: DailyRotationOutcome;
 }
 
 export async function runDailyArchive(options: {
   force?: boolean;
-  bearerToken?: string | null;
 } = {}): Promise<DailyArchiveRunOutcome> {
   if (dailyRunInFlight) return dailyRunInFlight;
 
@@ -492,27 +485,16 @@ export async function runDailyArchive(options: {
       classifiedNews,
     };
 
-    const driveUpload = await saveLocallyAndSyncToDrive({
+    await saveArchiveFileLocally({
       localPath: dailyFilePath,
-      fileName: dailyFileName,
       content: JSON.stringify(dailyPayload, null, 2),
-      mimeType: 'application/json',
-      subfolder: 'daily-snapshots',
-      bearerToken: options.bearerToken,
     });
 
-    const csvDriveUploads = await persistAndSyncDailySnapshotCsvs({
-      snapshot: dailyPayload,
-      bearerToken: options.bearerToken,
-    }).catch(() => [] as DriveUploadResult[]);
+    const csvPaths = await persistDailySnapshotCsvs(dailyPayload).catch(() => [] as string[]);
 
-    const matrixDriveUpload = await saveLocallyAndSyncToDrive({
+    await saveArchiveFileLocally({
       localPath: sensitivityMatrixFile,
-      fileName: 'asset-sensitivity-matrix.json',
       content: JSON.stringify(updatedMatrix, null, 2),
-      mimeType: 'application/json',
-      subfolder: 'root',
-      bearerToken: options.bearerToken,
     });
 
     await writeArchiveState({
@@ -520,7 +502,6 @@ export async function runDailyArchive(options: {
       lastRunAt: new Date().toISOString(),
       lastRecordedDateKey: dateKey,
       lastRunStatus: 'SUCCESS',
-      lastDriveUpload: driveUpload,
     });
 
     return {
@@ -529,9 +510,7 @@ export async function runDailyArchive(options: {
       assetCount: perAssetAnalysis.length,
       newsCount: classifiedNews.length,
       localFilePath: dailyFilePath,
-      driveUpload,
-      csvDriveUploads,
-      matrixDriveUpload,
+      csvPaths,
       historicalRotation: rotationOutcome,
     };
   })();
@@ -550,15 +529,12 @@ export interface RecordBacktestInput {
   timeframe: string;
   periodDays: number;
   backtestMetrics?: Record<string, unknown>;
-  bearerToken?: string | null;
 }
 
 export async function recordBacktestArchive(input: RecordBacktestInput): Promise<{
   record: BacktestAnomalyArchiveRecord;
   localJsonPath: string;
   localCsvPath: string;
-  driveJsonUpload: DriveUploadResult;
-  driveCsvUpload: DriveUploadResult;
 }> {
   await ensureArchiveDirectories();
   const assetClass = inferAssetClass(input.assetSymbol);
@@ -598,30 +574,20 @@ export async function recordBacktestArchive(input: RecordBacktestInput): Promise
   const localJsonPath = path.join(backtestDir, jsonFileName);
   const localCsvPath = path.join(backtestDir, csvFileName);
 
-  const driveJsonUpload = await saveLocallyAndSyncToDrive({
+  await saveArchiveFileLocally({
     localPath: localJsonPath,
-    fileName: jsonFileName,
     content: JSON.stringify(record, null, 2),
-    mimeType: 'application/json',
-    subfolder: 'backtest-anomalies',
-    bearerToken: input.bearerToken,
   });
 
-  const driveCsvUpload = await saveLocallyAndSyncToDrive({
+  await saveArchiveFileLocally({
     localPath: localCsvPath,
-    fileName: csvFileName,
     content: buildAnomalyWindowsCsv(record),
-    mimeType: 'text/csv',
-    subfolder: 'backtest-anomalies',
-    bearerToken: input.bearerToken,
   });
 
   return {
     record,
     localJsonPath,
     localCsvPath,
-    driveJsonUpload,
-    driveCsvUpload,
   };
 }
 
@@ -653,7 +619,6 @@ export async function listBacktestArchives(limit = 20, symbolFilter?: string): P
 export async function getArchiveOverviewStatus() {
   const { dailyDir, backtestDir } = getArchivePaths();
   await readArchiveState();
-  const pending = await readPendingSyncQueue();
   const matrix = await readSensitivityMatrix();
   const rotationState = await readHistoricalRotationState();
   const cachedHistories = await listCachedAssetSummaries();
@@ -683,8 +648,6 @@ export async function getArchiveOverviewStatus() {
     latestBacktestFiles: backtestFiles.slice(0, 10),
     trackedAssetsInMatrix: Object.keys(matrix.assets).length,
     recordedDates: matrix.recordedDates,
-    pendingDriveSyncCount: pending.length,
-    driveAuth: getDriveAuthStatus(),
     historicalCache: {
       cachedAssetCount: cachedHistories.length,
       cycleLength: rotationState.cycleLength,

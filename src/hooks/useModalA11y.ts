@@ -10,7 +10,7 @@ import { useEffect, useRef } from 'react';
  *
  *  - Escape closes the dialog (unless the caller opts out)
  *  - background scroll is locked, reference-counted so nested dialogs
- *    (e.g. the Gmail confirm sheet on top of the Gmail modal) do not unlock
+ *    (e.g. a nested confirm sheet on top of another modal) do not unlock
  *    the page when the inner one closes
  *  - focus moves into the dialog on open and is returned to the trigger on close
  *  - Tab / Shift+Tab cycle inside the dialog instead of escaping to the page

@@ -1,13 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Search, Sparkles, X, Star, History, Radio } from 'lucide-react';
-import { signOut, signInWithPopup, GoogleAuthProvider, User } from 'firebase/auth';
-import { auth, db, googleProvider } from './firebase';
-import { getCachedAccessToken, setCachedAccessToken } from './services/gmailService';
-import {
-  downloadDailyCsvExport,
-  exportDailyCsvToDriveFolder,
-} from './services/dailyCsvExportService';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { downloadDailyCsvExport } from './services/dailyCsvExportService';
 import { AtsMatrixDashboard } from './components/AtsMatrixDashboard';
 import { isAtsMatrixTrigger } from './services/atsMatrixService';
 import { GLOBAL_ROOM_ID, sendRoomMessage } from './services/chatRoomService';
@@ -63,8 +56,6 @@ import { StockDetailModal } from './components/StockDetailModal';
 import { SettingsDialog } from './components/SettingsDialog';
 import { HistoryList } from './components/HistoryList';
 import { TradingHistoryEntry } from './types';
-import { GmailModal } from './components/GmailModal';
-import { CalendarModal } from './components/CalendarModal';
 import { ChatModal } from './components/ChatModal';
 import { RiskCalculatorModal } from './components/RiskCalculatorModal';
 import { DrawdownAlertBanner } from './components/DrawdownAlertBanner';
@@ -88,7 +79,6 @@ import {
 } from './mascot/feed';
 import { registerMascotActionHandlers, type MascotMarket } from './mascot/actions';
 import { announceMascot } from './mascot/announce';
-import { syncMarketArchivesToFirestore } from './services/firestoreArchiveSync';
 import {
   buildDrawdownAssets,
   computePortfolioDrawdownSummary,
@@ -108,45 +98,15 @@ import {
   clearAllUserHistory,
 } from './services/firebaseSync';
 
+const LOCAL_USER = {
+  uid: 'local',
+  displayName: 'Trader',
+  email: null as string | null,
+  photoURL: null as string | null,
+};
+
 export const App: React.FC = () => {
-  const [user, setUser] = useState<User | null>(() => auth.currentUser || ({ uid: 'guest', displayName: 'Guest' } as unknown as User));
-  const [authReady, setAuthReady] = useState<boolean>(false);
-
-  useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((currentUser) => {
-      if (currentUser) {
-        setUser(currentUser);
-      } else {
-        setUser({ uid: 'guest', displayName: 'Guest' } as unknown as User);
-      }
-      setAuthReady(true);
-    });
-    return () => unsubscribe();
-  }, []);
-
-  const handleSignOut = async () => {
-    try {
-      await signOut(auth);
-      setUser({ uid: 'guest', displayName: 'Guest' } as unknown as User);
-    } catch (error) {
-      console.error('Error signing out', error);
-    }
-  };
-
-  const handleGoogleSignIn = async () => {
-    try {
-      const result = await signInWithPopup(auth, googleProvider);
-      const credential = GoogleAuthProvider.credentialFromResult(result);
-      if (credential?.accessToken) {
-        setCachedAccessToken(credential.accessToken);
-      }
-    } catch (error: any) {
-      if (error?.code === 'auth/popup-closed-by-user' || error?.code === 'auth/cancelled-popup-request') {
-        return;
-      }
-      console.error('Error signing in with Google:', error);
-    }
-  };
+  const user = LOCAL_USER;
 
   // State
   const [cryptoList, setCryptoList] = useState<CryptoCoin[]>(CRYPTO_INITIAL);
@@ -225,8 +185,6 @@ export const App: React.FC = () => {
   const [selectedSignal, setSelectedSignal] = useState<TradingSignal | null>(null);
   const [selectedForex, setSelectedForex] = useState<ForexPair | null>(null);
   const [showSettings, setShowSettings] = useState<boolean>(false);
-  const [showGmail, setShowGmail] = useState<boolean>(false);
-  const [showCalendar, setShowCalendar] = useState<boolean>(false);
   const [showChat, setShowChat] = useState<boolean>(false);
   // A question carried from the mascot into the chat composer (never auto-sent).
   const [chatSeed, setChatSeed] = useState<string>('');
@@ -239,47 +197,12 @@ export const App: React.FC = () => {
   const [autoPeaks, setAutoPeaks] = useState<AutoPeakBook>(loadAutoPeaks);
   const [geminiApiKey, setGeminiApiKey] = useState<string>('');
   const [historyEntries, setHistoryEntries] = useState<TradingHistoryEntry[]>([]);
-  const [globalSession, setGlobalSession] = useState<any>(null);
   /* eslint-disable-next-line */
   const [psychologySettings, setPsychologySettings] = useState<TradingPsychologySettings>({
     riskToleranceLevel: 'MODERATE',
     enableEmotionalCheckIn: true,
     dailyLimitRiskPct: 2,
   });
-
-  // Music removed.
-
-  useEffect(() => {
-    if (!authReady || !user || user.uid === 'guest') return;
-    if (typeof navigator !== 'undefined' && navigator.onLine === false) return;
-
-    const docRef = doc(db, 'sessions', 'global');
-    const unsubscribe = onSnapshot(
-      docRef,
-      (docSnap) => {
-        if (docSnap.exists()) {
-          setGlobalSession(docSnap.data());
-        }
-      },
-      (e: { code?: string; message?: string }) => {
-        if (e?.code === 'unavailable' || e?.code === 'permission-denied') return;
-        console.warn('Firestore global session listener warning:', e?.code || e?.message);
-      }
-    );
-    return () => unsubscribe();
-  }, [authReady, user?.uid]);
-
-  // Background Cloud Firestore sync for 1,000-day historical archives & anomaly records
-  useEffect(() => {
-    if (!authReady || !user || user.uid === 'guest') return;
-    if (typeof navigator !== 'undefined' && navigator.onLine === false) return;
-    void syncMarketArchivesToFirestore(user.uid);
-    const timer = setInterval(() => {
-      if (document.hidden) return;
-      void syncMarketArchivesToFirestore(user.uid);
-    }, 15 * 60 * 1000);
-    return () => clearInterval(timer);
-  }, [authReady, user?.uid]);
 
   // AI ตั้งจุดพีคอัตโนมัติแบบเรียลไทม์ — ทุกครั้งที่ฟีดราคาใหม่เข้ามา
   // (คริปโต/หุ้นไทย/หุ้นต่างประเทศ/ฟอเร็กซ์ อัปเดตทุก 15 วินาที) ระบบจะเก็บ
@@ -381,7 +304,7 @@ export const App: React.FC = () => {
     }
   };
 
-  // 0. User Settings & History Sync (Local Device & Google Account)
+  // 0. User Settings & History Sync (Local Browser Storage)
   useEffect(() => {
     const targetUid = user?.uid || 'local';
 
@@ -746,8 +669,6 @@ export const App: React.FC = () => {
     if (showRiskCalc) openWindows.push('RiskCalculator');
     if (showDrawdownModal) openWindows.push('DrawdownMonitor');
     if (showSettings) openWindows.push('Settings');
-    if (showGmail) openWindows.push('GmailModal');
-    if (showCalendar) openWindows.push('CalendarModal');
 
     const tabLabels = ['คริปโต', 'ฟอเร็กซ์', 'หุ้นไทย SET', 'หุ้นต่างประเทศ US', 'ดัชนีตลาดโลก'];
     const activeTabLabel = tabLabels[selectedTab] || 'คริปโต';
@@ -807,14 +728,6 @@ export const App: React.FC = () => {
       activeSurface = 'SETTINGS_MODAL';
       windowTitleTh = 'ตั้งค่าระบบและจิตวิทยาการเทรด';
       focusHint = 'โฟกัสค่าความเสี่ยงรายวัน การแจ้งเตือนราคา สกุลเงิน และการตั้งค่า API';
-    } else if (showGmail) {
-      activeSurface = 'GMAIL_MODAL';
-      windowTitleTh = 'แจ้งเตือนทางอีเมล (Gmail Alerts)';
-      focusHint = 'โฟกัสการส่งสรุปสัญญาณและการตรวจสอบแจ้งเตือนทางอีเมล';
-    } else if (showCalendar) {
-      activeSurface = 'CALENDAR_MODAL';
-      windowTitleTh = 'ปฏิทินเศรษฐกิจและนัดหมายเทรด';
-      focusHint = 'โฟกัสเหตุการณ์เศรษฐกิจสำคัญที่กำลังจะประกาศ';
     } else {
       const surfaceByTab: MascotWindowSurface[] = [
         'DASHBOARD_CRYPTO',
@@ -847,8 +760,6 @@ export const App: React.FC = () => {
     showSettings,
     showRiskCalc,
     showDrawdownModal,
-    showGmail,
-    showCalendar,
     selectedSignal,
     selectedForex,
     selectedThaiStock,
@@ -1024,8 +935,6 @@ export const App: React.FC = () => {
         setShowHistoryModal(false);
         setShowAtsMatrixModal(false);
         setShowSettings(false);
-        setShowGmail(false);
-        setShowCalendar(false);
         setShowChat(false);
         setShowRiskCalc(false);
         setShowDrawdownModal(false);
@@ -1060,12 +969,6 @@ export const App: React.FC = () => {
         case 'ats_matrix':
         case 'backtest':
           setShowAtsMatrixModal(false);
-          break;
-        case 'gmail':
-          setShowGmail(false);
-          break;
-        case 'calendar':
-          setShowCalendar(false);
           break;
         case 'detail':
           setSelectedSignal(null);
@@ -1127,12 +1030,6 @@ export const App: React.FC = () => {
             requestAtsDashboardTab('BACKTEST');
             setShowAtsMatrixModal(true);
             break;
-          case 'gmail':
-            setShowGmail(true);
-            break;
-          case 'calendar':
-            setShowCalendar(true);
-            break;
         }
       },
       close_window: (action) => {
@@ -1192,32 +1089,15 @@ export const App: React.FC = () => {
       clear_filters: () => {
         setSearchQuery('');
       },
-      sync_drive_archive: () => {
-        const token = getCachedAccessToken();
-        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-        if (token) headers.Authorization = `Bearer ${token}`;
+      sync_local_archive: () => {
         void fetch('/api/archive/daily/run', {
           method: 'POST',
-          headers,
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ force: false }),
-        })
-          .then(() =>
-            fetch('/api/archive/drive/sync', {
-              method: 'POST',
-              headers,
-            })
-          )
-          .catch(() => {});
+        }).catch(() => {});
       },
       export_daily_csv: (action) => {
         if (action.name !== 'export_daily_csv') return;
-        if (action.destination === 'drive') {
-          void exportDailyCsvToDriveFolder({
-            dateKey: action.dateKey,
-            dataset: action.dataset || 'all',
-          }).catch(() => {});
-          return;
-        }
         void downloadDailyCsvExport({
           dateKey: action.dateKey,
           dataset: action.dataset || 'combined',
@@ -1346,7 +1226,7 @@ export const App: React.FC = () => {
     triggerPriceAlert,
   ]);
 
-  // Handlers with Firestore Cloud Sync
+  // Handlers with Local Browser Storage Sync
   const handleToggleWatchlist = (symbol: string) => {
     const wasWatched = watchlist.has(symbol);
     announceMascot(
@@ -1395,7 +1275,7 @@ export const App: React.FC = () => {
   };
 
   const handleSaveApiKey = async (newKey: string) => {
-    // ตัดช่องว่างหัว-ท้ายเสมอ: คีย์ที่Copyมามักติดขึ้นบรรทัดใหม่ แล้วจะถูก Google ปฏิเสธ
+    // ตัดช่องว่างหัว-ท้ายเสมอ: คีย์ที่ copy มามักติดขึ้นบรรทัดใหม่
     const normalized = newKey.trim();
     setGeminiApiKey(normalized);
     const targetUid = user?.uid || 'local';
@@ -1554,20 +1434,15 @@ export const App: React.FC = () => {
         isDark={isDark}
         notifEnabled={notificationsEnabled}
         alertCount={priceAlerts.length}
-        user={user}
         onToggleCurrency={() => setUseThb(!useThb)}
         onToggleNotifications={() =>
           setNotificationsEnabled(!notificationsEnabled)
         }
         onOpenSettings={() => setShowSettings(true)}
-        onOpenGmail={() => setShowGmail(true)}
-        onOpenCalendar={() => setShowCalendar(true)}
         onOpenChat={() => openChat()}
         onOpenRiskCalc={() => setShowRiskCalc(true)}
         onOpenDrawdown={() => setShowDrawdownModal(true)}
         onOpenAtsMatrix={() => setShowAtsMatrixModal(true)}
-        onSignIn={handleGoogleSignIn}
-        onSignOut={handleSignOut}
         drawdownBreachCount={breachedDrawdownAssets.length}
       />
 
@@ -2014,11 +1889,6 @@ export const App: React.FC = () => {
                 <span>·</span>
                 <span>Real-Time Multi-Asset & AI Deep Analytics</span>
               </div>
-              {globalSession?.title && (
-                <div className="text-[11px] px-2.5 py-1 rounded-lg bg-[#141725] border border-white/[0.07] text-[#A7A4B8]">
-                  Global Session: <span className="font-medium text-[#ECEAF4]">{globalSession.title}</span>
-                </div>
-              )}
             </div>
           </footer>
         </div>
@@ -2148,27 +2018,6 @@ export const App: React.FC = () => {
             onSendReportToChat={handleSendDrawdownToChat}
             isDark={isDark}
           />
-
-          {/* Gmail Trading Alert Hub */}
-          {showGmail && (
-            <GmailModal
-              isOpen={showGmail}
-              onClose={() => setShowGmail(false)}
-              userEmail={user?.email ?? null}
-              signals={signals}
-              isDark
-            />
-          )}
-
-          {/* Calendar Trading Events */}
-          {showCalendar && (
-            <CalendarModal
-              isOpen={showCalendar}
-              onClose={() => setShowCalendar(false)}
-              userEmail={user?.email ?? null}
-              isDark
-            />
-          )}
 
           {/* AI Deep Analyze Chat Room (AI 100%) */}
           {showChat && (
@@ -2370,7 +2219,7 @@ export const App: React.FC = () => {
                   <div className="flex items-center gap-2">
                     <History className="w-5 h-5 text-[#7EE0B5]" />
                     <h2 className="text-white font-bold text-sm">
-                      ประวัติการวิเคราะห์ & สัญญาณที่บันทึก (Google Sync)
+                      ประวัติการวิเคราะห์ & สัญญาณที่บันทึก (Local Storage)
                     </h2>
                   </div>
                   <button

@@ -116,19 +116,18 @@ describe('publish & free-tier readiness', () => {
   });
 
   it('tracks grounding cooldown per hashed API key to avoid 2x free-tier quota burn', () => {
-    expect(isGroundingGloballyEnabled({ GEMINI_ENABLE_GROUNDING: 'false' })).toBe(false);
-    expect(isGroundingGloballyEnabled({})).toBe(true);
+    expect(isGroundingGloballyEnabled()).toBe(true);
 
     const key = 'AIzaTestFreeTierKey_12345';
     expect(fingerprintApiKey(key)).not.toContain(key);
-    expect(shouldAttemptGrounding(key, {}, 1_000)).toBe(true);
+    expect(shouldAttemptGrounding(key, 1_000)).toBe(true);
 
     const quotaErr = classifyGeminiError({ status: 429, message: 'RESOURCE_EXHAUSTED' });
     expect(shouldCooldownGroundingOnError(quotaErr)).toBe(true);
 
     markGroundingBlocked(key, 60_000, 1_000);
-    expect(shouldAttemptGrounding(key, {}, 10_000)).toBe(false);
-    expect(shouldAttemptGrounding(key, {}, 70_000)).toBe(true);
+    expect(shouldAttemptGrounding(key, 10_000)).toBe(false);
+    expect(shouldAttemptGrounding(key, 70_000)).toBe(true);
   });
 
   it('stores short-TTL AI responses cleanly in quota shield cache', () => {

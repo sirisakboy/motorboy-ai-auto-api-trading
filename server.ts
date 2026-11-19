@@ -22,11 +22,6 @@ import {
 } from './src/server/geminiConfig';
 import type { ChatTone } from './src/services/chatStreamCore';
 import {
-  extractBearerToken,
-  rememberRuntimeDriveToken,
-  syncPendingToGoogleDrive,
-} from './src/server/googleDriveArchive';
-import {
   getArchiveOverviewStatus,
   listBacktestArchives,
   readSensitivityMatrix,
@@ -43,9 +38,7 @@ import {
 } from './src/server/historicalCandleCache';
 import {
   type DailyCsvDataset,
-  type DailyDriveExportScope,
   buildCsvFileFromSnapshots,
-  exportDailyCsvToGoogleDrive,
   listAvailableDailySnapshots,
   loadDailySnapshots,
 } from './src/server/dailyCsvExporter';
@@ -71,7 +64,7 @@ const PORT = process.env.PORT || 3000;
 // Behind Cloud Run / a tunnel the client IP arrives in X-Forwarded-For.
 app.set('trust proxy', 1);
 
-// Cloud Run / Google AI Studio health check (bypass rate limiter so probes never fail)
+// Service health check (bypass rate limiter so probes never fail)
 app.get('/api/health', (_req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   return res.status(200).json({
@@ -101,11 +94,11 @@ app.use('/api/yahoo', (req, res) => {
 });
 
 /**
- * โมเดลตั้งต้นอ่านจาก env `GEMINI_MODEL` (ดีฟอลต์ DEFAULT_GEMINI_MODEL)
+ * โมเดลตั้งต้น: DEFAULT_GEMINI_MODEL (gemini-3.1-flash-lite)
  * ถ้าโมเดลถูกเปลี่ยนชื่อ/ปลดระวาง mid-flight ระบบจะไล่ fallback chain ให้เอง
  * แทนที่จะล้มทั้งหน้า AI
  */
-const GEMINI_MODEL = resolveGeminiModel(process.env);
+const GEMINI_MODEL = resolveGeminiModel();
 const GEMINI_MODEL_CHAIN = buildModelChain(GEMINI_MODEL);
 
 function createGeminiClient(apiKey: string): GoogleGenAI {
@@ -325,7 +318,7 @@ async function generateWithGroundingFallback(
   baseConfig: Record<string, any> = {},
   activeKey?: string
 ) {
-  if (!shouldAttemptGrounding(activeKey, process.env)) {
+  if (!shouldAttemptGrounding(activeKey)) {
     return await generateGeminiContent(ai, { contents, config: baseConfig });
   }
 
@@ -362,7 +355,7 @@ app.get('/api/gemini/config', (_req, res) => {
     model: GEMINI_MODEL,
     fallbackModels: GEMINI_MODEL_CHAIN.slice(1),
     serverKeyConfigured: configured,
-    groundingEnabled: isGroundingGloballyEnabled(process.env),
+    groundingEnabled: isGroundingGloballyEnabled(),
   });
 });
 
@@ -392,7 +385,7 @@ app.post('/api/gemini/test-key', async (req, res) => {
 
   try {
     let response: any;
-    let searchGrounded = shouldAttemptGrounding(key, process.env);
+    let searchGrounded = shouldAttemptGrounding(key);
 
     if (searchGrounded) {
       try {
@@ -1288,7 +1281,7 @@ app.post('/api/gemini/chat-stream', async (req, res) => {
 
   try {
     const full = await runWithUserOrServerKey(userGeminiKey, async (client, activeKey) => {
-      if (!shouldAttemptGrounding(activeKey, process.env)) {
+      if (!shouldAttemptGrounding(activeKey)) {
         return await runStream(client, false);
       }
       try {
@@ -1324,7 +1317,7 @@ app.post('/api/gemini/chat-stream', async (req, res) => {
 });
 
 // ============================================================================
-// BACKEND MARKET, NEWS-VOLATILITY CORRELATION & GOOGLE DRIVE ARCHIVE ROUTES
+// BACKEND MARKET, NEWS-VOLATILITY CORRELATION & LOCAL ARCHIVE ROUTES
 // ============================================================================
 
 app.get('/api/archive/status', async (_req, res) => {
@@ -1357,9 +1350,8 @@ app.get('/api/archive/sensitivity', async (req, res) => {
 
 app.post('/api/archive/daily/run', async (req, res) => {
   try {
-    const bearerToken = extractBearerToken(req.headers.authorization);
     const force = Boolean(req.body?.force);
-    const outcome = await runDailyArchive({ force, bearerToken });
+    const outcome = await runDailyArchive({ force });
     return res.json({ success: true, ...outcome });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Failed to execute daily archive';
@@ -1402,64 +1394,12 @@ app.get('/api/archive/daily/export.csv', async (req, res) => {
 
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename="${safeFileName}"`);
-    res.setHeader('X-Drive-Folder-Path', built.driveFolderPath);
+    res.setHeader('X-Archive-Folder-Path', built.archiveFolderPath);
     res.setHeader('X-Csv-Row-Count', String(built.rowCount));
     return res.status(200).send(built.content);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Failed to export daily CSV';
     return res.status(500).json({ error: 'daily_csv_export_failed', message });
-  }
-});
-
-app.post('/api/archive/daily/export-drive', async (req, res) => {
-  try {
-    const bearerToken = extractBearerToken(req.headers.authorization);
-    if (bearerToken) {
-      rememberRuntimeDriveToken(bearerToken);
-    }
-
-    const body = req.body || {};
-    const dateKey = typeof body.dateKey === 'string' ? body.dateKey.trim() : undefined;
-    const from = typeof body.from === 'string' ? body.from.trim() : undefined;
-    const to = typeof body.to === 'string' ? body.to.trim() : undefined;
-    const asset = typeof body.asset === 'string' ? body.asset.trim().slice(0, 32) : undefined;
-    const customSubpath =
-      typeof body.customSubpath === 'string' ? body.customSubpath.trim().slice(0, 64) : undefined;
-    const rawDataset = typeof body.dataset === 'string' ? body.dataset.trim() : 'all';
-    const dataset: DailyDriveExportScope =
-      rawDataset === 'combined' || rawDataset === 'prices' || rawDataset === 'news'
-        ? rawDataset
-        : 'all';
-
-    const outcome = await exportDailyCsvToGoogleDrive({
-      dateKey,
-      from,
-      to,
-      asset,
-      customSubpath,
-      dataset,
-      bearerToken,
-    });
-
-    if (outcome.snapshotCount === 0) {
-      return res.status(404).json({
-        error: 'no_daily_snapshots_found',
-        message: 'ไม่พบข้อมูลราคาและข่าวรายวันที่บันทึกไว้ในช่วงเวลาที่เลือก',
-      });
-    }
-
-    if (outcome.authRequired && outcome.uploadedCount === 0) {
-      return res.status(401).json({
-        error: 'drive_auth_required',
-        message: 'กรุณาเชื่อมต่อบัญชี Google Drive เพื่อส่งออกไฟล์ CSV เข้าโฟลเดอร์',
-        ...outcome,
-      });
-    }
-
-    return res.json({ success: true, ...outcome });
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Failed to export daily CSV to Google Drive';
-    return res.status(500).json({ error: 'daily_csv_drive_export_failed', message });
   }
 });
 
@@ -1475,7 +1415,6 @@ app.post('/api/archive/backtest', async (req, res) => {
   }
 
   try {
-    const bearerToken = extractBearerToken(req.headers.authorization);
     const archived = await recordBacktestArchive({
       strategyId,
       strategyName: typeof body.strategyName === 'string' ? body.strategyName.slice(0, 120) : undefined,
@@ -1486,7 +1425,6 @@ app.post('/api/archive/backtest', async (req, res) => {
         body.backtestMetrics && typeof body.backtestMetrics === 'object'
           ? (body.backtestMetrics as Record<string, unknown>)
           : undefined,
-      bearerToken,
     });
     return res.json({ success: true, ...archived });
   } catch (err: unknown) {
@@ -1504,20 +1442,6 @@ app.get('/api/archive/backtest', async (req, res) => {
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Failed to list backtest archives';
     return res.status(500).json({ error: 'backtest_list_failed', message });
-  }
-});
-
-app.post('/api/archive/drive/sync', async (req, res) => {
-  try {
-    const bearerToken = extractBearerToken(req.headers.authorization);
-    if (bearerToken) {
-      rememberRuntimeDriveToken(bearerToken);
-    }
-    const summary = await syncPendingToGoogleDrive(bearerToken);
-    return res.json({ success: true, ...summary });
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Failed to sync archive to Google Drive';
-    return res.status(500).json({ error: 'drive_sync_failed', message });
   }
 });
 

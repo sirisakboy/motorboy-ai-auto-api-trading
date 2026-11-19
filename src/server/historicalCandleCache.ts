@@ -93,9 +93,7 @@ export interface HistoricalRotationState {
 const MAX_STORED_CANDLES = 1000;
 
 function getCandlesCachePaths() {
-  const rootDir = process.env.ARCHIVE_DATA_DIR
-    ? path.resolve(process.env.ARCHIVE_DATA_DIR)
-    : getArchivePaths().rootDir;
+  const { rootDir } = getArchivePaths();
   return {
     candlesDir: path.join(rootDir, 'candles-1000d'),
     rotationFile: path.join(rootDir, 'historical-rotation.json'),

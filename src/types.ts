@@ -72,7 +72,7 @@ export interface ThaiStock {
   flash?: FlashDirection;
   isLive?: boolean;
   updatedAt?: string;
-  googleFinanceUrl?: string;
+  yahooFinanceUrl?: string;
 }
 
 export interface ForeignStock {
@@ -89,7 +89,7 @@ export interface ForeignStock {
   flash?: FlashDirection;
   isLive?: boolean;
   updatedAt?: string;
-  googleFinanceUrl?: string;
+  yahooFinanceUrl?: string;
 }
 
 export interface TradingSignal {
@@ -297,7 +297,7 @@ export interface UserSettingsProfile {
   updatedAt: string;
 }
 
-/** Unified realtime chat message (Firestore `chatRooms/{roomId}/messages`). */
+/** Unified chat message stored in local browser storage. */
 /**
  * Metadata that turns a chat bubble into a transparent AI answer
  * (Brand Book v2.0 §09): what it looked at, why it said it, which voice it used.

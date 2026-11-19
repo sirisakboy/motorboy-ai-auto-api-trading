@@ -9,8 +9,7 @@
  * This module:
  *  1. Tracks per-key SHA-256 fingerprints where grounding is unavailable/throttled
  *     for 15 minutes so subsequent calls immediately run plain generation (1x cost).
- *  2. Respects `GEMINI_ENABLE_GROUNDING=false` when explicitly disabled in deploy env.
- *  3. Provides a bounded in-memory TTL cache for identical read-heavy requests
+ *  2. Provides a bounded in-memory TTL cache for identical read-heavy requests
  *     (`categorize-headlines`, `holistic-stance`) to protect shared free-tier quota.
  */
 
@@ -35,24 +34,14 @@ export function fingerprintApiKey(apiKey?: string | null): string {
   return crypto.createHash('sha256').update(normalized).digest('hex').slice(0, 16);
 }
 
-export function isGroundingGloballyEnabled(
-  env: Record<string, string | undefined> = process.env
-): boolean {
-  const flag = typeof env.GEMINI_ENABLE_GROUNDING === 'string'
-    ? env.GEMINI_ENABLE_GROUNDING.trim().toLowerCase()
-    : '';
-  if (flag === 'false' || flag === '0' || flag === 'off' || flag === 'no') {
-    return false;
-  }
+export function isGroundingGloballyEnabled(): boolean {
   return true;
 }
 
 export function shouldAttemptGrounding(
   apiKey?: string | null,
-  env: Record<string, string | undefined> = process.env,
   now = Date.now()
 ): boolean {
-  if (!isGroundingGloballyEnabled(env)) return false;
   const fp = fingerprintApiKey(apiKey);
   const blockedUntil = groundingBlockedUntil.get(fp);
   if (!blockedUntil) return true;

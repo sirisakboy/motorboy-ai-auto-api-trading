@@ -79,9 +79,7 @@ export async function generateAiChatReply(
   // 2. Try Gemini AI if API Key is available
   const activeGeminiKey =
     context.geminiApiKey?.trim() ||
-    (typeof process !== 'undefined'
-      ? process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY
-      : undefined);
+    (typeof process !== 'undefined' ? process.env.GEMINI_API_KEY : undefined);
 
   if (activeGeminiKey && activeGeminiKey !== 'dummy_key') {
     try {
