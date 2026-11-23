@@ -1,10 +1,15 @@
 import { handleCloudflareApiRequest, type CloudflareEnv } from './apiHandler';
+import type { EdgeExecutionContext } from './rssAndAnalysisEngine';
 
 export default {
-  async fetch(request: Request, env: CloudflareEnv): Promise<Response> {
+  async fetch(
+    request: Request,
+    env: CloudflareEnv,
+    ctx?: EdgeExecutionContext
+  ): Promise<Response> {
     const url = new URL(request.url);
     if (url.pathname.startsWith('/api/')) {
-      return handleCloudflareApiRequest(request, env);
+      return handleCloudflareApiRequest(request, env, ctx);
     }
 
     if (env.ASSETS && typeof env.ASSETS.fetch === 'function') {

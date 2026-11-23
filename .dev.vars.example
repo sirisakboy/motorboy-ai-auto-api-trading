@@ -1,2 +1,18 @@
-# Cloudflare Workers / Pages secret (the only supported environment variable)
+# ============================================================================
+# MotorBoy AI-TH — Cloudflare Pages / Workers Local Secrets (.dev.vars)
+# Copy this file to `.dev.vars` for `npx wrangler pages dev` or `.env` for `npm run dev`
+# ============================================================================
+
+# 1. Primary Main AI (Google Gemini — Final Verifier & Co-Pilot)
 GEMINI_API_KEY=
+
+# 2. Cloudflare Workers AI Free Tier (@cf/meta/llama-3-8b-instruct)
+# Automatically bound via `"ai": { "binding": "AI" }` on Cloudflare Pages/Workers.
+# Optional REST credentials when running local Express (`npm run dev`):
+CLOUDFLARE_ACCOUNT_ID=
+CLOUDFLARE_API_TOKEN=
+CF_AI_MODEL=@cf/meta/llama-3-8b-instruct
+
+# 3. Cloudflare D1 Database (`motorboy-ai-db`)
+# Automatically bound via `"d1_databases"` (`DB`) in `wrangler.jsonc`.
+D1_DATABASE_ID=00000000-0000-0000-0000-000000000000

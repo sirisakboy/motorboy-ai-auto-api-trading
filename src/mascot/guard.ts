@@ -1,5 +1,6 @@
 import type { EndingResult, PoseId } from './types';
 import type { MascotSettings } from './journal';
+import { playDrawdownAlertChime } from '../services/drawdownService';
 
 /**
  * ENDING GUARD — “1 REAL JOB” (spec §6, ten rules for never blocking the UI).
@@ -175,7 +176,6 @@ export async function knock(now = Date.now()): Promise<{ vibrated: boolean; chim
   }
 
   try {
-    const { playDrawdownAlertChime } = await import('../services/drawdownService');
     playDrawdownAlertChime('CRITICAL');
     chimed = true;
   } catch {
