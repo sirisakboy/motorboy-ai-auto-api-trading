@@ -54,6 +54,11 @@ import {
   shouldCooldownGroundingOnError,
 } from './src/server/geminiQuotaShield';
 import { categorizeHeadlinesHeuristic } from './src/services/headlineCategorizationService';
+import {
+  handleAnalysisApiRequest,
+  handleRssApiRequest,
+  type DoubleCheckEnv,
+} from './src/cloudflare/rssAndAnalysisEngine';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -91,6 +96,50 @@ app.use('/api', apiRateLimiter);
 // Production & fallback reverse proxy for Yahoo Finance quotes/candles
 app.use('/api/yahoo', (req, res) => {
   void handleYahooProxyRequest(req, res);
+});
+
+async function forwardWebHandlerToExpress(
+  req: express.Request,
+  res: express.Response,
+  handler: typeof handleRssApiRequest
+) {
+  try {
+    const origin = `${req.protocol || 'http'}://${req.get('host') || 'localhost:3000'}`;
+    const webUrl = new URL(req.originalUrl || req.url, origin);
+    const hasBody = req.method !== 'GET' && req.method !== 'HEAD';
+    const webReq = new Request(webUrl.toString(), {
+      method: req.method,
+      headers: { 'Content-Type': 'application/json' },
+      body: hasBody && req.body ? JSON.stringify(req.body) : undefined,
+    });
+    const envMap: DoubleCheckEnv = {
+      GEMINI_API_KEY: process.env.GEMINI_API_KEY,
+      CLOUDFLARE_ACCOUNT_ID: process.env.CLOUDFLARE_ACCOUNT_ID || process.env.CF_ACCOUNT_ID,
+      CLOUDFLARE_API_TOKEN: process.env.CLOUDFLARE_API_TOKEN || process.env.CF_API_TOKEN,
+      CF_AI_MODEL: process.env.CF_AI_MODEL,
+    };
+    const webRes = await handler(webReq, envMap, {
+      waitUntil: (p) => {
+        void p.catch(() => undefined);
+      },
+    });
+    webRes.headers.forEach((value, key) => {
+      res.setHeader(key, value);
+    });
+    const bodyText = await webRes.text();
+    return res.status(webRes.status).send(bodyText);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Internal server error';
+    return res.status(500).json({ error: 'edge_bridge_error', message: msg });
+  }
+}
+
+app.all('/api/rss', (req, res) => {
+  void forwardWebHandlerToExpress(req, res, handleRssApiRequest);
+});
+
+app.all('/api/analysis', (req, res) => {
+  void forwardWebHandlerToExpress(req, res, handleAnalysisApiRequest);
 });
 
 /**

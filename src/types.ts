@@ -471,3 +471,41 @@ export interface PortfolioDrawdownSummary {
   portfolioStatus: DrawdownRiskStatus;
   recommendedActionTh: string;
 }
+
+/* ========================================================================
+ * Cloudflare Workers AI + Primary Main AI Double-Check & D1 RSS Types
+ * ======================================================================== */
+
+export type CloudflareAiStatus =
+  | 'OK'
+  | 'QUOTA_EXCEEDED'
+  | 'FALLBACK_MAIN_ONLY'
+  | 'ERROR';
+
+export interface DoubleCheckAnalysisRecord {
+  id: number | string;
+  rssItemId?: number | null;
+  rssSource: string;
+  rssUrl?: string;
+  headline: string;
+  cfAiModel: string;
+  cfAiResult: string;
+  cfAiStatus: CloudflareAiStatus;
+  mainAiModel: string;
+  mainAiVerdict: string;
+  mainAiSummary: string;
+  correctionsTh?: string;
+  sentiment: Sentiment;
+  confidenceScore: number;
+  timestamp: string;
+}
+
+export interface RssFeedRecord {
+  id?: number;
+  name: string;
+  url: string;
+  category: NewsArticle['category'];
+  isEnabled?: boolean;
+  lastFetchedAt?: string | null;
+  lastStatus?: number | null;
+}

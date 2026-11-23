@@ -6,11 +6,9 @@ import {
   NewsArticle,
   MarketHoursInfo,
   ChartData,
-  Sentiment,
   FlashDirection,
   BinanceTicker24h,
   BinanceKline,
-  RssItem,
   ThaiStock,
   ForeignStock,
 } from '../types';
@@ -165,7 +163,7 @@ const FOREIGN_STOCKS_RAW: ForeignStock[] = [
 
 export const FOREIGN_STOCKS: ForeignStock[] = stampSeedSnapshot(FOREIGN_STOCKS_RAW);
 
-const NEWS_SOURCES = [
+export const NEWS_SOURCES = [
   { url: 'https://www.coindesk.com/arc/outboundfeeds/rss/', name: 'CoinDesk', category: 'CRYPTO' as const },
   { url: 'https://cointelegraph.com/rss', name: 'Cointelegraph', category: 'CRYPTO' as const },
   { url: 'https://decrypt.co/feed', name: 'Decrypt', category: 'CRYPTO' as const },
@@ -201,102 +199,25 @@ interface FeedSource {
   category: NewsArticle['category'];
 }
 
-function generateArticleId(prefix: string, sourceName: string, idx: number, title: string): string {
-  const slug = sourceName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'src';
-  let hash = 0;
-  for (let i = 0; i < title.length; i++) {
-    hash = ((hash << 5) - hash + title.charCodeAt(i)) | 0;
+async function fetchServerRssArticles(category?: string): Promise<NewsArticle[]> {
+  try {
+    const query = category ? `?category=${encodeURIComponent(category)}` : '';
+    const res = await fetch(`/api/rss${query}`, { signal: AbortSignal.timeout(7000) });
+    if (!res.ok) return [];
+    const data = (await res.json()) as { articles?: NewsArticle[] };
+    return Array.isArray(data?.articles) ? data.articles : [];
+  } catch {
+    return [];
   }
-  const hashStr = Math.abs(hash).toString(36);
-  const rand = Math.random().toString(36).slice(2, 8);
-  return `${prefix}-${slug}-${idx}-${hashStr}-${rand}`;
-}
-
-function mapRssItemToArticle(
-  source: FeedSource,
-  item: RssItem,
-  idx: number,
-  idPrefix: string
-): NewsArticle | null {
-  const title = (item.title || '').trim();
-  if (!title) return null;
-  const sentiment = analyzeSentiment(title);
-  return {
-    id: generateArticleId(idPrefix, source.name, idx, title),
-    title,
-    source: source.name,
-    time: formatTimeAgo(item.pubDate || ''),
-    url: item.link || source.url,
-    sentiment,
-    category: source.category,
-    impact: sentiment === 'NEUTRAL' ? 'MEDIUM' : 'HIGH',
-    summary: item.description ? item.description.replace(/<[^>]*>?/gm, '').slice(0, 160) + '...' : undefined,
-    isCurated: false,
-    fetchedAt: new Date().toISOString(),
-  };
-}
-
-async function fetchViaRss2json(source: FeedSource, max: number): Promise<NewsArticle[]> {
-  const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(source.url)}`;
-  const res = await fetch(apiUrl, { signal: AbortSignal.timeout(6000) });
-  if (!res.ok) return [];
-  const data = await res.json();
-  if (data.status !== 'ok' || !Array.isArray(data.items)) return [];
-  const items = data.items as RssItem[];
-  return items
-    .slice(0, max)
-    .map((item, idx) => mapRssItemToArticle(source, item, idx, 'rss'))
-    .filter((a): a is NewsArticle => a !== null);
-}
-
-async function fetchViaProxyXml(source: FeedSource, max: number): Promise<NewsArticle[]> {
-  const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(source.url)}`;
-  const res = await fetch(proxyUrl, { signal: AbortSignal.timeout(8000) });
-  if (!res.ok) return [];
-  const xmlText = await res.text();
-  const parser = new DOMParser();
-  const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
-  const items = xmlDoc.querySelectorAll('item');
-  if (items.length === 0) return [];
-  const out: NewsArticle[] = [];
-  Array.from(items).slice(0, max).forEach((item, idx) => {
-    const mapped = mapRssItemToArticle(
-      source,
-      {
-        title: item.querySelector('title')?.textContent || '',
-        link: item.querySelector('link')?.textContent || '',
-        pubDate: item.querySelector('pubDate')?.textContent || '',
-        description: item.querySelector('description')?.textContent || '',
-      },
-      idx,
-      'rssxml'
-    );
-    if (mapped) out.push(mapped);
-  });
-  return out;
-}
-
-/**
- * Fetch one RSS feed, racing rss2json API against direct-XML-via-proxy.
- * First non-empty result wins — survives rss2json quotas and proxy outages.
- */
-async function fetchFeedArticles(source: FeedSource, max = 3): Promise<NewsArticle[]> {
-  const [a, b] = await Promise.allSettled([
-    fetchViaRss2json(source, max),
-    fetchViaProxyXml(source, max),
-  ]);
-  if (a.status === 'fulfilled' && a.value.length > 0) return a.value;
-  if (b.status === 'fulfilled' && b.value.length > 0) return b.value;
-  return [];
 }
 
 async function fetchFeedGroup(sources: FeedSource[], perSource = 3): Promise<NewsArticle[]> {
-  const settled = await Promise.allSettled(sources.map((s) => fetchFeedArticles(s, perSource)));
-  const out: NewsArticle[] = [];
-  for (const r of settled) {
-    if (r.status === 'fulfilled') out.push(...r.value);
-  }
-  return out;
+  const category = sources[0]?.category;
+  const all = await fetchServerRssArticles(category);
+  if (all.length === 0) return [];
+  const sourceNames = new Set(sources.map((s) => s.name));
+  const filtered = all.filter((a) => sourceNames.has(a.source));
+  return (filtered.length > 0 ? filtered : all).slice(0, sources.length * perSource);
 }
 
 function getYahooWorldCuratedNews(): NewsArticle[] {
@@ -714,58 +635,6 @@ export async function fetchForexRates(prevRates: ForexPair[] = []): Promise<Fore
   ]);
 }
 
-function analyzeSentiment(title: string): Sentiment {
-  const lower = title.toLowerCase();
-
-  // Negation detection - if these appear before sentiment words, flip the meaning
-  const negations = ['ไม่', 'ไม่ได้', 'ยังไม่', 'ยังไม่', 'ไม่มี', 'avoid', 'not', 'no ', 'never', 'without'];
-  const hasNegation = negations.some(n => lower.includes(n));
-
-  // Strong bullish keywords (higher weight)
-  const strongBullish = ['surge', 'soar', 'rally', 'breakout', 'ath', 'record high', 'pump', 'skyrocket', 'mooning',
-    'พุ่ง', 'ทะยาน', 'นิวไฮ', 'ทะลุ', 'แตกพีค', 'พีคใหม่', 'ดีดพุ่ง'];
-  // Moderate bullish keywords
-  const moderateBullish = ['inflow', 'gain', 'bull', 'up', 'high', 'boost', 'recovery', 'rally', 'positive', 'strong',
-    'บวก', 'ขึ้น', 'กำไร', 'ฟื้น', 'เติบโต', 'ซื้อสุทธิ', 'แกร่ง', 'สดใส', 'แรงหนุน', 'สะสม', 'หนุน', 'ดีดตัว', 'ฟื้นตัว', 'ปรับตัวขึ้น'];
-
-  // Strong bearish keywords
-  const strongBearish = ['crash', 'plummet', 'collapse', 'wipeout', 'dump', 'capitulation', 'bloodbath',
-    'วิกฤต', 'ถล่ม', 'ล่มสลาย', 'พังทลาย', 'น้ำตาถม'];
-  // Moderate bearish keywords
-  const moderateBearish = ['drop', 'loss', 'bear', 'fall', 'decline', 'down', 'cut', 'ban', 'hack', 'fear', 'sell',
-    'ลบ', 'ร่วง', 'ดิ่ง', 'ทรุด', 'ลดลง', 'เสี่ยง', 'กังวล', 'ชะลอตัว', 'ขายสุทธิ', 'หลุด', 'ผันผวน', 'หดตัว', 'ปรับตัวลง', 'อ่อนค่า'];
-
-  // Check strong keywords first (higher confidence)
-  if (strongBullish.some(w => lower.includes(w))) return hasNegation ? 'BEARISH' : 'BULLISH';
-  if (strongBearish.some(w => lower.includes(w))) return hasNegation ? 'BULLISH' : 'BEARISH';
-
-  // Then moderate keywords
-  const bullCount = moderateBullish.filter(w => lower.includes(w)).length;
-  const bearCount = moderateBearish.filter(w => lower.includes(w)).length;
-
-  if (bullCount > bearCount && bullCount >= 1) return hasNegation ? 'BEARISH' : 'BULLISH';
-  if (bearCount > bullCount && bearCount >= 1) return hasNegation ? 'BULLISH' : 'BEARISH';
-
-  return 'NEUTRAL';
-}
-
-function formatTimeAgo(dateStr: string): string {
-  try {
-    const date = new Date(dateStr);
-    if (isNaN(date.getTime())) return 'เมื่อสักครู่';
-    const diffMs = Date.now() - date.getTime();
-    const diffMin = Math.floor(diffMs / 60000);
-    const diffHr = Math.floor(diffMin / 60);
-
-    if (diffMin < 1) return 'เมื่อสักครู่';
-    if (diffMin < 60) return `${diffMin} นาทีที่แล้ว`;
-    if (diffHr < 24) return `${diffHr} ชม.ที่แล้ว`;
-    return `${Math.floor(diffHr / 24)} วันที่แล้ว`;
-  } catch {
-    return 'เมื่อสักครู่';
-  }
-}
-
 /**
  * Fetch direct Yahoo World & Finance News using Yahoo RSS and direct endpoints
  */
@@ -905,123 +774,37 @@ function getMitradeCuratedNews(): NewsArticle[] {
   ];
 }
 
-/**
- * Fetch live news from Mitrade Insights via CORS proxy
- */
-function parseMitradeHtml(html: string): NewsArticle[] {
-  const articles: NewsArticle[] = [];
-  const linkRegex = /href="(\/th\/insights\/(?:news\/live-news\/article-[^"]+|price-forecast[^"]+|more-analysis[^"]+|crypto[^"]+))"[^>]*>/g;
-  const titleRegex = /<h\d[^>]*class="[^"]*(?:title|heading)[^"]*"[^>]*>([^<]+)</i;
-  let linkMatch;
-  const seenPaths = new Set<string>();
-  let idx = 0;
-
-  while ((linkMatch = linkRegex.exec(html)) !== null && idx < 12) {
-    const path = linkMatch[1];
-    if (seenPaths.has(path)) continue;
-    seenPaths.add(path);
-
-    const startPos = Math.max(0, linkMatch.index - 50);
-    const endPos = Math.min(html.length, linkMatch.index + 500);
-    const chunk = html.substring(startPos, endPos);
-    const titleMatch = chunk.match(titleRegex) || chunk.match(/>([^<]{20,150})</);
-    const title = titleMatch ? titleMatch[1].trim() : '';
-    if (!title || title.length < 15) continue;
-
-    const sentiment = analyzeSentiment(title);
-    articles.push({
-      id: generateArticleId('mitrade-live', 'mitrade', idx, title),
-      title,
-      source: 'Mitrade Insights',
-      time: `${15 + idx * 10} นาทีที่แล้ว`,
-      url: `https://www.mitrade.com${path}`,
-      sentiment,
-      category: 'MITRADE',
-      impact: sentiment === 'NEUTRAL' ? 'MEDIUM' : 'HIGH',
-      summary: title.slice(0, 140) + '...',
-    });
-    idx++;
-  }
-
-  return articles;
-}
-
-async function fetchTextOk(url: string, timeoutMs = 8000): Promise<string | null> {
-  try {
-    const res = await fetch(url, { signal: AbortSignal.timeout(timeoutMs) });
-    if (!res.ok) return null;
-    return await res.text();
-  } catch {
-    return null;
-  }
-}
-
 export async function fetchMitradeLiveNews(): Promise<NewsArticle[]> {
-  // Primary: CORS proxy HTML
-  const viaProxy = await fetchTextOk(
-    `https://api.allorigins.win/raw?url=${encodeURIComponent(MITRADE_NEWS_URL)}`
-  );
-  if (viaProxy) {
-    const articles = parseMitradeHtml(viaProxy);
-    if (articles.length > 0) return articles;
-  }
-
-  // Secondary: Jina reader (different egress, returns markdown with links)
-  const viaJina = await fetchTextOk(`https://r.jina.ai/${MITRADE_NEWS_URL}`, 10000);
-  if (viaJina) {
-    const articles = parseMitradeHtml(viaJina);
-    if (articles.length > 0) return articles;
-  }
-
   return getMitradeCuratedNews().map((a) => ({ ...a, isCurated: true, fetchedAt: new Date().toISOString() }));
 }
 
 /**
- * Fetch real-time market and financial news from MSN Money, Yahoo World News, Mitrade, and Global Feeds
+ * Fetch real-time market and financial news via server-side Worker RSS cache (/api/rss, 10-min TTL)
+ * with curated fallback pools when offline — zero client-side CORS proxy dependencies.
  */
 export async function fetchNews(): Promise<NewsArticle[]> {
   const articles: NewsArticle[] = [];
   const nowIso = new Date().toISOString();
 
-  // Curated fallback pool — tagged isCurated:true so UI can badge "ข้อมูลสำรอง".
-  // Shown only to fill gaps when live feeds fail, sorted AFTER live items.
   const msnNews = getMsnMoneyCuratedNews().map((a) => ({ ...a, isCurated: true, fetchedAt: nowIso }));
   const projectNews = getProjectExpansionCuratedNews().map((a) => ({ ...a, isCurated: true, fetchedAt: nowIso }));
   const mitradeNews = getMitradeCuratedNews().map((a) => ({ ...a, isCurated: true, fetchedAt: nowIso }));
 
-  // Fetch all live groups in parallel (crypto, yahoo, macro, thai, mitrade)
-  const yahooPromise = fetchYahooWorldNews();
-  const mitradeLivePromise = fetchMitradeLiveNews();
-  const cryptoPromise = fetchFeedGroup(NEWS_SOURCES, 2);
-  const macroPromise = fetchMacroNews();
-  const thaiPromise = fetchThaiNews();
-
-  const [yahooResults, mitradeResults, cryptoResults, macroResults, thaiResults] = await Promise.allSettled([
-    yahooPromise,
-    mitradeLivePromise,
-    cryptoPromise,
-    macroPromise,
-    thaiPromise,
-  ]);
-
-  if (yahooResults.status === 'fulfilled') {
-    articles.push(...yahooResults.value.map((a) => ({ fetchedAt: nowIso, isCurated: false, ...a })));
+  // Single server-side Worker RSS request (fetches & caches all 10 global/Thai feeds for 10 mins)
+  const workerRssArticles = await fetchServerRssArticles();
+  if (workerRssArticles.length > 0) {
+    articles.push(
+      ...workerRssArticles.map((a) => ({
+        fetchedAt: nowIso,
+        isCurated: Boolean(a.isCurated),
+        ...a,
+      }))
+    );
   } else {
     articles.push(...getYahooWorldCuratedNews().map((a) => ({ ...a, isCurated: true, fetchedAt: nowIso })));
   }
 
-  if (mitradeResults.status === 'fulfilled' && mitradeResults.value.length > 0) {
-    articles.push(...mitradeResults.value.map((a) => ({ fetchedAt: nowIso, isCurated: false, ...a })));
-  } else {
-    // Live Mitrade failed → use curated pool as fallback only
-    articles.push(...mitradeNews);
-  }
-
-  for (const r of [cryptoResults, macroResults, thaiResults]) {
-    if (r.status === 'fulfilled') {
-      articles.push(...r.value);
-    }
-  }
+  articles.push(...mitradeNews);
 
   // If every live source failed, fill with MSN + project curated pool so UI is never empty
   const liveCount = articles.filter((a) => !a.isCurated).length;
@@ -1323,30 +1106,10 @@ function parseYahooCloses(data: unknown): number[] | null {
 async function fetchYahooCloses(symbol: string, range = '5y'): Promise<number[] | null> {
   const path = `/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=${range}`;
 
-  // 1) Try internal Vite dev proxy /api/yahoo (no CORS, direct server-side fetch)
+  // Server-side Cloudflare Worker / Vite proxy /api/yahoo (no external CORS proxies)
   const localData = await fetchJsonOk(`/api/yahoo${path}`, 6000);
   const localCloses = localData ? parseYahooCloses(localData) : null;
   if (localCloses && localCloses.length > 5) return localCloses;
-
-  // 2) Direct query1 / query2 hosts (for node / server environments)
-  for (const host of ['https://query1.finance.yahoo.com', 'https://query2.finance.yahoo.com']) {
-    const data = await fetchJsonOk(`${host}${path}`, 6000);
-    const closes = data ? parseYahooCloses(data) : null;
-    if (closes && closes.length > 5) return closes;
-  }
-
-  // 3) CORS proxy mirrors as fallback
-  const yahooUrl = `https://query1.finance.yahoo.com${path}`;
-  const proxies = [
-    `https://corsproxy.io/?url=${encodeURIComponent(yahooUrl)}`,
-    `https://api.allorigins.win/raw?url=${encodeURIComponent(yahooUrl)}`,
-    `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(yahooUrl)}`,
-  ];
-  for (const proxyUrl of proxies) {
-    const proxied = await fetchJsonOk(proxyUrl, 6000);
-    const closes = proxied ? parseYahooCloses(proxied) : null;
-    if (closes && closes.length > 5) return closes;
-  }
 
   return null;
 }
@@ -1573,45 +1336,16 @@ async function fetchJsonOk(url: string, timeoutMs = 7000): Promise<unknown | nul
 }
 
 /**
- * Fetch single-symbol quote via Yahoo Finance v8 chart API.
- * Uses /api/yahoo (Vite reverse proxy) for same-origin speed, then direct query hosts, then CORS proxies.
+ * Fetch single-symbol quote via same-origin /api/yahoo Worker proxy (cached on Cloudflare Edge).
  */
 async function fetchYahooChartMeta(symbol: string): Promise<YahooChartMeta | null> {
   const path = `/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=5d`;
-
-  // 1) Internal Vite proxy /api/yahoo
   const localData = await fetchJsonOk(`/api/yahoo${path}`, 5000);
-  const localMeta = localData ? parseYahooMeta(localData) : null;
-  if (localMeta) return localMeta;
-
-  // 2) Direct query1 / query2 hosts
-  for (const host of ['https://query1.finance.yahoo.com', 'https://query2.finance.yahoo.com']) {
-    const data = await fetchJsonOk(`${host}${path}`, 5000);
-    const meta = data ? parseYahooMeta(data) : null;
-    if (meta) return meta;
-  }
-
-  // 3) CORS proxy mirrors
-  return await fetchYahooChartMetaViaProxy(symbol);
+  return localData ? parseYahooMeta(localData) : null;
 }
 
-/**
- * Same quote via public CORS proxies when direct hosts fail or CORS applies.
- */
 async function fetchYahooChartMetaViaProxy(symbol: string): Promise<YahooChartMeta | null> {
-  const path = `/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=5d`;
-  const target = `https://query1.finance.yahoo.com${path}`;
-  const proxies = [
-    `https://corsproxy.io/?url=${encodeURIComponent(target)}`,
-    `https://api.allorigins.win/raw?url=${encodeURIComponent(target)}`,
-    `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(target)}`,
-  ];
-  for (const pUrl of proxies) {
-    const data = await fetchJsonOk(pUrl, 6000);
-    const meta = data ? parseYahooMeta(data) : null;
-    if (meta) return meta;
-  }
-  return null;
+  return fetchYahooChartMeta(symbol);
 }
 
 function calcChangePercent(price: number, prevClose?: number): number | null {

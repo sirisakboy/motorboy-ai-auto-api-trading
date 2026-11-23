@@ -1,15 +1,24 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "motorboy-ai-th",
-  "main": "src/cloudflare/worker.ts",
   "compatibility_date": "2025-12-01",
-  "assets": {
-    "directory": "./dist",
-    "binding": "ASSETS",
-    "not_found_handling": "single-page-application",
-    "run_worker_first": ["/api/*"]
+  "pages_build_output_dir": "./dist",
+  // Cloudflare Workers AI Free Tier (@cf/meta/llama-3-8b-instruct)
+  "ai": {
+    "binding": "AI"
   },
-  "observability": {
-    "enabled": true
+  // Cloudflare D1 Database (rss_feeds, rss_items, ai_analysis, songs)
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "motorboy-ai-db",
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "vars": {
+    "APP_ENV": "production",
+    "RSS_CACHE_TTL_SEC": "600",
+    "CF_AI_MODEL": "@cf/meta/llama-3-8b-instruct"
   }
 }
