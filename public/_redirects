@@ -1,0 +1,2 @@
+# Cloudflare Pages SPA routing (/api/* is served first by Pages Functions)
+/*    /index.html   200

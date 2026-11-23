@@ -325,7 +325,7 @@ export const RoadmapCard: React.FC = () => {
     '2.1 Real Binance WebSocket multi-symbol ✓',
     '2.2 CoinGecko REST + Binance REST fallback ✓',
     '2.3 Forex er-api.com + Frankfurter fallback ✓',
-    '2.4 RSS news 10 sources (crypto/Yahoo/BBC/CNBC/TH) rss2json+proxy race ✓',
+    '2.4 RSS news 10 sources via Cloudflare Worker /api/rss (10-min cache) ✓',
     '2.5 Momentum score from real 24h price change ✓',
     '2.6 Price chart (Binance klines + EMA; Forex & Stocks Yahoo/Frankfurter live, no simulation) ✓',
     '2.7 Real market hours (SET/Forex/Crypto) ✓',

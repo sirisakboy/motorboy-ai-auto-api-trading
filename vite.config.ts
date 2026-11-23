@@ -6,12 +6,30 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig(() => {
   return {
     plugins: [react(), tailwindcss()],
+    build: {
+      target: 'es2022',
+      cssCodeSplit: false,
+      minify: 'esbuild',
+      cssMinify: true,
+      modulePreload: false,
+      chunkSizeWarningLimit: 1200,
+      rollupOptions: {
+        output: {
+          inlineDynamicImports: true,
+          entryFileNames: 'assets/app.min.js',
+          assetFileNames: (assetInfo) => {
+            const assetName = assetInfo.names?.[0] ?? assetInfo.name ?? '';
+            if (assetName.endsWith('.css')) {
+              return 'assets/style.min.css';
+            }
+            return 'assets/[name][extname]';
+          },
+        },
+      },
+    },
     server: {
       host: '0.0.0.0',
       port: 3000,
-      // Required when the dev server is reached through a proxy/preview host
-      // (Arena previews, tunnels, e2b sandboxes). Vite 6 blocks unknown Host
-      // headers by default, which broke the live preview with a 403.
       allowedHosts: true,
       proxy: {
         '/api/yahoo': {
@@ -19,12 +37,12 @@ export default defineConfig(() => {
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/api\/yahoo/, ''),
           headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Accept': 'application/json, text/plain, */*',
+            'User-Agent':
+              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+            Accept: 'application/json, text/plain, */*',
           },
         },
       },
     },
   };
 });
-

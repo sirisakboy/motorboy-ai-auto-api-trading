@@ -50,6 +50,8 @@ import { PriceChartCanvas } from './components/PriceChartCanvas';
 import { MarketHoursCard } from './components/MarketHoursCard';
 import { NewsCard } from './components/NewsCard';
 import { SystemHealthPanel } from './components/SystemHealthPanel';
+import { AiAnalysisPanel } from './components/AiAnalysisPanel';
+import { BackgroundMusic } from './components/BackgroundMusic';
 import { SignalDetailModal } from './components/SignalDetailModal';
 import { ForexDetailModal } from './components/ForexDetailModal';
 import { StockDetailModal } from './components/StockDetailModal';
@@ -1877,12 +1879,13 @@ export const App: React.FC = () => {
                 </div>
               </div>
 
-              {/* Right Sidebar Column: Market Hours & System Health (col-span-4) */}
+              {/* Right Sidebar Column: Market Hours, AI Analysis & System Health (col-span-4) */}
               <div className="lg:col-span-4 space-y-6">
                 {/* The mascot is not a dashboard card any more: it floats over the
                     page and speaks only when the detectors actually catch
                     something (see MascotOverlay + the auto-detect effects above). */}
                 <MarketHoursCard marketHours={marketHours} />
+                <AiAnalysisPanel articles={newsList} geminiApiKey={geminiApiKey} />
                 {/* รายละเอียด API/Error Handling ถูกย่อไว้ในแท็บพับได้ ลดความรกของ sidebar */}
                 <SystemHealthPanel status={apiStatus} onRefresh={handleRefreshAllApis} />
               </div>
@@ -2274,6 +2277,7 @@ export const App: React.FC = () => {
       {/* Floating AI mascot — pointer-events-none wrapper, never blocks the UI */}
       {/* No data props: the mascot subscribes to the published feed, so it can
           be mounted on any surface and still see live market context. */}
+      <BackgroundMusic />
       <MascotOverlay onOpenChat={openChat} />
     </>
   );

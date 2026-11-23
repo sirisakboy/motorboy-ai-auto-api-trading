@@ -3,6 +3,104 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* ============================================================================
+   SELF-HOSTED TYPOGRAPHY (/assets/fonts/*.woff2 — zero external Google Fonts CDN)
+   ============================================================================ */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Inter Regular'), local('Inter'),
+    url('/assets/fonts/inter-latin-400-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: local('Inter SemiBold'), local('Inter'),
+    url('/assets/fonts/inter-latin-600-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 700 900;
+  font-display: swap;
+  src: local('Inter Bold'), local('Inter'),
+    url('/assets/fonts/inter-latin-700-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Noto Sans Thai';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Noto Sans Thai Regular'), local('Noto Sans Thai'),
+    url('/assets/fonts/noto-sans-thai-thai-400-normal.woff2') format('woff2');
+  unicode-range: U+0E01-0E5B, U+200C-200D, U+25CC;
+}
+
+@font-face {
+  font-family: 'Noto Sans Thai';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: local('Noto Sans Thai SemiBold'), local('Noto Sans Thai'),
+    url('/assets/fonts/noto-sans-thai-thai-600-normal.woff2') format('woff2');
+  unicode-range: U+0E01-0E5B, U+200C-200D, U+25CC;
+}
+
+@font-face {
+  font-family: 'Noto Sans Thai';
+  font-style: normal;
+  font-weight: 700 900;
+  font-display: swap;
+  src: local('Noto Sans Thai Bold'), local('Noto Sans Thai'),
+    url('/assets/fonts/noto-sans-thai-thai-700-normal.woff2') format('woff2');
+  unicode-range: U+0E01-0E5B, U+200C-200D, U+25CC;
+}
+
+@font-face {
+  font-family: 'Kanit';
+  font-style: normal;
+  font-weight: 700 900;
+  font-display: swap;
+  src: local('Kanit Bold'), local('Kanit'),
+    url('/assets/fonts/kanit-thai-700-normal.woff2') format('woff2');
+  unicode-range: U+0E01-0E5B, U+200C-200D, U+25CC;
+}
+
+@font-face {
+  font-family: 'Kanit';
+  font-style: normal;
+  font-weight: 700 900;
+  font-display: swap;
+  src: local('Kanit Bold'), local('Kanit'),
+    url('/assets/fonts/kanit-latin-700-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F;
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('JetBrains Mono Regular'), local('JetBrains Mono'),
+    url('/assets/fonts/jetbrains-mono-latin-400-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 700 900;
+  font-display: swap;
+  src: local('JetBrains Mono Bold'), local('JetBrains Mono'),
+    url('/assets/fonts/jetbrains-mono-latin-700-normal.woff2') format('woff2');
+}
+
+/* ============================================================================
    MOTORBOY CALM SYSTEM v2.0 — design tokens
    Source: MotorBoy-Studio-AI-TH Brand Book v2.0 (8 Nov 2026), section 16
    "Tokens as Code". This :root block is the single source of truth and mirrors
